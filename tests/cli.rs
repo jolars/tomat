@@ -71,10 +71,15 @@ impl TestDaemon {
         self.send_command(&["status"])
     }
 
-    /// Wait for timer to complete and optionally trigger transition manually for testing
+    /// Wait for timer to complete and transition (paused for auto_advance=false, continued for auto_advance=true)
     fn wait_for_completion(&self, max_wait: u64) -> Result<(), Box<dyn std::error::Error>> {
         let start = std::time::Instant::now();
         let max_duration = Duration::from_secs(max_wait);
+
+        // For auto_advance=false timers, we wait for paused state
+        // For auto_advance=true timers, we wait for phase change
+        let mut initial_phase: Option<String> = None;
+        let mut timer_completed = false;
 
         loop {
             if start.elapsed() > max_duration {
@@ -82,22 +87,52 @@ impl TestDaemon {
             }
 
             let status = self.get_status()?;
-            if let Some(text) = status.get("text").and_then(|v| v.as_str())
-                && text.contains("Done!")
+
+            // Record initial phase
+            if initial_phase.is_none()
+                && let Some(class) = status.get("class").and_then(|v| v.as_str())
             {
-                // Timer completed, wait a bit more for automatic transition
-                thread::sleep(Duration::from_millis(1500)); // Wait 1.5 seconds for auto-transition
+                initial_phase = Some(class.to_string());
+            }
 
-                let status_after_wait = self.get_status()?;
-                if let Some(text_after) = status_after_wait.get("text").and_then(|v| v.as_str())
-                    && text_after.contains("Done!")
-                {
-                    // Still showing "Done!", manually trigger transition for testing
-                    println!("Auto-transition didn't occur, manually triggering with skip");
-                    self.send_command(&["skip"])?;
+            // Check if timer shows 00:00 (completed but not yet transitioned)
+            if let Some(text) = status.get("text").and_then(|v| v.as_str()) {
+                if text.contains("00:00") && !timer_completed {
+                    // Timer reached 00:00, wait a moment for automatic transition
+                    thread::sleep(Duration::from_millis(1500));
+                    timer_completed = true;
+
+                    // Check what happened after transition
+                    let status_after = self.get_status()?;
+                    if let Some(text_after) = status_after.get("text").and_then(|v| v.as_str()) {
+                        if text_after.contains("⏸") {
+                            // Successfully transitioned to paused state (auto_advance=false)
+                            return Ok(());
+                        } else if let Some(class_after) =
+                            status_after.get("class").and_then(|v| v.as_str())
+                            && Some(class_after.to_string()) != initial_phase
+                        {
+                            // Phase changed (auto_advance=true)
+                            return Ok(());
+                        }
+
+                        if text_after.contains("00:00") {
+                            // Still showing 00:00, manually trigger transition
+                            println!("Auto-transition didn't occur, manually triggering with skip");
+                            self.send_command(&["skip"])?;
+                            thread::sleep(Duration::from_millis(200));
+                            return Ok(());
+                        }
+                    }
+                } else if text.contains("⏸") {
+                    // Already in paused state
+                    return Ok(());
+                } else if let Some(class) = status.get("class").and_then(|v| v.as_str()) {
+                    // Check if phase changed (auto_advance=true case)
+                    if Some(class.to_string()) != initial_phase && initial_phase.is_some() {
+                        return Ok(());
+                    }
                 }
-
-                return Ok(());
             }
 
             thread::sleep(Duration::from_millis(100));
@@ -140,7 +175,10 @@ fn test_auto_advance_false_pauses_after_transition() -> Result<(), Box<dyn std::
         status["class"], "break-paused",
         "Timer should be in paused break state"
     );
-    assert_eq!(status["text"], "☕ Paused", "Timer should show paused text");
+    assert!(
+        status["text"].as_str().unwrap().contains("⏸"),
+        "Timer should show pause symbol"
+    );
     assert!(
         status["tooltip"].as_str().unwrap().contains("Paused"),
         "Tooltip should indicate paused state"
@@ -181,8 +219,8 @@ fn test_auto_advance_true_continues_automatically() -> Result<(), Box<dyn std::e
         "Timer should show break icon"
     );
     assert!(
-        !status["text"].as_str().unwrap().contains("Paused"),
-        "Timer should not show paused text"
+        status["text"].as_str().unwrap().contains("▶"),
+        "Timer should show play symbol when running"
     );
     assert!(
         !status["tooltip"].as_str().unwrap().contains("Paused"),
@@ -217,21 +255,21 @@ fn test_resume_paused_timer() -> Result<(), Box<dyn std::error::Error>> {
         "Timer should be in active break state after resume"
     );
     assert!(
-        !status["text"].as_str().unwrap().contains("Paused"),
-        "Timer should not show paused text after resume"
+        status["text"].as_str().unwrap().contains("▶"),
+        "Timer should show play symbol when running after resume"
     );
 
     Ok(())
 }
 
 #[test]
-fn test_toggle_from_idle_with_auto_advance_false() -> Result<(), Box<dyn std::error::Error>> {
+fn test_toggle_from_paused_with_auto_advance_false() -> Result<(), Box<dyn std::error::Error>> {
     let daemon = TestDaemon::start()?;
 
-    // Toggle from idle state (should start timer with auto_advance=false by default)
-    daemon.send_command(&["toggle", "--work", "0.1", "--break-time", "0.05"])?;
+    // Start in paused work state (default), toggle should resume
+    daemon.send_command(&["toggle"])?;
 
-    // Check that timer started
+    // Check that timer resumed
     let status = daemon.get_status()?;
     assert_eq!(status["class"], "work", "Timer should be in work state");
     assert!(
@@ -243,12 +281,12 @@ fn test_toggle_from_idle_with_auto_advance_false() -> Result<(), Box<dyn std::er
 }
 
 #[test]
-fn test_toggle_from_idle_with_auto_advance_true() -> Result<(), Box<dyn std::error::Error>> {
+fn test_toggle_pause_and_resume() -> Result<(), Box<dyn std::error::Error>> {
     let daemon = TestDaemon::start()?;
 
-    // Toggle from idle state with auto_advance=true
+    // Start timer with auto_advance=true and short duration
     daemon.send_command(&[
-        "toggle",
+        "start",
         "--work",
         "0.05",
         "--break-time",
@@ -267,8 +305,8 @@ fn test_toggle_from_idle_with_auto_advance_true() -> Result<(), Box<dyn std::err
         "Timer should auto-advance to break phase"
     );
     assert!(
-        !status["text"].as_str().unwrap().contains("Paused"),
-        "Timer should not be paused with auto_advance=true"
+        status["text"].as_str().unwrap().contains("▶"),
+        "Timer should show play symbol when running with auto_advance=true"
     );
 
     Ok(())

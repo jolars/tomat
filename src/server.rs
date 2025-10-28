@@ -7,7 +7,7 @@ use tokio::net::{UnixListener, UnixStream};
 use tokio::time::sleep;
 
 use crate::ServerResponse;
-use crate::timer::{Phase, TimerState};
+use crate::timer::TimerState;
 
 #[derive(Serialize, Deserialize)]
 struct ClientMessage {
@@ -98,18 +98,16 @@ async fn handle_client(
             state.auto_advance = auto_advance;
             state.current_session_count = 0;
 
-            if state.is_paused && !matches!(state.phase, Phase::Idle) {
-                // Resume if paused
-                state.resume();
-            } else {
-                // Start new session
-                state.start_work();
-            }
+            // Always start a fresh work session
+            state.start_work();
 
             ServerResponse {
                 success: true,
                 data: serde_json::Value::Null,
-                message: "Timer started".to_string(),
+                message: format!(
+                    "Pomodoro started: {:.1}min work, {:.1}min break, {:.1}min long break every {} sessions",
+                    work, break_time, long_break, sessions
+                ),
             }
         }
         "stop" => {
@@ -139,51 +137,7 @@ async fn handle_client(
             }
         }
         "toggle" => {
-            if matches!(state.phase, Phase::Idle) {
-                // Start timer if idle
-                let work = message
-                    .args
-                    .get("work")
-                    .and_then(|v| v.as_f64())
-                    .unwrap_or(25.0) as f32;
-                let break_time = message
-                    .args
-                    .get("break")
-                    .and_then(|v| v.as_f64())
-                    .unwrap_or(5.0) as f32;
-                let long_break = message
-                    .args
-                    .get("long_break")
-                    .and_then(|v| v.as_f64())
-                    .unwrap_or(15.0) as f32;
-                let sessions = message
-                    .args
-                    .get("sessions")
-                    .and_then(|v| v.as_u64())
-                    .unwrap_or(4) as u32;
-                let auto_advance = message
-                    .args
-                    .get("auto_advance")
-                    .and_then(|v| v.as_bool())
-                    .unwrap_or(false);
-
-                state.work_duration = work;
-                state.break_duration = break_time;
-                state.long_break_duration = long_break;
-                state.sessions_until_long_break = sessions;
-                state.auto_advance = auto_advance;
-                state.current_session_count = 0;
-                state.start_work();
-
-                ServerResponse {
-                    success: true,
-                    data: serde_json::Value::Null,
-                    message: format!(
-                        "Timer started: {}min work, {}min break, {}min long break every {} sessions",
-                        work, break_time, long_break, sessions
-                    ),
-                }
-            } else if state.is_paused {
+            if state.is_paused {
                 // Resume if paused
                 state.resume();
                 ServerResponse {
@@ -192,7 +146,7 @@ async fn handle_client(
                     message: "Timer resumed".to_string(),
                 }
             } else {
-                // Stop timer if running
+                // Stop timer if running (return to paused work state)
                 state.stop();
                 ServerResponse {
                     success: true,

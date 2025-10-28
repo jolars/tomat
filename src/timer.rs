@@ -29,22 +29,21 @@ pub enum Phase {
     Work,
     Break,
     LongBreak,
-    Idle,
 }
 
 impl TimerState {
     pub fn new(work: f32, break_time: f32, long_break: f32, sessions: u32) -> Self {
         Self {
-            phase: Phase::Idle,
+            phase: Phase::Work,
             start_time: 0,
-            duration_minutes: 0.0,
+            duration_minutes: work,
             work_duration: work,
             break_duration: break_time,
             long_break_duration: long_break,
             sessions_until_long_break: sessions,
             current_session_count: 0,
             auto_advance: false,
-            is_paused: false,
+            is_paused: true, // Start in paused state
         }
     }
 
@@ -70,8 +69,8 @@ impl TimerState {
     }
 
     fn get_remaining_seconds(&self) -> i64 {
-        if matches!(self.phase, Phase::Idle) {
-            return 0;
+        if self.is_paused {
+            return (self.duration_minutes * 60.0) as i64;
         }
 
         let elapsed = current_timestamp() - self.start_time;
@@ -85,7 +84,7 @@ impl TimerState {
     }
 
     pub fn is_finished(&self) -> bool {
-        !self.is_paused && self.get_remaining_seconds() <= 0 && !matches!(self.phase, Phase::Idle)
+        !self.is_paused && self.get_remaining_seconds() <= 0
     }
 
     pub fn next_phase(&mut self) -> Result<(), Box<dyn std::error::Error>> {
@@ -135,10 +134,6 @@ impl TimerState {
                 }
                 ("Back to work! You're refreshed and ready 🚀", "🍅")
             }
-            Phase::Idle => {
-                self.start_work();
-                ("Pomodoro started! Let's focus 🍅", "🍅")
-            }
         };
 
         // Send desktop notification (synchronous to avoid cross-platform issues)
@@ -158,30 +153,21 @@ impl TimerState {
     }
 
     pub fn resume(&mut self) {
-        if self.is_paused && !matches!(self.phase, Phase::Idle) {
+        if self.is_paused {
             self.start_time = current_timestamp();
             self.is_paused = false;
         }
     }
 
     pub fn stop(&mut self) {
-        self.phase = Phase::Idle;
+        self.phase = Phase::Work;
         self.start_time = 0;
-        self.duration_minutes = 0.0;
+        self.duration_minutes = self.work_duration;
         self.current_session_count = 0;
-        self.is_paused = false;
+        self.is_paused = true;
     }
 
     pub fn get_status_output(&self) -> StatusOutput {
-        if matches!(self.phase, Phase::Idle) {
-            return StatusOutput {
-                text: "🍅 Idle".to_string(),
-                tooltip: "Pomodoro timer idle".to_string(),
-                class: "idle".to_string(),
-                percentage: 0.0,
-            };
-        }
-
         let (icon, class) = match self.phase {
             Phase::Work => (
                 "🍅",
@@ -207,7 +193,6 @@ impl TimerState {
                     "long-break"
                 },
             ),
-            Phase::Idle => ("🍅", "idle"),
         };
 
         if self.is_paused {
@@ -225,11 +210,17 @@ impl TimerState {
                 Phase::Work => "Work",
                 Phase::Break => "Break",
                 Phase::LongBreak => "Long Break",
-                Phase::Idle => "Idle",
             };
 
+            // Show the full duration time with a pause indicator
+            let time_str = format!(
+                "{:02}:{:02}",
+                (self.duration_minutes * 60.0) as i64 / 60,
+                (self.duration_minutes * 60.0) as i64 % 60
+            );
+
             return StatusOutput {
-                text: format!("{} Paused", icon),
+                text: format!("{} {} ⏸", icon, time_str),
                 tooltip: format!(
                     "{}{} - {:.1}min (Paused)",
                     phase_name, sessions_info, self.duration_minutes
@@ -248,17 +239,13 @@ impl TimerState {
             100.0
         };
 
-        let time_str = if remaining <= 0 {
-            "Done!".to_string()
-        } else {
-            format!("{:02}:{:02}", remaining / 60, remaining % 60)
-        };
+        // Always show remaining time with play symbol when running
+        let time_str = format!("{:02}:{:02}", remaining / 60, remaining % 60);
 
         let phase_name = match self.phase {
             Phase::Work => "Work",
             Phase::Break => "Break",
             Phase::LongBreak => "Long Break",
-            Phase::Idle => "Idle",
         };
 
         let sessions_info = if matches!(self.phase, Phase::Work) {
@@ -272,7 +259,7 @@ impl TimerState {
         };
 
         StatusOutput {
-            text: format!("{} {}", icon, time_str),
+            text: format!("{} {} ▶", icon, time_str),
             tooltip: format!(
                 "{}{} - {:.1}min",
                 phase_name, sessions_info, self.duration_minutes
