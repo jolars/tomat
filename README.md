@@ -1,14 +1,37 @@
 # tomat
 
-A Pomodoro timer with daemon support for waybar and other status bars.
+A Pomodoro timer with daemon support designed for waybar and other status bars.
+
+[![Build Status](https://github.com/jolars/tomat/workflows/Build%20and%20Test/badge.svg)](https://github.com/jolars/tomat/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Features
 
-- **Server/Client Architecture**: Robust daemon that survives waybar restarts
-- **JSON Output**: Perfect for waybar integration
-- **Unix Socket Communication**: Fast, secure local IPC
-- **Systemd Integration**: Auto-start with user session
-- **Minimal Resource Usage**: Lightweight daemon
+- **🍅 Pomodoro Technique**: Work/break cycles with configurable durations
+- **⚡ Daemon Architecture**: Robust background service that survives restarts
+- **📊 Waybar Integration**: JSON output with CSS classes for seamless integration
+- **🎮 Visual Indicators**: Play ▶ and pause ⏸ symbols for clear state indication
+- **🔧 Auto-advance Control**: Choose between manual or automatic phase transitions
+- **🔄 Process Management**: Built-in daemon start/stop/status commands
+- **🖥️ Unix Sockets**: Fast, secure local communication
+- **🌙 Systemd Integration**: Auto-start with user session
+- **📱 Desktop Notifications**: Phase transition alerts
+- **💾 Minimal Resources**: Lightweight and efficient
+
+## Quick Start
+
+```bash
+# Install
+git clone https://github.com/jolars/tomat.git
+cd tomat && ./install.sh
+
+# Start daemon and begin working
+tomat daemon start
+tomat start --work 25 --break-time 5
+
+# Check status (perfect for waybar)
+tomat status
+```
 
 ## Installation
 
@@ -20,15 +43,12 @@ cd tomat
 ./install.sh
 ```
 
-This will install the binary and set up the systemd service automatically.
+This installs the binary and sets up the systemd service automatically.
 
 ### Manual Installation
 
-#### From source
-
 ```bash
-git clone https://github.com/jolars/tomat.git
-cd tomat
+# Build and install
 cargo install --path .
 
 # Set up systemd service
@@ -39,61 +59,64 @@ systemctl --user enable tomat.service
 systemctl --user start tomat.service
 ```
 
-#### Via package managers (when available)
-
-```bash
-# Debian/Ubuntu (future)
-# sudo apt install tomat
-
-# Arch Linux (future)
-# yay -S tomat
-```
-
-**Note**: Ensure `~/.cargo/bin` is in your PATH. Add this to your shell profile if needed:
-
-```bash
-export PATH="$HOME/.cargo/bin:$PATH"
-```
-
-### Creating a Debian package (for maintainers)
-
-```bash
-cargo install cargo-deb
-cargo deb
-```
-
-This creates a `.deb` package that properly installs the systemd service.
+**Note**: Ensure `~/.cargo/bin` is in your PATH.
 
 ## Usage
 
-### Basic Commands
+### Daemon Management
 
 ```bash
-# Start a Pomodoro session (25min work, 5min break by default)
+# Start daemon in background
+tomat daemon start
+
+# Check daemon status
+tomat daemon status
+
+# Stop daemon
+tomat daemon stop
+```
+
+### Timer Control
+
+```bash
+# Start Pomodoro (25min work, 5min break by default)
 tomat start
 
-# Start with custom durations
-tomat start --work 30 --break-time 10
+# Start with custom durations and auto-advance
+tomat start --work 30 --break-time 10 --auto-advance
 
-# Toggle timer (start if idle, stop if running)
+# Toggle pause/resume
 tomat toggle
 
-# Toggle with custom durations (only used when starting)
-tomat toggle --work 30 --break-time 10
-
-# Get current status (JSON format for waybar)
-tomat status
-
-# Skip to next phase (work -> break -> work)
+# Skip to next phase
 tomat skip
 
 # Stop current session
 tomat stop
+
+# Get status (JSON for waybar)
+tomat status
 ```
 
-### Waybar Integration
+### Auto-advance Behavior
 
-Add this module to your waybar config:
+By default (`--auto-advance=false`):
+
+- Timer transitions to next phase but **pauses**
+- You manually resume with `tomat toggle` or `tomat start`
+- Gives you control over when breaks start/end
+
+With `--auto-advance=true`:
+
+- Timer automatically continues through all phases
+- No manual intervention needed
+- Traditional Pomodoro timer behavior
+
+## Waybar Integration
+
+### Configuration
+
+Add to your waybar config:
 
 ```json
 "custom/pomodoro": {
@@ -107,15 +130,9 @@ Add this module to your waybar config:
 }
 ```
 
-### CSS Classes
+### Styling
 
-The status output includes these CSS classes for styling:
-
-- `idle`: Timer not running
-- `work`: Work session active
-- `break`: Break session active
-
-Example waybar CSS:
+The status output provides CSS classes for styling:
 
 ```css
 #custom-pomodoro.work {
@@ -123,32 +140,135 @@ Example waybar CSS:
   color: #ffffff;
 }
 
+#custom-pomodoro.work-paused {
+  background: #1a3a16;
+  color: #cccccc;
+}
+
 #custom-pomodoro.break {
   background: #8b4513;
   color: #ffffff;
 }
 
-#custom-pomodoro.idle {
-  background: #404040;
-  color: #888888;
+#custom-pomodoro.break-paused {
+  background: #5c2e09;
+  color: #cccccc;
+}
+
+#custom-pomodoro.long-break {
+  background: #1e3a8a;
+  color: #ffffff;
+}
+
+#custom-pomodoro.long-break-paused {
+  background: #0f1e5c;
+  color: #cccccc;
 }
 ```
 
-## JSON Output Format
+## Output Format
+
+The `tomat status` command returns JSON optimized for status bars:
 
 ```json
 {
-  "text": "🍅 24:30",
-  "tooltip": "Work - 25min",
+  "text": "🍅 24:30 ▶",
+  "tooltip": "Work (1/4) - 25.0min",
   "class": "work",
   "percentage": 2.0
 }
 ```
 
+### Visual Indicators
+
+- **Icons**: 🍅 (work), ☕ (break), 🏖️ (long break)
+- **State**: ▶ (running), ⏸ (paused)
+- **Format**: `{icon} {time} {state}`
+
+### CSS Classes
+
+- `work` / `work-paused` - Work session running/paused
+- `break` / `break-paused` - Break session running/paused
+- `long-break` / `long-break-paused` - Long break running/paused
+
 ## Architecture
 
-- **Daemon** (`tomat daemon`): Runs continuously, manages timer state
-- **Client** (`tomat <command>`): Sends commands to daemon via Unix socket
-- **Socket**: Located at `$XDG_RUNTIME_DIR/tomat.sock` (typically `/run/user/$UID/tomat.sock`)
+```
+┌─────────────────┐    Unix Socket    ┌──────────────────┐
+│   tomat start   │ ──────────────────▶│   tomat daemon   │
+│   tomat status  │                    │                  │
+│   tomat toggle  │ ◀──────────────────│  Timer State     │
+│   tomat stop    │    JSON Response   │  Notifications   │
+└─────────────────┘                    └──────────────────┘
+     (Client)                              (Background)
+```
 
-This architecture ensures the timer survives waybar restarts, system suspend/resume, and provides accurate timing.
+- **Daemon**: Runs continuously, manages timer state and notifications
+- **Client**: Sends commands via Unix socket (`$XDG_RUNTIME_DIR/tomat.sock`)
+- **Persistence**: Timer survives waybar restarts and system suspend/resume
+
+## Examples
+
+### Basic Workflow
+
+```bash
+# Start daemon
+tomat daemon start
+
+# Begin a Pomodoro session
+tomat start --work 25 --break-time 5
+
+# Status shows: 🍅 24:30 ▶
+tomat status
+
+# Pause for interruption
+tomat toggle
+# Status shows: 🍅 24:30 ⏸
+
+# Resume work
+tomat toggle
+# Status shows: 🍅 24:29 ▶
+
+# When work completes (auto_advance=false default)
+# Status shows: ☕ 05:00 ⏸
+
+# Start break manually
+tomat toggle
+# Status shows: ☕ 04:59 ▶
+```
+
+### Automatic Mode
+
+```bash
+# Start with auto-advance (no manual resume needed)
+tomat start --work 25 --break-time 5 --auto-advance
+
+# Timer automatically flows: Work ▶ → Break ▶ → Work ▶ → ...
+# No manual intervention required
+```
+
+## Development
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed development documentation.
+
+```bash
+# Quick development workflow
+cargo build
+tomat daemon start
+tomat start --work 0.1 --break-time 0.05  # Fast testing
+cargo test  # Run 11 integration tests
+```
+
+## License
+
+MIT License - see the [LICENSE](LICENSE) file.
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make changes with tests
+4. Run `cargo test` and `cargo clippy`
+5. Submit a pull request
+
+Bug reports and feature requests welcome via [GitHub Issues](https://github.com/jolars/tomat/issues).
