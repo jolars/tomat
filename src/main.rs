@@ -27,6 +27,12 @@ enum Commands {
         /// Break duration in minutes (default: 5)
         #[arg(short, long, default_value = "5")]
         break_time: u32,
+        /// Long break duration in minutes (default: 15)
+        #[arg(short, long, default_value = "15")]
+        long_break: u32,
+        /// Sessions until long break (default: 4)
+        #[arg(short, long, default_value = "4")]
+        sessions: u32,
     },
     /// Stop the current session
     Stop,
@@ -42,6 +48,12 @@ enum Commands {
         /// Break duration in minutes (default: 5)
         #[arg(short, long, default_value = "5")]
         break_time: u32,
+        /// Long break duration in minutes (default: 15)
+        #[arg(short, long, default_value = "15")]
+        long_break: u32,
+        /// Sessions until long break (default: 4)
+        #[arg(short, long, default_value = "4")]
+        sessions: u32,
     },
 }
 
@@ -49,6 +61,7 @@ enum Commands {
 enum Phase {
     Work,
     Break,
+    LongBreak,
     Idle,
 }
 
@@ -59,6 +72,9 @@ struct TimerState {
     duration_minutes: u32,
     work_duration: u32,
     break_duration: u32,
+    long_break_duration: u32,
+    sessions_until_long_break: u32,
+    current_session_count: u32,
 }
 
 #[derive(Serialize)]
@@ -83,13 +99,16 @@ struct ServerResponse {
 }
 
 impl TimerState {
-    fn new(work: u32, break_time: u32) -> Self {
+    fn new(work: u32, break_time: u32, long_break: u32, sessions: u32) -> Self {
         Self {
             phase: Phase::Idle,
             start_time: 0,
             duration_minutes: 0,
             work_duration: work,
             break_duration: break_time,
+            long_break_duration: long_break,
+            sessions_until_long_break: sessions,
+            current_session_count: 0,
         }
     }
 
@@ -102,6 +121,12 @@ impl TimerState {
     fn start_break(&mut self) {
         self.phase = Phase::Break;
         self.duration_minutes = self.break_duration;
+        self.start_time = current_timestamp();
+    }
+
+    fn start_long_break(&mut self) {
+        self.phase = Phase::LongBreak;
+        self.duration_minutes = self.long_break_duration;
         self.start_time = current_timestamp();
     }
 
@@ -127,12 +152,25 @@ impl TimerState {
     fn next_phase(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let (message, _icon) = match self.phase {
             Phase::Work => {
-                self.start_break();
-                ("Break time! Take a rest 🍅", "🍅")
+                self.current_session_count += 1;
+
+                // Check if it's time for a long break
+                if self.current_session_count >= self.sessions_until_long_break {
+                    self.current_session_count = 0;
+                    self.start_long_break();
+                    ("Long break time! Take a well-deserved rest 🏖️", "🍅")
+                } else {
+                    self.start_break();
+                    ("Break time! Take a rest ☕", "🍅")
+                }
             }
             Phase::Break => {
                 self.start_work();
                 ("Back to work! Stay focused 💪", "🍅")
+            }
+            Phase::LongBreak => {
+                self.start_work();
+                ("Back to work! You're refreshed and ready 🚀", "🍅")
             }
             Phase::Idle => {
                 self.start_work();
@@ -158,6 +196,7 @@ impl TimerState {
         self.phase = Phase::Idle;
         self.start_time = 0;
         self.duration_minutes = 0;
+        self.current_session_count = 0;
     }
 
     fn get_status_output(&self) -> StatusOutput {
@@ -183,6 +222,7 @@ impl TimerState {
         let (icon, class) = match self.phase {
             Phase::Work => ("🍅", "work"),
             Phase::Break => ("☕", "break"),
+            Phase::LongBreak => ("🏖️", "long-break"),
             Phase::Idle => ("🍅", "idle"),
         };
 
@@ -195,12 +235,26 @@ impl TimerState {
         let phase_name = match self.phase {
             Phase::Work => "Work",
             Phase::Break => "Break",
+            Phase::LongBreak => "Long Break",
             Phase::Idle => "Idle",
+        };
+
+        let sessions_info = if matches!(self.phase, Phase::Work) {
+            format!(
+                " ({}/{})",
+                self.current_session_count + 1,
+                self.sessions_until_long_break
+            )
+        } else {
+            String::new()
         };
 
         StatusOutput {
             text: format!("{} {}", icon, time_str),
-            tooltip: format!("{} - {}min", phase_name, self.duration_minutes),
+            tooltip: format!(
+                "{}{} - {}min",
+                phase_name, sessions_info, self.duration_minutes
+            ),
             class: class.to_string(),
             percentage,
         }
@@ -268,9 +322,22 @@ async fn handle_client(
                 .get("break")
                 .and_then(|v| v.as_u64())
                 .unwrap_or(5) as u32;
+            let long_break = message
+                .args
+                .get("long_break")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(15) as u32;
+            let sessions = message
+                .args
+                .get("sessions")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(4) as u32;
 
             state.work_duration = work;
             state.break_duration = break_time;
+            state.long_break_duration = long_break;
+            state.sessions_until_long_break = sessions;
+            state.current_session_count = 0;
             state.start_work();
 
             ServerResponse {
@@ -318,15 +385,31 @@ async fn handle_client(
                     .get("break")
                     .and_then(|v| v.as_u64())
                     .unwrap_or(5) as u32;
+                let long_break = message
+                    .args
+                    .get("long_break")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(15) as u32;
+                let sessions = message
+                    .args
+                    .get("sessions")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(4) as u32;
 
                 state.work_duration = work;
                 state.break_duration = break_time;
+                state.long_break_duration = long_break;
+                state.sessions_until_long_break = sessions;
+                state.current_session_count = 0;
                 state.start_work();
 
                 ServerResponse {
                     success: true,
                     data: serde_json::Value::Null,
-                    message: format!("Timer started: {}min work, {}min break", work, break_time),
+                    message: format!(
+                        "Timer started: {}min work, {}min break, {}min long break every {} sessions",
+                        work, break_time, long_break, sessions
+                    ),
                 }
             } else {
                 // Stop timer if running
@@ -361,7 +444,7 @@ async fn run_daemon() -> Result<(), Box<dyn std::error::Error>> {
     let _ = std::fs::remove_file(&socket_path);
 
     let listener = UnixListener::bind(&socket_path)?;
-    let mut state = TimerState::new(25, 5);
+    let mut state = TimerState::new(25, 5, 15, 4);
 
     println!("Tomat daemon listening on {:?}", socket_path);
 
@@ -394,18 +477,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             run_daemon().await?;
         }
 
-        Commands::Start { work, break_time } => {
+        Commands::Start {
+            work,
+            break_time,
+            long_break,
+            sessions,
+        } => {
             let args = serde_json::json!({
                 "work": work,
-                "break": break_time
+                "break": break_time,
+                "long_break": long_break,
+                "sessions": sessions
             });
 
             match send_command("start", args).await {
                 Ok(response) => {
                     if response.success {
                         println!(
-                            "Pomodoro started: {}min work, {}min break",
-                            work, break_time
+                            "Pomodoro started: {}min work, {}min break, {}min long break every {} sessions",
+                            work, break_time, long_break, sessions
                         );
                     } else {
                         eprintln!("Error: {}", response.message);
@@ -448,10 +538,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Err(e) => eprintln!("Failed to connect to daemon: {}", e),
         },
 
-        Commands::Toggle { work, break_time } => {
+        Commands::Toggle {
+            work,
+            break_time,
+            long_break,
+            sessions,
+        } => {
             let args = serde_json::json!({
                 "work": work,
-                "break": break_time
+                "break": break_time,
+                "long_break": long_break,
+                "sessions": sessions
             });
 
             match send_command("toggle", args).await {
