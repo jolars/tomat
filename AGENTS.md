@@ -2,7 +2,7 @@
 
 ## Repository Overview
 
-**tomat** is a Pomodoro timer with daemon support designed for waybar and other status bars. It's a small Rust project (~384 lines in a single `src/main.rs` file) that implements a server/client architecture using Unix sockets for inter-process communication.
+**tomat** is a Pomodoro timer with daemon support designed for waybar and other status bars. It's a small Rust project (~410 lines in a single `src/main.rs` file) that implements a server/client architecture using Unix sockets for inter-process communication.
 
 **Key Details:**
 
@@ -92,7 +92,7 @@
 
 ```
 /
-├── src/main.rs              # Single source file (384 lines) - all application logic
+├── src/main.rs              # Single source file (410 lines) - all application logic
 ├── Cargo.toml               # Dependencies and metadata, includes cargo-deb config
 ├── Cargo.lock               # Dependency lockfile
 ├── Taskfile.yml             # Task runner commands (dev, lint, build-release, test-*)
@@ -125,6 +125,7 @@
 - `chrono`: Time handling with serialization support
 - `dirs`: Standard directory discovery
 - `libc`: Unix user ID access
+- `notify-rust`: Desktop notifications for phase transitions
 
 ## Continuous Integration
 
@@ -204,6 +205,7 @@ Your changes will be validated against:
 - **Signal handling:** None implemented (relies on systemd restart)
 - **Logging:** Uses `println!`/`eprintln!` for output
 - **State persistence:** None - state lost on daemon restart
+- **Notifications:** Desktop notifications sent automatically on phase transitions via `notify-rust`
 
 ## Trust These Instructions
 

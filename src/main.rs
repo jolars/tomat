@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand};
+use notify_rust::Notification;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -114,12 +115,34 @@ impl TimerState {
         self.get_remaining_seconds() <= 0 && !matches!(self.phase, Phase::Idle)
     }
 
-    fn next_phase(&mut self) {
-        match self.phase {
-            Phase::Work => self.start_break(),
-            Phase::Break => self.start_work(),
-            Phase::Idle => self.start_work(),
+    async fn next_phase(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let (message, _icon) = match self.phase {
+            Phase::Work => {
+                self.start_break();
+                ("Break time! Take a rest 🍅", "🍅")
+            }
+            Phase::Break => {
+                self.start_work();
+                ("Back to work! Stay focused 💪", "🍅")
+            }
+            Phase::Idle => {
+                self.start_work();
+                ("Pomodoro started! Let's focus 🍅", "🍅")
+            }
+        };
+
+        // Send desktop notification
+        if let Err(e) = Notification::new()
+            .summary("Pomodoro Timer")
+            .body(message)
+            .icon("timer")
+            .timeout(3000)
+            .show()
+        {
+            eprintln!("Failed to send notification: {}", e);
         }
+
+        Ok(())
     }
 
     fn stop(&mut self) {
@@ -264,7 +287,9 @@ async fn handle_client(
             }
         }
         "skip" => {
-            state.next_phase();
+            if let Err(e) = state.next_phase().await {
+                eprintln!("Error during phase transition: {}", e);
+            }
             ServerResponse {
                 success: true,
                 data: serde_json::Value::Null,
@@ -308,9 +333,10 @@ async fn run_daemon() -> Result<(), Box<dyn std::error::Error>> {
 
             // Auto-advance timer every second
             _ = sleep(Duration::from_secs(1)) => {
-                if state.is_finished() {
-                    state.next_phase();
-                }
+                if state.is_finished()
+                    && let Err(e) = state.next_phase().await {
+                        eprintln!("Error during automatic phase transition: {}", e);
+                    }
             }
         }
     }
