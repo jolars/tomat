@@ -1,0 +1,29 @@
+version: "3"
+
+tasks:
+  lint:
+    desc: Run linter
+    cmds:
+      - cargo clippy --all-targets --all-features -- -D warnings
+
+  build-release:
+    desc: Build release version
+    cmds:
+      - cargo build --release
+
+  test-debug:
+    desc: Run tests with debug logging
+    cmds:
+      - RUST_LOG=debug cargo test
+
+  test-quiet:
+    desc: Run tests quietly (no debug output)
+    cmds:
+      - RUST_LOG=off cargo test
+
+  dev:
+    desc: Development workflow - check, test, lint
+    cmds:
+      - cargo check
+      - cargo test
+      - cargo clippy --all-targets --all-features -- -D warnings
