@@ -6,6 +6,19 @@ use serde::{Deserialize, Serialize};
 
 use crate::server::{run_daemon, send_command};
 
+#[derive(Subcommand)]
+enum DaemonAction {
+    /// Start the daemon in the background
+    Start,
+    /// Stop the running daemon
+    Stop,
+    /// Check daemon status
+    Status,
+    /// Run the daemon in the foreground (internal use)
+    #[command(hide = true)]
+    Run,
+}
+
 #[derive(Serialize, Deserialize)]
 struct ServerResponse {
     success: bool,
@@ -23,8 +36,11 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Start the daemon (usually run by systemd)
-    Daemon,
+    /// Daemon management
+    Daemon {
+        #[command(subcommand)]
+        action: DaemonAction,
+    },
     /// Start a new Pomodoro session
     Start {
         /// Work duration in minutes (default: 25)
@@ -74,9 +90,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Daemon => {
-            run_daemon().await?;
-        }
+        Commands::Daemon { action } => match action {
+            DaemonAction::Start => {
+                crate::server::start_daemon().await?;
+            }
+            DaemonAction::Stop => {
+                crate::server::stop_daemon().await?;
+            }
+            DaemonAction::Status => {
+                crate::server::daemon_status().await?;
+            }
+            DaemonAction::Run => {
+                run_daemon().await?;
+            }
+        },
 
         Commands::Start {
             work,

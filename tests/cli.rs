@@ -18,6 +18,7 @@ impl TestDaemon {
         // Start daemon with custom socket path and testing flag to disable notifications
         let mut daemon_process = Command::new("target/debug/tomat")
             .arg("daemon")
+            .arg("run") // Use the internal run command for testing
             .env("XDG_RUNTIME_DIR", temp_dir.path())
             .env("TOMAT_TESTING", "1") // Disable notifications during testing
             .stdout(Stdio::null())
@@ -372,6 +373,127 @@ fn test_fractional_minutes_work_correctly() -> Result<(), Box<dyn std::error::Er
     // Should transition to paused break (auto_advance=false by default)
     let status = daemon.get_status()?;
     assert_eq!(status["class"], "break-paused");
+
+    Ok(())
+}
+
+// Daemon management tests
+#[test]
+fn test_daemon_status_when_not_running() -> Result<(), Box<dyn std::error::Error>> {
+    // Use a temporary directory to avoid conflicts
+    let temp_dir = tempfile::tempdir()?;
+
+    let output = Command::new("target/debug/tomat")
+        .args(["daemon", "status"])
+        .env("XDG_RUNTIME_DIR", temp_dir.path())
+        .output()?;
+
+    assert!(output.status.success(), "Command should succeed");
+    let stdout = String::from_utf8(output.stdout)?;
+    assert!(
+        stdout.contains("Not running"),
+        "Should indicate daemon is not running"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_daemon_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
+    // Use a temporary directory to avoid conflicts
+    let temp_dir = tempfile::tempdir()?;
+    let temp_path = temp_dir.path();
+
+    // Start daemon
+    let output = Command::new("target/debug/tomat")
+        .args(["daemon", "start"])
+        .env("XDG_RUNTIME_DIR", temp_path)
+        .output()?;
+
+    assert!(output.status.success(), "Daemon start should succeed");
+    let stdout = String::from_utf8(output.stdout)?;
+    assert!(
+        stdout.contains("started successfully"),
+        "Should indicate successful start"
+    );
+
+    // Check status
+    let output = Command::new("target/debug/tomat")
+        .args(["daemon", "status"])
+        .env("XDG_RUNTIME_DIR", temp_path)
+        .output()?;
+
+    assert!(output.status.success(), "Status check should succeed");
+    let stdout = String::from_utf8(output.stdout)?;
+    assert!(
+        stdout.contains("Running"),
+        "Should indicate daemon is running"
+    );
+
+    // Stop daemon
+    let output = Command::new("target/debug/tomat")
+        .args(["daemon", "stop"])
+        .env("XDG_RUNTIME_DIR", temp_path)
+        .output()?;
+
+    assert!(output.status.success(), "Daemon stop should succeed");
+    let stdout = String::from_utf8(output.stdout)?;
+    assert!(
+        stdout.contains("stopped") || stdout.contains("SIGTERM"),
+        "Should indicate daemon was stopped"
+    );
+
+    // Verify daemon is stopped
+    let output = Command::new("target/debug/tomat")
+        .args(["daemon", "status"])
+        .env("XDG_RUNTIME_DIR", temp_path)
+        .output()?;
+
+    assert!(output.status.success(), "Status check should succeed");
+    let stdout = String::from_utf8(output.stdout)?;
+    assert!(
+        stdout.contains("Not running"),
+        "Should indicate daemon is not running"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_daemon_start_when_already_running() -> Result<(), Box<dyn std::error::Error>> {
+    // Use a temporary directory to avoid conflicts
+    let temp_dir = tempfile::tempdir()?;
+    let temp_path = temp_dir.path();
+
+    // Start daemon first time
+    let output = Command::new("target/debug/tomat")
+        .args(["daemon", "start"])
+        .env("XDG_RUNTIME_DIR", temp_path)
+        .output()?;
+
+    assert!(output.status.success(), "First daemon start should succeed");
+
+    // Try to start again
+    let output = Command::new("target/debug/tomat")
+        .args(["daemon", "start"])
+        .env("XDG_RUNTIME_DIR", temp_path)
+        .output()?;
+
+    assert!(
+        output.status.success(),
+        "Second start should succeed but detect running daemon"
+    );
+    let stdout = String::from_utf8(output.stdout)?;
+    assert!(
+        stdout.contains("already running"),
+        "Should detect daemon already running"
+    );
+
+    // Clean up
+    let _ = Command::new("target/debug/tomat")
+        .args(["daemon", "stop"])
+        .env("XDG_RUNTIME_DIR", temp_path)
+        .output();
 
     Ok(())
 }
