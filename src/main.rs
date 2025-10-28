@@ -29,16 +29,19 @@ enum Commands {
     Start {
         /// Work duration in minutes (default: 25)
         #[arg(short, long, default_value = "25")]
-        work: u32,
+        work: f32,
         /// Break duration in minutes (default: 5)
         #[arg(short, long, default_value = "5")]
-        break_time: u32,
+        break_time: f32,
         /// Long break duration in minutes (default: 15)
         #[arg(short, long, default_value = "15")]
-        long_break: u32,
+        long_break: f32,
         /// Sessions until long break (default: 4)
         #[arg(short, long, default_value = "4")]
         sessions: u32,
+        /// Automatically advance between timer states (default: false)
+        #[arg(short, long, default_value = "false")]
+        auto_advance: bool,
     },
     /// Stop the current session
     Stop,
@@ -50,16 +53,19 @@ enum Commands {
     Toggle {
         /// Work duration in minutes (default: 25)
         #[arg(short, long, default_value = "25")]
-        work: u32,
+        work: f32,
         /// Break duration in minutes (default: 5)
         #[arg(short, long, default_value = "5")]
-        break_time: u32,
+        break_time: f32,
         /// Long break duration in minutes (default: 15)
         #[arg(short, long, default_value = "15")]
-        long_break: u32,
+        long_break: f32,
         /// Sessions until long break (default: 4)
         #[arg(short, long, default_value = "4")]
         sessions: u32,
+        /// Automatically advance between timer states (default: false)
+        #[arg(short, long, default_value = "false")]
+        auto_advance: bool,
     },
 }
 
@@ -77,12 +83,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             break_time,
             long_break,
             sessions,
+            auto_advance,
         } => {
             let args = serde_json::json!({
                 "work": work,
                 "break": break_time,
                 "long_break": long_break,
-                "sessions": sessions
+                "sessions": sessions,
+                "auto_advance": auto_advance
             });
 
             match send_command("start", args).await {
@@ -138,12 +146,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             break_time,
             long_break,
             sessions,
+            auto_advance,
         } => {
             let args = serde_json::json!({
                 "work": work,
                 "break": break_time,
                 "long_break": long_break,
-                "sessions": sessions
+                "sessions": sessions,
+                "auto_advance": auto_advance
             });
 
             match send_command("toggle", args).await {

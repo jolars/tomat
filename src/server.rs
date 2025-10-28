@@ -61,30 +61,43 @@ async fn handle_client(
             let work = message
                 .args
                 .get("work")
-                .and_then(|v| v.as_u64())
-                .unwrap_or(25) as u32;
+                .and_then(|v| v.as_f64())
+                .unwrap_or(25.0) as f32;
             let break_time = message
                 .args
                 .get("break")
-                .and_then(|v| v.as_u64())
-                .unwrap_or(5) as u32;
+                .and_then(|v| v.as_f64())
+                .unwrap_or(5.0) as f32;
             let long_break = message
                 .args
                 .get("long_break")
-                .and_then(|v| v.as_u64())
-                .unwrap_or(15) as u32;
+                .and_then(|v| v.as_f64())
+                .unwrap_or(15.0) as f32;
             let sessions = message
                 .args
                 .get("sessions")
                 .and_then(|v| v.as_u64())
                 .unwrap_or(4) as u32;
+            let auto_advance = message
+                .args
+                .get("auto_advance")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
 
             state.work_duration = work;
             state.break_duration = break_time;
             state.long_break_duration = long_break;
             state.sessions_until_long_break = sessions;
+            state.auto_advance = auto_advance;
             state.current_session_count = 0;
-            state.start_work();
+
+            if state.is_paused && !matches!(state.phase, Phase::Idle) {
+                // Resume if paused
+                state.resume();
+            } else {
+                // Start new session
+                state.start_work();
+            }
 
             ServerResponse {
                 success: true,
@@ -124,28 +137,34 @@ async fn handle_client(
                 let work = message
                     .args
                     .get("work")
-                    .and_then(|v| v.as_u64())
-                    .unwrap_or(25) as u32;
+                    .and_then(|v| v.as_f64())
+                    .unwrap_or(25.0) as f32;
                 let break_time = message
                     .args
                     .get("break")
-                    .and_then(|v| v.as_u64())
-                    .unwrap_or(5) as u32;
+                    .and_then(|v| v.as_f64())
+                    .unwrap_or(5.0) as f32;
                 let long_break = message
                     .args
                     .get("long_break")
-                    .and_then(|v| v.as_u64())
-                    .unwrap_or(15) as u32;
+                    .and_then(|v| v.as_f64())
+                    .unwrap_or(15.0) as f32;
                 let sessions = message
                     .args
                     .get("sessions")
                     .and_then(|v| v.as_u64())
                     .unwrap_or(4) as u32;
+                let auto_advance = message
+                    .args
+                    .get("auto_advance")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
 
                 state.work_duration = work;
                 state.break_duration = break_time;
                 state.long_break_duration = long_break;
                 state.sessions_until_long_break = sessions;
+                state.auto_advance = auto_advance;
                 state.current_session_count = 0;
                 state.start_work();
 
@@ -156,6 +175,14 @@ async fn handle_client(
                         "Timer started: {}min work, {}min break, {}min long break every {} sessions",
                         work, break_time, long_break, sessions
                     ),
+                }
+            } else if state.is_paused {
+                // Resume if paused
+                state.resume();
+                ServerResponse {
+                    success: true,
+                    data: serde_json::Value::Null,
+                    message: "Timer resumed".to_string(),
                 }
             } else {
                 // Stop timer if running
@@ -190,7 +217,7 @@ pub async fn run_daemon() -> Result<(), Box<dyn std::error::Error>> {
     let _ = std::fs::remove_file(&socket_path);
 
     let listener = UnixListener::bind(&socket_path)?;
-    let mut state = TimerState::new(25, 5, 15, 4);
+    let mut state = TimerState::new(25.0, 5.0, 15.0, 4);
 
     println!("Tomat daemon listening on {:?}", socket_path);
 
@@ -203,11 +230,11 @@ pub async fn run_daemon() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
 
-            // Auto-advance timer every second
+            // Check timer completion every second
             _ = sleep(Duration::from_secs(1)) => {
                 if state.is_finished()
                     && let Err(e) = state.next_phase() {
-                        eprintln!("Error during automatic phase transition: {}", e);
+                        eprintln!("Error during phase transition: {}", e);
                     }
             }
         }
