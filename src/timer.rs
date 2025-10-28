@@ -142,12 +142,14 @@ impl TimerState {
         };
 
         // Send desktop notification (synchronous to avoid cross-platform issues)
-        if let Err(e) = Notification::new()
-            .summary("Pomodoro Timer")
-            .body(message)
-            .icon("timer")
-            .timeout(3000)
-            .show()
+        // Skip notifications during testing
+        if std::env::var("TOMAT_TESTING").is_err()
+            && let Err(e) = Notification::new()
+                .summary("Pomodoro Timer")
+                .body(message)
+                .icon("timer")
+                .timeout(3000)
+                .show()
         {
             eprintln!("Failed to send notification: {}", e);
         }
