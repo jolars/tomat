@@ -34,6 +34,15 @@ enum Commands {
     Status,
     /// Skip to next phase
     Skip,
+    /// Toggle timer (start if stopped, stop if running)
+    Toggle {
+        /// Work duration in minutes (default: 25)
+        #[arg(short, long, default_value = "25")]
+        work: u32,
+        /// Break duration in minutes (default: 5)
+        #[arg(short, long, default_value = "5")]
+        break_time: u32,
+    },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -296,6 +305,39 @@ async fn handle_client(
                 message: "Skipped to next phase".to_string(),
             }
         }
+        "toggle" => {
+            if matches!(state.phase, Phase::Idle) {
+                // Start timer if idle
+                let work = message
+                    .args
+                    .get("work")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(25) as u32;
+                let break_time = message
+                    .args
+                    .get("break")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(5) as u32;
+
+                state.work_duration = work;
+                state.break_duration = break_time;
+                state.start_work();
+
+                ServerResponse {
+                    success: true,
+                    data: serde_json::Value::Null,
+                    message: format!("Timer started: {}min work, {}min break", work, break_time),
+                }
+            } else {
+                // Stop timer if running
+                state.stop();
+                ServerResponse {
+                    success: true,
+                    data: serde_json::Value::Null,
+                    message: "Timer stopped".to_string(),
+                }
+            }
+        }
         _ => ServerResponse {
             success: false,
             data: serde_json::Value::Null,
@@ -404,6 +446,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             Err(e) => eprintln!("Failed to connect to daemon: {}", e),
         },
+
+        Commands::Toggle { work, break_time } => {
+            let args = serde_json::json!({
+                "work": work,
+                "break": break_time
+            });
+
+            match send_command("toggle", args).await {
+                Ok(response) => {
+                    if response.success {
+                        println!("{}", response.message);
+                    } else {
+                        eprintln!("Error: {}", response.message);
+                    }
+                }
+                Err(e) => eprintln!("Failed to connect to daemon: {}", e),
+            }
+        }
     }
 
     Ok(())

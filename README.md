@@ -75,6 +75,12 @@ tomat start
 # Start with custom durations
 tomat start --work 30 --break-time 10
 
+# Toggle timer (start if idle, stop if running)
+tomat toggle
+
+# Toggle with custom durations (only used when starting)
+tomat toggle --work 30 --break-time 10
+
 # Get current status (JSON format for waybar)
 tomat status
 
@@ -95,9 +101,9 @@ Add this module to your waybar config:
     "exec": "tomat status",
     "return-type": "json",
     "interval": 1,
-    "on-click": "tomat skip",
+    "on-click": "tomat toggle",
     "on-click-right": "tomat stop",
-    "on-click-middle": "tomat start"
+    "on-click-middle": "tomat skip"
 }
 ```
 

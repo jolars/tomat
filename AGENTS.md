@@ -2,7 +2,7 @@
 
 ## Repository Overview
 
-**tomat** is a Pomodoro timer with daemon support designed for waybar and other status bars. It's a small Rust project (~410 lines in a single `src/main.rs` file) that implements a server/client architecture using Unix sockets for inter-process communication.
+**tomat** is a Pomodoro timer with daemon support designed for waybar and other status bars. It's a small Rust project (~470 lines in a single `src/main.rs` file) that implements a server/client architecture using Unix sockets for inter-process communication.
 
 **Key Details:**
 
@@ -92,7 +92,7 @@
 
 ```
 /
-├── src/main.rs              # Single source file (410 lines) - all application logic
+├── src/main.rs              # Single source file (470 lines) - all application logic
 ├── Cargo.toml               # Dependencies and metadata, includes cargo-deb config
 ├── Cargo.lock               # Dependency lockfile
 ├── Taskfile.yml             # Task runner commands (dev, lint, build-release, test-*)
@@ -111,7 +111,7 @@
 
 ### Code Architecture
 
-- **Single binary** with subcommands: `daemon`, `start`, `stop`, `status`, `skip`
+- **Single binary** with subcommands: `daemon`, `start`, `stop`, `status`, `skip`, `toggle`
 - **Daemon mode:** Runs continuously, listens on Unix socket at `$XDG_RUNTIME_DIR/tomat.sock`
 - **Client mode:** All other commands send requests to daemon via socket
 - **Timer state:** Manages work/break phases with automatic transitions
@@ -163,6 +163,7 @@ Your changes will be validated against:
    # Test client commands
    ./target/debug/tomat status
    ./target/debug/tomat start --work 1 --break-time 1  # Short durations for testing
+   ./target/debug/tomat toggle  # Toggle timer on/off
    ```
 
 2. **Essential validation before commit:**
