@@ -2,6 +2,9 @@
 name = "tomat"
 version = "0.1.0"
 edition = "2024"
+description = "A Pomodoro timer with daemon support for waybar and other status bars"
+license = "MIT"
+repository = "https://github.com/jolars/tomat"
 
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
@@ -11,3 +14,25 @@ tokio = { version = "1.48", features = ["full"] }
 chrono = { version = "0.4", features = ["serde"] }
 dirs = "6.0"
 libc = "0.2"
+
+[package.metadata.deb]
+depends = "$auto"
+assets = [
+    [
+        "target/release/tomat",
+        "usr/bin/",
+        "755",
+    ],
+    [
+        "tomat.service",
+        "etc/systemd/user/",
+        "644",
+    ],
+    [
+        "README.md",
+        "usr/share/doc/tomat/README",
+        "644",
+    ],
+]
+section = "utils"
+priority = "optional"

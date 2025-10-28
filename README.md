@@ -24,6 +24,8 @@ This will install the binary and set up the systemd service automatically.
 
 ### Manual Installation
 
+#### From source
+
 ```bash
 git clone https://github.com/jolars/tomat.git
 cd tomat
@@ -37,10 +39,30 @@ systemctl --user enable tomat.service
 systemctl --user start tomat.service
 ```
 
+#### Via package managers (when available)
+
+```bash
+# Debian/Ubuntu (future)
+# sudo apt install tomat
+
+# Arch Linux (future)
+# yay -S tomat
+```
+
 **Note**: Ensure `~/.cargo/bin` is in your PATH. Add this to your shell profile if needed:
+
 ```bash
 export PATH="$HOME/.cargo/bin:$PATH"
 ```
+
+### Creating a Debian package (for maintainers)
+
+```bash
+cargo install cargo-deb
+cargo deb
+```
+
+This creates a `.deb` package that properly installs the systemd service.
 
 ## Usage
 
