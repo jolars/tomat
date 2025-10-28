@@ -349,6 +349,7 @@ async fn handle_client(
     let mut writer = reader.into_inner();
     writer.write_all(response_json.as_bytes()).await?;
     writer.write_all(b"\n").await?;
+    writer.flush().await?;
 
     Ok(())
 }
