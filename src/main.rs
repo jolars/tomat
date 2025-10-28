@@ -124,7 +124,7 @@ impl TimerState {
         self.get_remaining_seconds() <= 0 && !matches!(self.phase, Phase::Idle)
     }
 
-    async fn next_phase(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    fn next_phase(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let (message, _icon) = match self.phase {
             Phase::Work => {
                 self.start_break();
@@ -140,7 +140,7 @@ impl TimerState {
             }
         };
 
-        // Send desktop notification
+        // Send desktop notification (synchronous to avoid cross-platform issues)
         if let Err(e) = Notification::new()
             .summary("Pomodoro Timer")
             .body(message)
@@ -296,7 +296,7 @@ async fn handle_client(
             }
         }
         "skip" => {
-            if let Err(e) = state.next_phase().await {
+            if let Err(e) = state.next_phase() {
                 eprintln!("Error during phase transition: {}", e);
             }
             ServerResponse {
@@ -376,7 +376,7 @@ async fn run_daemon() -> Result<(), Box<dyn std::error::Error>> {
             // Auto-advance timer every second
             _ = sleep(Duration::from_secs(1)) => {
                 if state.is_finished()
-                    && let Err(e) = state.next_phase().await {
+                    && let Err(e) = state.next_phase() {
                         eprintln!("Error during automatic phase transition: {}", e);
                     }
             }
