@@ -2,7 +2,7 @@
 
 ## Repository Overview
 
-**tomat** is a Pomodoro timer with daemon support designed for waybar and other status bars. It's a small Rust project (~470 lines in a single `src/main.rs` file) that implements a server/client architecture using Unix sockets for inter-process communication.
+**tomat** is a Pomodoro timer with daemon support designed for waybar and other status bars. It's a small Rust project (~580 lines across multiple modules) that implements a server/client architecture using Unix sockets for inter-process communication.
 
 **Key Details:**
 
@@ -92,7 +92,10 @@
 
 ```
 /
-├── src/main.rs              # Single source file (470 lines) - all application logic
+├── src/
+│   ├── main.rs               # CLI parsing and command dispatching (163 lines)
+│   ├── server.rs             # Unix socket server and daemon logic (215 lines)
+│   └── timer.rs              # Timer state management and phase transitions (201 lines)
 ├── Cargo.toml               # Dependencies and metadata, includes cargo-deb config
 ├── Cargo.lock               # Dependency lockfile
 ├── Taskfile.yml             # Task runner commands (dev, lint, build-release, test-*)
@@ -111,6 +114,13 @@
 
 ### Code Architecture
 
+The project is organized into three main modules:
+
+- **`main.rs`**: CLI parsing with clap and command dispatching to server/client functions
+- **`server.rs`**: Unix socket server implementation, client communication handling, and daemon event loop
+- **`timer.rs`**: Timer state management, phase transitions, status output formatting, and desktop notifications
+
+**Communication flow:**
 - **Single binary** with subcommands: `daemon`, `start`, `stop`, `status`, `skip`, `toggle`
 - **Daemon mode:** Runs continuously, listens on Unix socket at `$XDG_RUNTIME_DIR/tomat.sock`
 - **Client mode:** All other commands send requests to daemon via socket

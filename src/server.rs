@@ -5,7 +5,8 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{UnixListener, UnixStream};
 use tokio::time::sleep;
 
-use crate::{Phase, ServerResponse, TimerState};
+use crate::ServerResponse;
+use crate::timer::{Phase, TimerState};
 
 #[derive(Serialize, Deserialize)]
 struct ClientMessage {
