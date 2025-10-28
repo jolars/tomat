@@ -2,7 +2,7 @@
 
 ## Repository Overview
 
-**tomat** is a Pomodoro timer with daemon support designed for waybar and other status bars. It's a small Rust project (~580 lines across multiple modules) that implements a server/client architecture using Unix sockets for inter-process communication.
+**tomat** is a Pomodoro timer with daemon support designed for waybar and other status bars. It's a small Rust project (~650 lines across multiple modules) that implements a server/client architecture using Unix sockets for inter-process communication.
 
 **Key Details:**
 
@@ -10,7 +10,8 @@
 - **Architecture:** Client/server with Unix socket communication
 - **Target:** Linux systems with systemd user services
 - **Purpose:** Lightweight Pomodoro timer for waybar integration
-- **Dependencies:** Standard Rust ecosystem (tokio, clap, serde, chrono)
+- **Dependencies:** Standard Rust ecosystem (tokio, clap, serde, chrono, notify-rust)
+- **Testing:** Comprehensive integration tests (11 tests covering all functionality)
 
 ## Build & Development Environment
 
@@ -39,8 +40,12 @@
    # Check compilation without building
    cargo check
 
-   # Run tests (currently no tests in codebase)
+   # Run tests (comprehensive integration test suite)
    cargo test
+
+   # Run specific test categories
+   cargo test --test cli test_auto_advance    # Auto-advance functionality
+   cargo test --test cli test_daemon         # Daemon management
 
    # Lint with clippy - MUST pass with zero warnings
    cargo clippy --all-targets --all-features -- -D warnings
@@ -82,7 +87,7 @@
 1. **Formatting:** `cargo fmt -- --check` (MUST exit with code 0)
 2. **Linting:** `cargo clippy --all-targets --all-features -- -D warnings` (MUST exit with code 0, no warnings allowed)
 3. **Compilation:** `cargo check` (MUST pass)
-4. **Tests:** `cargo test` (currently no tests, but command must succeed)
+4. **Tests:** `cargo test` (11 integration tests must pass)
 
 **Pre-commit hooks are configured** in `.pre-commit-config.yaml` and will run clippy and rustfmt automatically if using the Nix devenv.
 
@@ -93,9 +98,11 @@
 ```
 /
 ├── src/
-│   ├── main.rs               # CLI parsing and command dispatching (163 lines)
-│   ├── server.rs             # Unix socket server and daemon logic (215 lines)
-│   └── timer.rs              # Timer state management and phase transitions (201 lines)
+│   ├── main.rs               # CLI parsing and command dispatching
+│   ├── server.rs             # Unix socket server, daemon logic, and process management
+│   └── timer.rs              # Timer state management and phase transitions
+├── tests/
+│   └── cli.rs                # Integration tests (11 tests)
 ├── Cargo.toml               # Dependencies and metadata, includes cargo-deb config
 ├── Cargo.lock               # Dependency lockfile
 ├── Taskfile.yml             # Task runner commands (dev, lint, build-release, test-*)
@@ -117,15 +124,17 @@
 The project is organized into three main modules:
 
 - **`main.rs`**: CLI parsing with clap and command dispatching to server/client functions
-- **`server.rs`**: Unix socket server implementation, client communication handling, and daemon event loop
-- **`timer.rs`**: Timer state management, phase transitions, status output formatting, and desktop notifications
+- **`server.rs`**: Unix socket server implementation, client communication handling, daemon process management (PID files, graceful shutdown), and timer event loop
+- **`timer.rs`**: Timer state management, phase transitions, status output formatting, desktop notifications, and auto-advance logic
+- **`tests/cli.rs`**: Comprehensive integration tests covering all functionality
 
 **Communication flow:**
-- **Single binary** with subcommands: `daemon`, `start`, `stop`, `status`, `skip`, `toggle`
+
+- **Single binary** with subcommands: `daemon start|stop|status|run`, `start`, `stop`, `status`, `skip`, `toggle`
 - **Daemon mode:** Runs continuously, listens on Unix socket at `$XDG_RUNTIME_DIR/tomat.sock`
 - **Client mode:** All other commands send requests to daemon via socket
-- **Timer state:** Manages work/break phases with automatic transitions
-- **JSON output:** Formatted for waybar consumption with CSS classes
+- **Timer state:** Manages work/break/long-break phases with configurable auto-advance behavior
+- **JSON output:** Formatted for waybar consumption with CSS classes and visual indicators (play ▶/pause ⏸ symbols)
 
 ### Key Dependencies
 
@@ -134,8 +143,9 @@ The project is organized into three main modules:
 - `serde`/`serde_json`: Serialization for client/server communication
 - `chrono`: Time handling with serialization support
 - `dirs`: Standard directory discovery
-- `libc`: Unix user ID access
+- `libc`: Unix user ID access and process management
 - `notify-rust`: Desktop notifications for phase transitions
+- `tempfile` (dev-dependency): Temporary directories for integration tests
 
 ## Continuous Integration
 
@@ -167,13 +177,19 @@ Your changes will be validated against:
 1. **Start daemon for testing:**
 
    ```bash
-   # Build and run daemon in background
-   cargo build && ./target/debug/tomat daemon &
+   # Build and start daemon in background (modern approach)
+   cargo build && ./target/debug/tomat daemon start
 
-   # Test client commands
+   # Check daemon status
+   ./target/debug/tomat daemon status
+
+   # Test client commands with short durations
+   ./target/debug/tomat start --work 0.1 --break-time 0.05  # 6s work, 3s break
    ./target/debug/tomat status
-   ./target/debug/tomat start --work 1 --break-time 1  # Short durations for testing
-   ./target/debug/tomat toggle  # Toggle timer on/off
+   ./target/debug/tomat toggle  # Toggle timer pause/resume
+
+   # Stop daemon when done
+   ./target/debug/tomat daemon stop
    ```
 
 2. **Essential validation before commit:**
@@ -185,7 +201,7 @@ Your changes will be validated against:
    # Or individual steps
    cargo fmt
    cargo clippy --all-targets --all-features -- -D warnings
-   cargo test
+   cargo test  # Runs 11 integration tests
    ```
 
 3. **Test systemd integration:**
@@ -197,10 +213,12 @@ Your changes will be validated against:
 ### Common Gotchas
 
 - **Socket path:** Uses `$XDG_RUNTIME_DIR/tomat.sock` or `/run/user/$UID/tomat.sock`
-- **Daemon cleanup:** Remove socket file on startup in case of unclean shutdown
+- **PID files:** Daemon creates `$XDG_RUNTIME_DIR/tomat.pid` for process management
+- **Daemon cleanup:** Automatic cleanup of socket and PID files on graceful shutdown
 - **Dependencies:** Clean build downloads ~60 crates, takes ~10 seconds
-- **No tests:** Project currently has no unit tests, but `cargo test` must still pass
-- **Systemd:** Service expects `tomat` binary in PATH (typically `~/.cargo/bin`)
+- **Testing:** 11 integration tests validate all functionality including daemon management
+- **Systemd:** Service expects `tomat daemon run` command (updated from plain `tomat daemon`)
+- **Notifications:** Automatically disabled during testing via `TOMAT_TESTING` environment variable
 
 ### Build Timing
 
@@ -210,13 +228,65 @@ Your changes will be validated against:
 
 ## Key Implementation Notes
 
+### Timer Behavior
+
+- **No Idle phase:** Timer starts in paused work state, never returns to "idle"
+- **Auto-advance:** Configurable via `--auto-advance` flag (default: false)
+  - `false`: Timer transitions to next phase but pauses (requires manual resume)
+  - `true`: Timer continues automatically through all phases
+- **Visual indicators:** Play symbol ▶ when running, pause symbol ⏸ when paused
+- **Phase transitions:** Work → Break → Work → ... → Long Break (after N sessions)
+
+### Technical Details
+
 - **Error handling:** Uses `Box<dyn std::error::Error>` for simplicity
 - **Communication:** Line-delimited JSON over Unix sockets
 - **Timer precision:** 1-second resolution with tokio timers
-- **Signal handling:** None implemented (relies on systemd restart)
+- **Process management:** SIGTERM → SIGKILL graceful shutdown with 5-second timeout
 - **Logging:** Uses `println!`/`eprintln!` for output
 - **State persistence:** None - state lost on daemon restart
 - **Notifications:** Desktop notifications sent automatically on phase transitions via `notify-rust`
+
+### Daemon Management
+
+- **Manual control:** `tomat daemon start|stop|status` for development and user convenience
+- **Systemd integration:** `tomat daemon run` for production deployment  
+  (Note: systemd service file updated from `tomat daemon` to `tomat daemon run`)
+- **Process safety:** PID file tracking, duplicate instance prevention, stale file cleanup
+- **Background operation:** Detached process with stdio redirection
+
+### Status Output Format
+
+The timer provides JSON output optimized for waybar and other status bars:
+
+```json
+{
+  "class": "work-paused", // CSS class for styling
+  "percentage": 0.0, // Progress percentage (0-100)
+  "text": "🍅 25:00 ⏸", // Display text with icon and play/pause symbol
+  "tooltip": "Work (1/4) - 25.0min (Paused)" // Detailed tooltip information
+}
+```
+
+**CSS Classes:**
+
+- `work` / `work-paused` - Work session running/paused
+- `break` / `break-paused` - Break session running/paused
+- `long-break` / `long-break-paused` - Long break running/paused
+
+**Visual Symbols:**
+
+- **Icons:** 🍅 (work), ☕ (break), 🏖️ (long break)
+- **State:** ▶ (playing/running), ⏸ (paused)
+- **Format:** `{icon} {time} {state_symbol}`
+
+### Testing Infrastructure
+
+- **Integration tests:** 11 comprehensive tests covering all functionality
+- **Isolated environments:** Each test uses temporary directories and custom socket paths
+- **Timing handling:** Tests use fractional minutes (0.05 = 3 seconds) for fast execution
+- **Notification suppression:** Tests automatically disable desktop notifications
+- **Daemon lifecycle:** Tests cover start, stop, status, and error conditions
 
 ## Trust These Instructions
 
