@@ -535,3 +535,102 @@ fn test_daemon_start_when_already_running() -> Result<(), Box<dyn std::error::Er
 
     Ok(())
 }
+
+#[test]
+fn test_negative_duration_rejected() -> Result<(), Box<dyn std::error::Error>> {
+    let daemon = TestDaemon::start()?;
+
+    // Try to start with negative work duration
+    let output = Command::new("target/debug/tomat")
+        .args(["start", "--work", "-5"])
+        .env("XDG_RUNTIME_DIR", daemon._temp_dir.path())
+        .output()?;
+
+    assert!(
+        !output.status.success(),
+        "Negative duration should be rejected"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_zero_duration_rejected() -> Result<(), Box<dyn std::error::Error>> {
+    let daemon = TestDaemon::start()?;
+
+    // Try to start with zero work duration
+    let output = Command::new("target/debug/tomat")
+        .args(["start", "--work", "0"])
+        .env("XDG_RUNTIME_DIR", daemon._temp_dir.path())
+        .output()?;
+
+    // Check stderr for error message
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    assert!(
+        stderr.contains("Error")
+            || stderr.contains("greater than 0")
+            || stdout.contains("Error")
+            || stdout.contains("greater than 0"),
+        "Zero duration should be rejected. stderr: {}, stdout: {}",
+        stderr,
+        stdout
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_excessive_duration_rejected() -> Result<(), Box<dyn std::error::Error>> {
+    let daemon = TestDaemon::start()?;
+
+    // Try to start with excessive work duration (over 10 hours)
+    let output = Command::new("target/debug/tomat")
+        .args(["start", "--work", "700"])
+        .env("XDG_RUNTIME_DIR", daemon._temp_dir.path())
+        .output()?;
+
+    // Check stderr for error message
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    assert!(
+        stderr.contains("Error")
+            || stderr.contains("600 minutes")
+            || stdout.contains("Error")
+            || stdout.contains("600 minutes"),
+        "Excessive duration should be rejected. stderr: {}, stdout: {}",
+        stderr,
+        stdout
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_zero_sessions_rejected() -> Result<(), Box<dyn std::error::Error>> {
+    let daemon = TestDaemon::start()?;
+
+    // Try to start with zero sessions
+    let output = Command::new("target/debug/tomat")
+        .args(["start", "--sessions", "0"])
+        .env("XDG_RUNTIME_DIR", daemon._temp_dir.path())
+        .output()?;
+
+    // Check stderr for error message
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    assert!(
+        stderr.contains("Error")
+            || stderr.contains("at least 1")
+            || stdout.contains("Error")
+            || stdout.contains("at least 1"),
+        "Zero sessions should be rejected. stderr: {}, stdout: {}",
+        stderr,
+        stdout
+    );
+
+    Ok(())
+}

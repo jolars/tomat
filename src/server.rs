@@ -27,6 +27,48 @@ fn get_pid_file_path() -> PathBuf {
     PathBuf::from(runtime_dir).join("tomat.pid")
 }
 
+/// Validate timer parameters
+fn validate_timer_params(
+    work: f32,
+    break_time: f32,
+    long_break: f32,
+    sessions: u32,
+) -> Result<(), String> {
+    // Validate work duration
+    if work <= 0.0 {
+        return Err("Work duration must be greater than 0".to_string());
+    }
+    if work > 600.0 {
+        return Err("Work duration must be 600 minutes (10 hours) or less".to_string());
+    }
+
+    // Validate break duration
+    if break_time <= 0.0 {
+        return Err("Break duration must be greater than 0".to_string());
+    }
+    if break_time > 600.0 {
+        return Err("Break duration must be 600 minutes (10 hours) or less".to_string());
+    }
+
+    // Validate long break duration
+    if long_break <= 0.0 {
+        return Err("Long break duration must be greater than 0".to_string());
+    }
+    if long_break > 600.0 {
+        return Err("Long break duration must be 600 minutes (10 hours) or less".to_string());
+    }
+
+    // Validate sessions
+    if sessions == 0 {
+        return Err("Sessions must be at least 1".to_string());
+    }
+    if sessions > 100 {
+        return Err("Sessions must be 100 or less".to_string());
+    }
+
+    Ok(())
+}
+
 pub async fn send_command(
     command: &str,
     args: serde_json::Value,
@@ -91,23 +133,32 @@ async fn handle_client(
                 .and_then(|v| v.as_bool())
                 .unwrap_or(false);
 
-            state.work_duration = work;
-            state.break_duration = break_time;
-            state.long_break_duration = long_break;
-            state.sessions_until_long_break = sessions;
-            state.auto_advance = auto_advance;
-            state.current_session_count = 0;
+            // Validate parameters
+            if let Err(err_msg) = validate_timer_params(work, break_time, long_break, sessions) {
+                ServerResponse {
+                    success: false,
+                    data: serde_json::Value::Null,
+                    message: err_msg,
+                }
+            } else {
+                state.work_duration = work;
+                state.break_duration = break_time;
+                state.long_break_duration = long_break;
+                state.sessions_until_long_break = sessions;
+                state.auto_advance = auto_advance;
+                state.current_session_count = 0;
 
-            // Always start a fresh work session
-            state.start_work();
+                // Always start a fresh work session
+                state.start_work();
 
-            ServerResponse {
-                success: true,
-                data: serde_json::Value::Null,
-                message: format!(
-                    "Pomodoro started: {:.1}min work, {:.1}min break, {:.1}min long break every {} sessions",
-                    work, break_time, long_break, sessions
-                ),
+                ServerResponse {
+                    success: true,
+                    data: serde_json::Value::Null,
+                    message: format!(
+                        "Pomodoro started: {:.1}min work, {:.1}min break, {:.1}min long break every {} sessions",
+                        work, break_time, long_break, sessions
+                    ),
+                }
             }
         }
         "stop" => {
@@ -566,5 +617,73 @@ mod tests {
 
         assert!(socket_path.is_absolute(), "Socket path should be absolute");
         assert!(pid_path.is_absolute(), "PID file path should be absolute");
+    }
+
+    #[test]
+    fn test_validate_timer_params_valid() {
+        assert!(validate_timer_params(25.0, 5.0, 15.0, 4).is_ok());
+        assert!(validate_timer_params(0.1, 0.1, 0.1, 1).is_ok());
+        assert!(validate_timer_params(600.0, 600.0, 600.0, 100).is_ok());
+    }
+
+    #[test]
+    fn test_validate_timer_params_zero_work() {
+        let result = validate_timer_params(0.0, 5.0, 15.0, 4);
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .contains("Work duration must be greater than 0")
+        );
+    }
+
+    #[test]
+    fn test_validate_timer_params_negative_work() {
+        let result = validate_timer_params(-5.0, 5.0, 15.0, 4);
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .contains("Work duration must be greater than 0")
+        );
+    }
+
+    #[test]
+    fn test_validate_timer_params_excessive_work() {
+        let result = validate_timer_params(700.0, 5.0, 15.0, 4);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("600 minutes"));
+    }
+
+    #[test]
+    fn test_validate_timer_params_zero_break() {
+        let result = validate_timer_params(25.0, 0.0, 15.0, 4);
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .contains("Break duration must be greater than 0")
+        );
+    }
+
+    #[test]
+    fn test_validate_timer_params_excessive_long_break() {
+        let result = validate_timer_params(25.0, 5.0, 700.0, 4);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("600 minutes"));
+    }
+
+    #[test]
+    fn test_validate_timer_params_zero_sessions() {
+        let result = validate_timer_params(25.0, 5.0, 15.0, 0);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Sessions must be at least 1"));
+    }
+
+    #[test]
+    fn test_validate_timer_params_excessive_sessions() {
+        let result = validate_timer_params(25.0, 5.0, 15.0, 150);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("100 or less"));
     }
 }
