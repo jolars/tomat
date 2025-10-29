@@ -144,7 +144,7 @@ Settings are applied in this order (later overrides earlier):
 
 1. **Built-in defaults**: 25min work, 5min break, 15min long break, 4 sessions
 2. **Config file**: Values from `~/.config/tomat/config.toml`
-3. **CLI arguments**: Flags passed to `tomat start` or `tomat toggle`
+3. **CLI arguments**: Flags passed to `tomat start`
 
 ### Partial Configuration
 
@@ -225,8 +225,8 @@ Add to your waybar config:
     "return-type": "json",
     "interval": 1,
     "on-click": "tomat toggle",
-    "on-click-right": "tomat stop",
-    "on-click-middle": "tomat skip"
+    "on-click-right": "tomat skip",
+    "on-click-middle": "tomat start"
 }
 ```
 
