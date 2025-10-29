@@ -8,23 +8,6 @@ This document tracks known issues and planned improvements for tomat.
 
 ## Medium Priority - Improvements
 
-### Add Explicit Pause/Resume Commands
-
-**Location:** `src/cli.rs`, `src/server.rs`
-
-**Issue:**
-
-- Only `toggle` command exists (which pauses/resumes)
-- Users may want explicit `pause` and `resume` commands
-- More intuitive for scripting and automation
-
-**Proposed Fix:**
-
-- Add `tomat pause` command
-- Add `tomat resume` command
-- Keep `toggle` for convenience
-- Update documentation
-
 ### Improve Error Handling in Phase Transitions
 
 **Location:** `src/server.rs:130-131`, `src/server.rs:223-224`

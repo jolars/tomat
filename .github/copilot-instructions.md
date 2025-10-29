@@ -11,7 +11,7 @@
 - **Target:** Linux systems with systemd user services
 - **Purpose:** Lightweight Pomodoro timer for waybar integration
 - **Dependencies:** Standard Rust ecosystem (tokio, clap, serde, chrono, notify-rust, fs2)
-- **Testing:** Comprehensive integration tests (16 tests covering all functionality)
+- **Testing:** Comprehensive integration tests (19 tests covering all functionality)
 
 ## Build & Development Environment
 
@@ -87,7 +87,7 @@
 1. **Formatting:** `cargo fmt -- --check` (MUST exit with code 0)
 2. **Linting:** `cargo clippy --all-targets --all-features -- -D warnings` (MUST exit with code 0, no warnings allowed)
 3. **Compilation:** `cargo check` (MUST pass)
-4. **Tests:** `cargo test` (16 integration tests must pass)
+4. **Tests:** `cargo test` (19 integration tests must pass)
 
 **Pre-commit hooks are configured** in `.pre-commit-config.yaml` and will run clippy and rustfmt automatically if using the Nix devenv.
 
@@ -102,7 +102,7 @@
 │   ├── server.rs             # Unix socket server, daemon logic, and process management
 │   └── timer.rs              # Timer state management and phase transitions
 ├── tests/
-│   └── cli.rs                # Integration tests (16 tests)
+│   └── cli.rs                # Integration tests (19 tests)
 ├── Cargo.toml               # Dependencies and metadata, includes cargo-deb config
 ├── Cargo.lock               # Dependency lockfile
 ├── Taskfile.yml             # Task runner commands (dev, lint, build-release, test-*)
@@ -202,7 +202,7 @@ Your changes will be validated against:
    # Or individual steps
    cargo fmt
    cargo clippy --all-targets --all-features -- -D warnings
-   cargo test  # Runs 16 integration tests
+   cargo test  # Runs 19 integration tests
    ```
 
 3. **Test systemd integration:**
@@ -217,7 +217,7 @@ Your changes will be validated against:
 - **PID files:** Daemon creates `$XDG_RUNTIME_DIR/tomat.pid` for process management
 - **Daemon cleanup:** Automatic cleanup of socket and PID files on graceful shutdown
 - **Dependencies:** Clean build downloads ~60 crates, takes ~10 seconds
-- **Testing:** 16 integration tests validate all functionality including daemon management
+- **Testing:** 19 integration tests validate all functionality including daemon management
 - **Systemd:** Service expects `tomat daemon run` command (updated from plain `tomat daemon`)
 - **Notifications:** Automatically disabled during testing via `TOMAT_TESTING` environment variable
 
@@ -284,7 +284,7 @@ The timer provides JSON output optimized for waybar and other status bars:
 
 ### Testing Infrastructure
 
-- **Integration tests:** 16 comprehensive tests covering all functionality
+- **Integration tests:** 19 comprehensive tests covering all functionality
 - **Isolated environments:** Each test uses temporary directories and custom socket paths
 - **Timing handling:** Tests use fractional minutes (0.05 = 3 seconds) for fast execution
 - **Notification suppression:** Tests automatically disable desktop notifications

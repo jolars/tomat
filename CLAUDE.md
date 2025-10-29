@@ -19,7 +19,7 @@ task dev
 cargo build                    # Development build
 cargo build --release          # Release build
 
-# Run tests (16 integration tests)
+# Run tests (19 integration tests)
 cargo test
 
 # Run specific test categories
@@ -65,7 +65,7 @@ cargo build && ./target/debug/tomat daemon start
 - **`src/main.rs`** (133 lines): CLI parsing with clap, command dispatching
 - **`src/server.rs`** (902 lines): Unix socket server, daemon lifecycle, client request handling, PID file management with file locking
 - **`src/timer.rs`** (616 lines): Timer state machine, phase transitions, status output formatting, desktop notifications
-- **`tests/cli.rs`** (636 lines): 16 comprehensive integration tests with `TestDaemon` helper
+- **`tests/cli.rs`** (636 lines): 19 comprehensive integration tests with `TestDaemon` helper
 
 ### Communication Flow
 

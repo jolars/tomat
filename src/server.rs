@@ -279,6 +279,46 @@ async fn handle_client(
                 }
             }
         }
+        "pause" => {
+            if state.is_paused {
+                ServerResponse {
+                    success: true,
+                    data: serde_json::Value::Null,
+                    message: "Timer is already paused".to_string(),
+                }
+            } else {
+                state.pause();
+
+                // Save state after pausing
+                save_state(state);
+
+                ServerResponse {
+                    success: true,
+                    data: serde_json::Value::Null,
+                    message: "Timer paused".to_string(),
+                }
+            }
+        }
+        "resume" => {
+            if !state.is_paused {
+                ServerResponse {
+                    success: true,
+                    data: serde_json::Value::Null,
+                    message: "Timer is already running".to_string(),
+                }
+            } else {
+                state.resume();
+
+                // Save state after resuming
+                save_state(state);
+
+                ServerResponse {
+                    success: true,
+                    data: serde_json::Value::Null,
+                    message: "Timer resumed".to_string(),
+                }
+            }
+        }
         _ => ServerResponse {
             success: false,
             data: serde_json::Value::Null,

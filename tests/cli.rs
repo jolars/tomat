@@ -677,3 +677,111 @@ fn test_precise_timer_completion() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+#[test]
+fn test_explicit_pause_resume_commands() -> Result<(), Box<dyn std::error::Error>> {
+    let daemon = TestDaemon::start()?;
+
+    // Start a timer with a reasonable duration
+    daemon.send_command(&["start", "--work", "0.2", "--break-time", "0.1"])?;
+
+    // Timer should be running
+    let status = daemon.get_status()?;
+    assert_eq!(status["class"], "work");
+
+    // Test explicit pause command
+    daemon.send_command(&["pause"])?;
+
+    let status = daemon.get_status()?;
+    assert_eq!(
+        status["class"], "work-paused",
+        "Timer should be paused after pause command"
+    );
+
+    // Test explicit resume command
+    daemon.send_command(&["resume"])?;
+
+    let status = daemon.get_status()?;
+    assert_eq!(
+        status["class"], "work",
+        "Timer should be running after resume command"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_pause_resume_error_handling() -> Result<(), Box<dyn std::error::Error>> {
+    let daemon = TestDaemon::start()?;
+
+    // Start a timer
+    daemon.send_command(&["start", "--work", "0.2", "--break-time", "0.1"])?;
+
+    // Pause it
+    daemon.send_command(&["pause"])?;
+    let status = daemon.get_status()?;
+    assert_eq!(status["class"], "work-paused");
+
+    // Try to pause again - should still succeed (idempotent operation)
+    daemon.send_command(&["pause"])?;
+    let status = daemon.get_status()?;
+    assert_eq!(status["class"], "work-paused", "Timer should remain paused");
+
+    // Resume it
+    daemon.send_command(&["resume"])?;
+    let status = daemon.get_status()?;
+    assert_eq!(status["class"], "work");
+
+    // Try to resume again - should still succeed (idempotent operation)
+    daemon.send_command(&["resume"])?;
+    let status = daemon.get_status()?;
+    assert_eq!(status["class"], "work", "Timer should remain running");
+
+    Ok(())
+}
+
+#[test]
+fn test_toggle_still_works_with_new_commands() -> Result<(), Box<dyn std::error::Error>> {
+    let daemon = TestDaemon::start()?;
+
+    // Start a timer
+    daemon.send_command(&["start", "--work", "0.2", "--break-time", "0.1"])?;
+
+    // Timer should be running
+    let status = daemon.get_status()?;
+    assert_eq!(status["class"], "work");
+
+    // Use explicit pause
+    daemon.send_command(&["pause"])?;
+    let status = daemon.get_status()?;
+    assert_eq!(
+        status["class"], "work-paused",
+        "Timer should be paused after explicit pause"
+    );
+
+    // Use toggle to resume (should work)
+    daemon.send_command(&["toggle"])?;
+    let status = daemon.get_status()?;
+    assert_eq!(
+        status["class"], "work",
+        "Timer should be running after toggle resume"
+    );
+
+    // Use toggle to pause (should work)
+    daemon.send_command(&["toggle"])?;
+    let status = daemon.get_status()?;
+    assert_eq!(
+        status["class"], "work-paused",
+        "Timer should be paused after toggle pause"
+    );
+
+    // Use explicit resume
+    daemon.send_command(&["resume"])?;
+    let status = daemon.get_status()?;
+    assert_eq!(
+        status["class"], "work",
+        "Timer should be running after explicit resume"
+    );
+
+    Ok(())
+}

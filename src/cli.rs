@@ -86,6 +86,10 @@ pub enum Commands {
     Status,
     /// Skip to next phase
     Skip,
+    /// Pause the current timer
+    Pause,
+    /// Resume a paused timer
+    Resume,
     /// Toggle timer (start if stopped, stop if running)
     Toggle {
         #[command(flatten)]
