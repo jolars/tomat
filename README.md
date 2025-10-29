@@ -235,7 +235,7 @@ The `tomat status` command returns JSON optimized for status bars:
 ## Architecture
 
 ```
-┌─────────────────┐    Unix Socket    ┌──────────────────┐
+┌─────────────────┐    Unix Socket     ┌──────────────────┐
 │   tomat start   │ ──────────────────▶│   tomat daemon   │
 │   tomat status  │                    │                  │
 │   tomat toggle  │ ◀──────────────────│  Timer State     │
