@@ -1,4 +1,4 @@
-# tomat <img src='https://raw.githubusercontent.com/jolars/tomat/refs/heads/main/assets/logo.svg' align="right" width="139" />
+# Tomat <img src='https://raw.githubusercontent.com/jolars/tomat/refs/heads/main/assets/logo.svg' align="right" width="139" />
 
 [![Build Status](https://github.com/jolars/tomat/workflows/Build%20and%20Test/badge.svg)](https://github.com/jolars/tomat/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
