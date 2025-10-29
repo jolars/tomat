@@ -159,16 +159,17 @@ Template:
 ```
 ````
 
-````
-
 ### Feature Requests
+
 For new features, please include:
+
 - **Problem statement**: What problem does this solve?
 - **Proposed solution**: How should it work?
 - **Alternative solutions**: Other approaches considered
 - **Additional context**: Use cases, examples
 
 ### Documentation Improvements
+
 - Fix typos or unclear explanations
 - Add missing examples
 - Improve waybar integration guides
@@ -177,6 +178,7 @@ For new features, please include:
 ### Code Contributions
 
 #### Areas for Contribution
+
 - **New features**: Configuration files, additional status bar integrations
 - **Performance**: Optimization opportunities
 - **Platform support**: Windows/macOS compatibility
@@ -184,6 +186,7 @@ For new features, please include:
 - **Testing**: Additional test coverage
 
 #### Architecture Guidelines
+
 - **Single responsibility**: Each module has a clear purpose
 - **Minimal dependencies**: Only add dependencies if absolutely necessary
 - **Unix philosophy**: Small, focused, composable tools
@@ -192,6 +195,7 @@ For new features, please include:
 ## Testing Guidelines
 
 ### Running Tests
+
 ```bash
 # Run all tests
 cargo test
@@ -202,7 +206,7 @@ cargo test --test cli test_daemon         # Daemon management
 
 # Run with output for debugging
 cargo test --test cli -- --nocapture
-````
+```
 
 ### Writing Tests
 
