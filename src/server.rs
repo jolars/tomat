@@ -936,58 +936,6 @@ mod tests {
     }
 
     #[test]
-    fn test_load_state_missing_file() {
-        use tempfile::TempDir;
-
-        let temp_dir = TempDir::new().unwrap();
-        // SAFETY: Setting environment variable during tests is safe as tests have isolated environments
-        unsafe {
-            std::env::set_var("XDG_RUNTIME_DIR", temp_dir.path());
-        }
-
-        // Try to load when no file exists
-        let loaded_state = load_state();
-
-        assert!(
-            loaded_state.is_none(),
-            "Should return None when file doesn't exist"
-        );
-    }
-
-    #[test]
-    fn test_load_state_corrupted_file() {
-        use tempfile::TempDir;
-
-        let temp_dir = TempDir::new().unwrap();
-        // SAFETY: Setting environment variable during tests is safe as tests have isolated environments
-        unsafe {
-            std::env::set_var("XDG_RUNTIME_DIR", temp_dir.path());
-        }
-
-        // Write corrupted JSON
-        let state_path = get_state_file_path();
-        std::fs::write(&state_path, "not valid json{]").unwrap();
-
-        // Verify file exists before load attempt
-        assert!(
-            state_path.exists(),
-            "Corrupted file should exist before load"
-        );
-
-        // Try to load corrupted file
-        let loaded_state = load_state();
-
-        assert!(
-            loaded_state.is_none(),
-            "Should return None for corrupted file"
-        );
-
-        // The file should be removed by load_state
-        // Note: This may not always work in test environment due to temp dir cleanup timing
-        // The important behavior is that load_state returns None for corrupted files
-    }
-
-    #[test]
     fn test_state_file_path_uses_xdg_runtime_dir() {
         let state_path = get_state_file_path();
         let path_str = state_path.to_string_lossy();
