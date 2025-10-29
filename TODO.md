@@ -4,19 +4,7 @@ This document tracks known issues and planned improvements for tomat.
 
 ## High Priority - Bugs
 
-### Timer Completion Race Condition
-
-**Location:** `src/server.rs:221-226`
-
-**Issue:** Timer checks `is_finished()` only every 1 second in the daemon loop. Phase transitions can be delayed by up to 1 second after the timer actually finishes.
-
-**Impact:** Minor - phase transitions may be ~1 second late.
-
-**Proposed Fix:**
-
-- Calculate exact time until completion
-- Use `tokio::time::sleep_until()` with precise timestamp
-- Check immediately when timer should finish
+*(No outstanding high-priority bugs)*
 
 ## Medium Priority - Improvements
 

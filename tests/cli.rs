@@ -634,3 +634,46 @@ fn test_zero_sessions_rejected() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+#[test]
+fn test_precise_timer_completion() -> Result<(), Box<dyn std::error::Error>> {
+    let daemon = TestDaemon::start()?;
+
+    // Start a very short timer (3 seconds) with auto-advance to test precise transitions
+    daemon.send_command(&[
+        "start",
+        "--work",
+        "0.05",
+        "--break-time",
+        "0.05",
+        "--auto-advance",
+    ])?;
+
+    let start_time = std::time::Instant::now();
+
+    // Wait for the timer to finish work phase and transition to break
+    // This should happen in exactly 3 seconds (0.05 * 60)
+    std::thread::sleep(Duration::from_millis(3100)); // Wait slightly longer than 3 seconds
+
+    let status = daemon.get_status()?;
+    let elapsed = start_time.elapsed();
+
+    // Verify we're in the break phase (timer should have transitioned precisely)
+    assert_eq!(
+        status["class"],
+        "break",
+        "Timer should have transitioned to break phase by now. Status: {}",
+        serde_json::to_string_pretty(&status)?
+    );
+
+    // The transition should have happened close to 3 seconds, not up to 4 seconds
+    // With the old implementation, this could take up to 4 seconds (3s + up to 1s delay)
+    // With precise timing, it should be close to 3 seconds
+    assert!(
+        elapsed.as_millis() < 3500,
+        "Timer transition took too long: {}ms (should be close to 3000ms)",
+        elapsed.as_millis()
+    );
+
+    Ok(())
+}

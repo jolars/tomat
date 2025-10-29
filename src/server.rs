@@ -7,7 +7,6 @@ use std::process::{Command, Stdio};
 use std::time::Duration;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{UnixListener, UnixStream};
-use tokio::time::sleep;
 
 use crate::ServerResponse;
 use crate::timer::TimerState;
@@ -364,8 +363,26 @@ async fn daemon_loop(
                 }
             }
 
-            // Check timer completion every second
-            _ = sleep(Duration::from_secs(1)) => {
+            // Check timer completion with precise timing
+            _ = async {
+                if let Some(finish_timestamp) = state.get_finish_time() {
+                    // Timer is running, calculate exact sleep duration
+                    let current_time = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs();
+
+                    if finish_timestamp > current_time {
+                        // Timer hasn't finished yet, sleep until it does
+                        let sleep_duration = Duration::from_secs(finish_timestamp - current_time);
+                        tokio::time::sleep(sleep_duration).await;
+                    }
+                    // If finish_timestamp <= current_time, timer is already finished, so don't sleep
+                } else {
+                    // Timer is paused, check again after 1 second
+                    tokio::time::sleep(Duration::from_secs(1)).await;
+                }
+            } => {
                 if state.is_finished() {
                     if let Err(e) = state.next_phase() {
                         eprintln!("Error during phase transition: {}", e);

@@ -91,6 +91,16 @@ impl TimerState {
         !self.is_paused && self.get_remaining_seconds() <= 0
     }
 
+    /// Get the exact timestamp when the timer will finish, or None if paused
+    pub fn get_finish_time(&self) -> Option<u64> {
+        if self.is_paused {
+            None
+        } else {
+            let total_duration = (self.duration_minutes * 60.0) as u64;
+            Some(self.start_time + total_duration)
+        }
+    }
+
     pub fn next_phase(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let (message, _icon) = match self.phase {
             Phase::Work => {
