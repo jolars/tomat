@@ -24,9 +24,8 @@ for waybar and other status bars.
 ## Quick Start
 
 ```bash
-# Install
-git clone https://github.com/jolars/tomat.git
-cd tomat && ./install.sh
+# Install from crates.io
+cargo install tomat
 
 # Start daemon and begin working
 tomat daemon start
@@ -60,6 +59,23 @@ sudo pacman -S alsa-lib
 ### Quick Install (Recommended)
 
 ```bash
+# Install from crates.io
+cargo install tomat
+
+# Set up systemd service for auto-start
+mkdir -p ~/.config/systemd/user
+curl -o ~/.config/systemd/user/tomat.service https://raw.githubusercontent.com/jolars/tomat/main/tomat.service
+systemctl --user daemon-reload
+systemctl --user enable tomat.service
+systemctl --user start tomat.service
+```
+
+**Note**: Ensure `~/.cargo/bin` is in your PATH.
+
+### Install from Source
+
+```bash
+# Clone and install
 git clone https://github.com/jolars/tomat.git
 cd tomat
 ./install.sh
@@ -70,7 +86,9 @@ This installs the binary and sets up the systemd service automatically.
 ### Manual Installation
 
 ```bash
-# Build and install
+# Install from crates.io or build from source
+cargo install tomat
+# OR
 cargo install --path .
 
 # Set up systemd service
