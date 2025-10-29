@@ -19,6 +19,7 @@ chrono = { version = "0.4", features = ["serde"] }
 dirs = "6.0"
 libc = "0.2"
 notify-rust = "4.11"
+toml = "0.8"
 
 [dev-dependencies]
 tempfile = "3.8"

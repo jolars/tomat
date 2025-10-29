@@ -8,6 +8,7 @@ A Pomodoro timer with daemon support designed for waybar and other status bars.
 ## Features
 
 - **🍅 Pomodoro Technique**: Work/break cycles with configurable durations
+- **⚙️ TOML Configuration**: Persistent defaults via XDG config directory
 - **⚡ Daemon Architecture**: Robust background service that survives restarts
 - **📊 Waybar Integration**: JSON output with CSS classes for seamless integration
 - **🎮 Visual Indicators**: Play ▶ and pause ⏸ symbols for clear state indication
@@ -27,10 +28,12 @@ cd tomat && ./install.sh
 
 # Start daemon and begin working
 tomat daemon start
-tomat start --work 25 --break-time 5
+tomat start
 
 # Check status (perfect for waybar)
 tomat status
+
+# Optional: Configure defaults in ~/.config/tomat/config.toml
 ```
 
 ## Installation
@@ -60,6 +63,44 @@ systemctl --user start tomat.service
 ```
 
 **Note**: Ensure `~/.cargo/bin` is in your PATH.
+
+## Configuration
+
+Tomat can be configured using a TOML file located at
+`~/.config/tomat/config.toml`. This allows you to set default values for timer
+durations and behaviors without specifying them on every command.
+
+### Example Configuration
+
+Create `~/.config/tomat/config.toml`:
+
+```toml
+[timer]
+work = 25.0          # Work duration in minutes (default: 25)
+break_time = 5.0     # Break duration in minutes (default: 5)
+long_break = 15.0    # Long break duration in minutes (default: 15)
+sessions = 4         # Sessions until long break (default: 4)
+auto_advance = false # Auto-advance between phases (default: false)
+```
+
+### Priority Order
+
+Settings are applied in this order (later overrides earlier):
+
+1. **Built-in defaults**: 25min work, 5min break, 15min long break, 4 sessions
+2. **Config file**: Values from `~/.config/tomat/config.toml`
+3. **CLI arguments**: Flags passed to `tomat start` or `tomat toggle`
+
+### Partial Configuration
+
+You can specify only the values you want to override:
+
+```toml
+[timer]
+work = 30.0
+auto_advance = true
+# Other values will use built-in defaults
+```
 
 ## Usage
 

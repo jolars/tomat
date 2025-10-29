@@ -1,4 +1,5 @@
 mod cli;
+mod config;
 mod server;
 mod timer;
 
@@ -6,6 +7,7 @@ use clap::Parser;
 use serde::{Deserialize, Serialize};
 
 use crate::cli::{Cli, Commands, DaemonAction};
+use crate::config::Config;
 use crate::server::{run_daemon, send_command};
 
 #[derive(Serialize, Deserialize)]
@@ -18,6 +20,7 @@ struct ServerResponse {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
+    let config = Config::load();
 
     match cli.command {
         Commands::Daemon { action } => match action {
@@ -35,19 +38,35 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         },
 
-        Commands::Start { timer } => match send_command("start", timer.to_json()).await {
-            Ok(response) => {
-                if response.success {
-                    println!(
-                        "Pomodoro started: {}min work, {}min break, {}min long break every {} sessions",
-                        timer.work, timer.break_time, timer.long_break, timer.sessions
-                    );
-                } else {
-                    eprintln!("Error: {}", response.message);
+        Commands::Start { timer } => {
+            let work = timer.get_work(config.timer.work);
+            let break_time = timer.get_break_time(config.timer.break_time);
+            let long_break = timer.get_long_break(config.timer.long_break);
+            let sessions = timer.get_sessions(config.timer.sessions);
+            let auto_advance = timer.get_auto_advance(config.timer.auto_advance);
+
+            let args = serde_json::json!({
+                "work": work,
+                "break": break_time,
+                "long_break": long_break,
+                "sessions": sessions,
+                "auto_advance": auto_advance
+            });
+
+            match send_command("start", args).await {
+                Ok(response) => {
+                    if response.success {
+                        println!(
+                            "Pomodoro started: {}min work, {}min break, {}min long break every {} sessions",
+                            work, break_time, long_break, sessions
+                        );
+                    } else {
+                        eprintln!("Error: {}", response.message);
+                    }
                 }
+                Err(e) => eprintln!("Failed to connect to daemon: {}", e),
             }
-            Err(e) => eprintln!("Failed to connect to daemon: {}", e),
-        },
+        }
 
         Commands::Stop => match send_command("stop", serde_json::Value::Null).await {
             Ok(response) => {
@@ -82,16 +101,32 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Err(e) => eprintln!("Failed to connect to daemon: {}", e),
         },
 
-        Commands::Toggle { timer } => match send_command("toggle", timer.to_json()).await {
-            Ok(response) => {
-                if response.success {
-                    println!("{}", response.message);
-                } else {
-                    eprintln!("Error: {}", response.message);
+        Commands::Toggle { timer } => {
+            let work = timer.get_work(config.timer.work);
+            let break_time = timer.get_break_time(config.timer.break_time);
+            let long_break = timer.get_long_break(config.timer.long_break);
+            let sessions = timer.get_sessions(config.timer.sessions);
+            let auto_advance = timer.get_auto_advance(config.timer.auto_advance);
+
+            let args = serde_json::json!({
+                "work": work,
+                "break": break_time,
+                "long_break": long_break,
+                "sessions": sessions,
+                "auto_advance": auto_advance
+            });
+
+            match send_command("toggle", args).await {
+                Ok(response) => {
+                    if response.success {
+                        println!("{}", response.message);
+                    } else {
+                        eprintln!("Error: {}", response.message);
+                    }
                 }
+                Err(e) => eprintln!("Failed to connect to daemon: {}", e),
             }
-            Err(e) => eprintln!("Failed to connect to daemon: {}", e),
-        },
+        }
     }
 
     Ok(())

@@ -1,4 +1,4 @@
-use clap::{Args, Parser, Subcommand};
+use clap::{ArgAction, Args, Parser, Subcommand};
 
 #[derive(Subcommand)]
 pub enum DaemonAction {
@@ -23,33 +23,48 @@ pub struct Cli {
 
 #[derive(Args)]
 pub struct TimerArgs {
-    /// Work duration in minutes (default: 25)
-    #[arg(short, long, default_value = "25")]
-    pub work: f32,
-    /// Break duration in minutes (default: 5)
-    #[arg(short, long, default_value = "5")]
-    pub break_time: f32,
-    /// Long break duration in minutes (default: 15)
-    #[arg(short, long, default_value = "15")]
-    pub long_break: f32,
-    /// Sessions until long break (default: 4)
-    #[arg(short, long, default_value = "4")]
-    pub sessions: u32,
-    /// Automatically advance between timer states (default: false)
-    #[arg(short, long, default_value = "false")]
+    /// Work duration in minutes (default: from config or 25)
+    #[arg(short, long)]
+    pub work: Option<f32>,
+    /// Break duration in minutes (default: from config or 5)
+    #[arg(short, long)]
+    pub break_time: Option<f32>,
+    /// Long break duration in minutes (default: from config or 15)
+    #[arg(short, long)]
+    pub long_break: Option<f32>,
+    /// Sessions until long break (default: from config or 4)
+    #[arg(short, long)]
+    pub sessions: Option<u32>,
+    /// Automatically advance between timer states (default: from config or false)
+    #[arg(short, long, action = ArgAction::SetTrue)]
     pub auto_advance: bool,
 }
 
 impl TimerArgs {
-    #[cfg(not(doc))]
-    pub fn to_json(&self) -> serde_json::Value {
-        serde_json::json!({
-            "work": self.work,
-            "break": self.break_time,
-            "long_break": self.long_break,
-            "sessions": self.sessions,
-            "auto_advance": self.auto_advance
-        })
+    /// Get work duration with fallback
+    pub fn get_work(&self, default: f32) -> f32 {
+        self.work.unwrap_or(default)
+    }
+
+    /// Get break duration with fallback
+    pub fn get_break_time(&self, default: f32) -> f32 {
+        self.break_time.unwrap_or(default)
+    }
+
+    /// Get long break duration with fallback
+    pub fn get_long_break(&self, default: f32) -> f32 {
+        self.long_break.unwrap_or(default)
+    }
+
+    /// Get sessions with fallback
+    pub fn get_sessions(&self, default: u32) -> u32 {
+        self.sessions.unwrap_or(default)
+    }
+
+    /// Get auto_advance with fallback
+    pub fn get_auto_advance(&self, default: bool) -> bool {
+        // If flag is set, it's true; otherwise use default
+        if self.auto_advance { true } else { default }
     }
 }
 
