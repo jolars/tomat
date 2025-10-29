@@ -123,32 +123,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Err(e) => eprintln!("Failed to connect to daemon: {}", e),
         },
 
-        Commands::Toggle { timer } => {
-            let work = timer.get_work(config.timer.work);
-            let break_time = timer.get_break_time(config.timer.break_time);
-            let long_break = timer.get_long_break(config.timer.long_break);
-            let sessions = timer.get_sessions(config.timer.sessions);
-            let auto_advance = timer.get_auto_advance(config.timer.auto_advance);
-
-            let args = serde_json::json!({
-                "work": work,
-                "break": break_time,
-                "long_break": long_break,
-                "sessions": sessions,
-                "auto_advance": auto_advance
-            });
-
-            match send_command("toggle", args).await {
-                Ok(response) => {
-                    if response.success {
-                        println!("{}", response.message);
-                    } else {
-                        eprintln!("Error: {}", response.message);
-                    }
+        Commands::Toggle => match send_command("toggle", serde_json::Value::Null).await {
+            Ok(response) => {
+                if response.success {
+                    println!("{}", response.message);
+                } else {
+                    eprintln!("Error: {}", response.message);
                 }
-                Err(e) => eprintln!("Failed to connect to daemon: {}", e),
             }
-        }
+            Err(e) => eprintln!("Failed to connect to daemon: {}", e),
+        },
     }
 
     Ok(())

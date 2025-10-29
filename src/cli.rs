@@ -91,8 +91,5 @@ pub enum Commands {
     /// Resume a paused timer
     Resume,
     /// Toggle timer (start if stopped, stop if running)
-    Toggle {
-        #[command(flatten)]
-        timer: TimerArgs,
-    },
+    Toggle,
 }
