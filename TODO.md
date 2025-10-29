@@ -2,10 +2,6 @@
 
 This document tracks known issues and planned improvements for tomat.
 
-## High Priority - Bugs
-
-*(No outstanding high-priority bugs)*
-
 ## Medium Priority - Improvements
 
 ### Improve Error Handling in Phase Transitions
@@ -50,9 +46,9 @@ This document tracks known issues and planned improvements for tomat.
 - Allow customization via config file:
   ```toml
   [notifications]
-  work_to_break = "Break time! Step away from the screen."
-  break_to_work = "Back to work! Let's get things done."
-  work_to_long_break = "Long break! You've earned it."
+  work = "Break time! Step away from the screen."
+  break = "Back to work! Let's get things done."
+  long_break = "Long break! You've earned it."
   ```
 - Support notification urgency levels
 - Option to disable notifications entirely
