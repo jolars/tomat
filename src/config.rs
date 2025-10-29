@@ -16,7 +16,7 @@ pub struct TimerConfig {
     #[serde(default = "default_work")]
     pub work: f32,
     /// Break duration in minutes (default: 5)
-    #[serde(default = "default_break")]
+    #[serde(default = "default_break", rename = "break")]
     pub break_time: f32,
     /// Long break duration in minutes (default: 15)
     #[serde(default = "default_long_break")]
@@ -198,5 +198,36 @@ mod tests {
         // This should not panic and should return defaults
         let config = Config::load();
         assert_eq!(config.timer.work, 25.0);
+    }
+
+    #[test]
+    fn test_config_uses_break_not_break_time() {
+        let config = Config::default();
+        let toml_str = toml::to_string_pretty(&config).unwrap();
+
+        // Should use "break" in the TOML output, not "break_time"
+        assert!(
+            toml_str.contains("break = "),
+            "Config should serialize with 'break' field"
+        );
+        assert!(
+            !toml_str.contains("break_time"),
+            "Config should not serialize with 'break_time' field"
+        );
+    }
+
+    #[test]
+    fn test_config_can_parse_break_field() {
+        let toml_str = r#"
+            [timer]
+            work = 30.0
+            break = 7.0
+            long_break = 20.0
+        "#;
+
+        let config: Config = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.timer.work, 30.0);
+        assert_eq!(config.timer.break_time, 7.0);
+        assert_eq!(config.timer.long_break, 20.0);
     }
 }

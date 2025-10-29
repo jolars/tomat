@@ -139,10 +139,10 @@ Create `~/.config/tomat/config.toml`:
 
 ```toml
 [timer]
-work = 25.0          # Work duration in minutes (default: 25)
-break_time = 5.0     # Break duration in minutes (default: 5)
-long_break = 15.0    # Long break duration in minutes (default: 15)
-sessions = 4         # Sessions until long break (default: 4)
+work = 25.0        # Work duration in minutes (default: 25)
+break = 5.0        # Break duration in minutes (default: 5)
+long_break = 15.0  # Long break duration in minutes (default: 15)
+sessions = 4       # Sessions until long break (default: 4)
 auto_advance = false # Auto-advance between phases (default: false)
 
 [sound]
@@ -201,7 +201,7 @@ tomat daemon stop
 tomat start
 
 # Start with custom durations and auto-advance
-tomat start --work 30 --break-time 10 --auto-advance
+tomat start --work 30 --break 10 --auto-advance
 
 # Toggle pause/resume
 tomat toggle
@@ -334,7 +334,7 @@ The `tomat status` command returns JSON optimized for status bars:
 tomat daemon start
 
 # Begin a Pomodoro session
-tomat start --work 25 --break-time 5
+tomat start --work 25 --break 5
 
 # Status shows: 🍅 24:30 ▶
 tomat status
@@ -359,7 +359,7 @@ tomat toggle
 
 ```bash
 # Start with auto-advance (no manual resume needed)
-tomat start --work 25 --break-time 5 --auto-advance
+tomat start --work 25 --break 5 --auto-advance
 
 # Timer automatically flows: Work ▶ → Break ▶ → Work ▶ → ...
 # No manual intervention required
@@ -373,7 +373,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed development documentation.
 # Quick development workflow
 cargo build
 tomat daemon start
-tomat start --work 0.1 --break-time 0.05  # Fast testing
+tomat start --work 0.1 --break 0.05  # Fast testing
 cargo test  # Run 11 integration tests
 ```
 

@@ -188,7 +188,7 @@ fn test_auto_advance_false_pauses_after_transition() -> Result<(), Box<dyn std::
     let daemon = TestDaemon::start()?;
 
     // Start timer with auto_advance=false (default) and very short duration
-    daemon.send_command(&["start", "--work", "0.05", "--break-time", "0.05"])?; // 3 second intervals
+    daemon.send_command(&["start", "--work", "0.05", "--break", "0.05"])?; // 3 second intervals
 
     // Debug: Check initial status
     let initial_status = daemon.get_status()?;
@@ -232,7 +232,7 @@ fn test_auto_advance_true_continues_automatically() -> Result<(), Box<dyn std::e
         "start",
         "--work",
         "0.05",
-        "--break-time",
+        "--break",
         "0.05",
         "--auto-advance",
     ])?;
@@ -271,7 +271,7 @@ fn test_resume_paused_timer() -> Result<(), Box<dyn std::error::Error>> {
     let daemon = TestDaemon::start()?;
 
     // Start timer with auto_advance=false
-    daemon.send_command(&["start", "--work", "0.05", "--break-time", "0.05"])?;
+    daemon.send_command(&["start", "--work", "0.05", "--break", "0.05"])?;
 
     // Wait for work phase to complete and transition to paused break
     daemon.wait_for_completion(10)?;
@@ -325,7 +325,7 @@ fn test_toggle_pause_and_resume() -> Result<(), Box<dyn std::error::Error>> {
         "start",
         "--work",
         "0.05",
-        "--break-time",
+        "--break",
         "0.05",
         "--auto-advance",
     ])?;
@@ -357,7 +357,7 @@ fn test_stop_and_start_preserves_auto_advance_setting() -> Result<(), Box<dyn st
         "start",
         "--work",
         "0.05",
-        "--break-time",
+        "--break",
         "0.05",
         "--auto-advance",
     ])?;
@@ -366,7 +366,7 @@ fn test_stop_and_start_preserves_auto_advance_setting() -> Result<(), Box<dyn st
     daemon.send_command(&["stop"])?;
 
     // Start again with auto_advance=false
-    daemon.send_command(&["start", "--work", "0.05", "--break-time", "0.05"])?;
+    daemon.send_command(&["start", "--work", "0.05", "--break", "0.05"])?;
 
     // Wait for completion
     daemon.wait_for_completion(10)?;
@@ -387,7 +387,7 @@ fn test_manual_skip_respects_auto_advance_setting() -> Result<(), Box<dyn std::e
     let daemon = TestDaemon::start()?;
 
     // Test skip with auto_advance=false
-    daemon.send_command(&["start", "--work", "0.05", "--break-time", "0.05"])?;
+    daemon.send_command(&["start", "--work", "0.05", "--break", "0.05"])?;
 
     // Manually skip before completion
     thread::sleep(Duration::from_millis(100));
@@ -406,7 +406,7 @@ fn test_manual_skip_respects_auto_advance_setting() -> Result<(), Box<dyn std::e
         "start",
         "--work",
         "0.05",
-        "--break-time",
+        "--break",
         "0.05",
         "--auto-advance",
     ])?;
@@ -430,7 +430,7 @@ fn test_fractional_minutes_work_correctly() -> Result<(), Box<dyn std::error::Er
     let daemon = TestDaemon::start()?;
 
     // Test with fractional minutes
-    daemon.send_command(&["start", "--work", "0.02", "--break-time", "0.01"])?; // 1.2s work, 0.6s break
+    daemon.send_command(&["start", "--work", "0.02", "--break", "0.01"])?; // 1.2s work, 0.6s break
 
     // Should start successfully
     let status = daemon.get_status()?;
@@ -680,7 +680,7 @@ fn test_precise_timer_completion() -> Result<(), Box<dyn std::error::Error>> {
         "start",
         "--work",
         "0.05",
-        "--break-time",
+        "--break",
         "0.05",
         "--auto-advance",
     ])?;
@@ -719,7 +719,7 @@ fn test_explicit_pause_resume_commands() -> Result<(), Box<dyn std::error::Error
     let daemon = TestDaemon::start()?;
 
     // Start a timer with a reasonable duration
-    daemon.send_command(&["start", "--work", "0.2", "--break-time", "0.1"])?;
+    daemon.send_command(&["start", "--work", "0.2", "--break", "0.1"])?;
 
     // Timer should be running
     let status = daemon.get_status()?;
@@ -751,7 +751,7 @@ fn test_pause_resume_error_handling() -> Result<(), Box<dyn std::error::Error>> 
     let daemon = TestDaemon::start()?;
 
     // Start a timer
-    daemon.send_command(&["start", "--work", "0.2", "--break-time", "0.1"])?;
+    daemon.send_command(&["start", "--work", "0.2", "--break", "0.1"])?;
 
     // Pause it
     daemon.send_command(&["pause"])?;
@@ -781,7 +781,7 @@ fn test_toggle_still_works_with_new_commands() -> Result<(), Box<dyn std::error:
     let daemon = TestDaemon::start()?;
 
     // Start a timer
-    daemon.send_command(&["start", "--work", "0.2", "--break-time", "0.1"])?;
+    daemon.send_command(&["start", "--work", "0.2", "--break", "0.1"])?;
 
     // Timer should be running
     let status = daemon.get_status()?;

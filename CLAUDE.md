@@ -50,7 +50,7 @@ cargo fmt -- --check
 cargo build && ./target/debug/tomat daemon start
 
 # Test with short durations (fractional minutes for fast testing)
-./target/debug/tomat start --work 0.1 --break-time 0.05  # 6s work, 3s break
+./target/debug/tomat start --work 0.1 --break 0.05  # 6s work, 3s break
 ./target/debug/tomat status
 ./target/debug/tomat toggle
 
@@ -120,7 +120,7 @@ All tests use the `TestDaemon` helper struct (`tests/cli.rs:8-148`):
 let daemon = TestDaemon::start()?;
 
 // Send commands
-daemon.send_command(&["start", "--work", "0.05", "--break-time", "0.05"])?;
+daemon.send_command(&["start", "--work", "0.05", "--break", "0.05"])?;
 
 // Get status
 let status = daemon.get_status()?;

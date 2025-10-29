@@ -27,10 +27,10 @@ pub struct TimerArgs {
     #[arg(short, long)]
     pub work: Option<f32>,
     /// Break duration in minutes (default: from config or 5)
-    #[arg(short, long)]
+    #[arg(short, long = "break")]
     pub break_time: Option<f32>,
     /// Long break duration in minutes (default: from config or 15)
-    #[arg(short, long)]
+    #[arg(short, long = "long-break")]
     pub long_break: Option<f32>,
     /// Sessions until long break (default: from config or 4)
     #[arg(short, long)]
