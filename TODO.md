@@ -4,24 +4,6 @@ This document tracks known issues and planned improvements for tomat.
 
 ## High Priority - Bugs
 
-### Socket Cleanup Race Condition
-
-**Location:** `src/server.rs:179`
-
-**Issue:**
-
-- Socket file removed at startup without checking for existing daemon
-- No file locking to prevent multiple daemon instances
-- Race condition if multiple `tomat daemon start` commands run simultaneously
-
-**Impact:** Could lead to multiple daemon instances or connection failures.
-
-**Proposed Fix:**
-
-- Use `flock` on PID file to prevent multiple daemon instances
-- More robust socket cleanup only after verifying no daemon is running
-- Better error messages when daemon is already running
-
 ### Timer Completion Race Condition
 
 **Location:** `src/server.rs:221-226`
@@ -37,20 +19,6 @@ This document tracks known issues and planned improvements for tomat.
 - Check immediately when timer should finish
 
 ## Medium Priority - Improvements
-
-### Add File Locking for Daemon
-
-**Location:** `src/server.rs:182`
-
-**Issue:** Multiple daemon instances could theoretically start if there's a race condition between PID file check and daemon startup.
-
-**Proposed Fix:**
-
-- Use `flock` on PID file for exclusive lock
-- Hold lock for lifetime of daemon
-- Fail immediately if lock can't be acquired
-
-**Dependencies:** May need to add `nix` or `fs2` crate for file locking.
 
 ### Add Explicit Pause/Resume Commands
 
@@ -130,34 +98,6 @@ This document tracks known issues and planned improvements for tomat.
   ```
 - Support notification urgency levels
 - Option to disable notifications entirely
-
-### Web Dashboard (Optional)
-
-**Issue:** CLI-only interface may not be ideal for all users.
-
-**Proposed Features:**
-
-- Optional web interface (localhost only)
-- Real-time timer display
-- Statistics visualization
-- Configuration UI
-- Start/stop/pause controls
-
-**Dependencies:** Would need web framework (e.g., `axum`, `actix-web`).
-
-**Note:** This is a significant feature addition and should be carefully considered.
-
-## Documentation
-
-### Add Troubleshooting Guide
-
-Create troubleshooting section covering:
-
-- Daemon won't start (port conflicts, permissions)
-- Lost connection to daemon
-- Corrupted state recovery
-- Notification issues
-- Integration with different status bars
 
 ## Testing
 

@@ -1,4 +1,7 @@
+use fs2::FileExt;
 use serde::{Deserialize, Serialize};
+use std::fs::File;
+use std::io::Write;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::time::Duration;
@@ -297,11 +300,25 @@ pub async fn run_daemon() -> Result<(), Box<dyn std::error::Error>> {
     let socket_path = get_socket_path();
     let pid_file_path = get_pid_file_path();
 
-    // Remove existing socket
-    let _ = std::fs::remove_file(&socket_path);
+    // Create and lock PID file to prevent multiple daemon instances
+    let mut pid_file = File::create(&pid_file_path)?;
+    pid_file.try_lock_exclusive().map_err(|_| {
+        format!(
+            "Another daemon instance is already running. PID file locked: {:?}",
+            pid_file_path
+        )
+    })?;
 
-    // Write PID file
-    std::fs::write(&pid_file_path, std::process::id().to_string())?;
+    // Write current PID to the locked file
+    let pid = std::process::id();
+    write!(pid_file, "{}", pid)?;
+    pid_file.flush()?;
+
+    // Now that we have the exclusive lock, safely remove existing socket if present
+    // This is safe because we're the only daemon instance that can run now
+    if socket_path.exists() {
+        std::fs::remove_file(&socket_path)?;
+    }
 
     let listener = UnixListener::bind(&socket_path)?;
 
@@ -313,8 +330,9 @@ pub async fn run_daemon() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Tomat daemon listening on {:?}", socket_path);
 
-    // Clean up PID file on exit
-    let cleanup_pid_file = || {
+    // Clean up socket and PID file on exit
+    let cleanup = || {
+        let _ = std::fs::remove_file(&socket_path);
         let _ = std::fs::remove_file(&pid_file_path);
     };
 
@@ -327,7 +345,9 @@ pub async fn run_daemon() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    cleanup_pid_file();
+    // Keep the PID file lock alive until here (by keeping _pid_file in scope)
+    drop(pid_file);
+    cleanup();
     result
 }
 
@@ -363,18 +383,37 @@ pub async fn start_daemon() -> Result<(), Box<dyn std::error::Error>> {
     let pid_file_path = get_pid_file_path();
     let socket_path = get_socket_path();
 
-    // Check if daemon is already running
+    // Check if daemon is already running by trying to read and verify PID file
     if let Ok(pid_str) = std::fs::read_to_string(&pid_file_path)
         && let Ok(pid) = pid_str.trim().parse::<u32>()
     {
         if is_process_running(pid) {
-            println!("Daemon is already running (PID: {})", pid);
+            println!(
+                "Daemon is already running (PID: {}). Use 'tomat daemon stop' to stop it first.",
+                pid
+            );
             return Ok(());
         } else {
-            // Stale PID file, remove it
+            // Stale PID file found - try to clean it up
+            println!(
+                "Found stale PID file (PID {} no longer running), cleaning up...",
+                pid
+            );
             let _ = std::fs::remove_file(&pid_file_path);
             let _ = std::fs::remove_file(&socket_path);
         }
+    }
+
+    // Try to lock the PID file to prevent race conditions with concurrent start attempts
+    if let Ok(test_file) = File::create(&pid_file_path) {
+        if test_file.try_lock_exclusive().is_err() {
+            return Err(
+                "Another daemon is starting up right now. Please wait and try again.".into(),
+            );
+        }
+        // Release the test lock - the actual daemon will create its own lock
+        drop(test_file);
+        let _ = std::fs::remove_file(&pid_file_path);
     }
 
     // Get the current executable path
@@ -394,11 +433,11 @@ pub async fn start_daemon() -> Result<(), Box<dyn std::error::Error>> {
     // Wait a moment to ensure daemon starts
     tokio::time::sleep(Duration::from_millis(500)).await;
 
-    // Verify daemon is running
-    if socket_path.exists() {
+    // Verify daemon is running by checking both socket and PID file
+    if socket_path.exists() && pid_file_path.exists() {
         println!("Daemon started successfully");
     } else {
-        return Err("Failed to start daemon".into());
+        return Err("Failed to start daemon - socket or PID file not created".into());
     }
 
     Ok(())
