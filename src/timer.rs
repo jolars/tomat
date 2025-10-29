@@ -276,3 +276,289 @@ fn current_timestamp() -> u64 {
         .unwrap()
         .as_secs()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn setup_test_env() {
+        // SAFETY: Setting environment variable during tests is safe as tests are run sequentially
+        // in the same process and we only set this once per test.
+        unsafe {
+            std::env::set_var("TOMAT_TESTING", "1");
+        }
+    }
+
+    #[test]
+    fn test_new_timer_starts_in_paused_work_state() {
+        let timer = TimerState::new(25.0, 5.0, 15.0, 4);
+
+        assert!(matches!(timer.phase, Phase::Work));
+        assert!(timer.is_paused);
+        assert_eq!(timer.work_duration, 25.0);
+        assert_eq!(timer.break_duration, 5.0);
+        assert_eq!(timer.long_break_duration, 15.0);
+        assert_eq!(timer.sessions_until_long_break, 4);
+        assert_eq!(timer.current_session_count, 0);
+        assert!(!timer.auto_advance);
+    }
+
+    #[test]
+    fn test_start_work_sets_running_state() {
+        let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
+
+        timer.start_work();
+
+        assert!(matches!(timer.phase, Phase::Work));
+        assert!(!timer.is_paused);
+        assert_eq!(timer.duration_minutes, 25.0);
+        assert!(timer.start_time > 0);
+    }
+
+    #[test]
+    fn test_paused_timer_shows_full_duration() {
+        let timer = TimerState::new(25.0, 5.0, 15.0, 4);
+
+        let remaining = timer.get_remaining_seconds();
+
+        assert_eq!(remaining, 25 * 60); // 25 minutes in seconds
+    }
+
+    #[test]
+    fn test_running_timer_calculates_remaining_time() {
+        let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
+        timer.start_work();
+
+        // Timer just started, should have close to full duration
+        let remaining = timer.get_remaining_seconds();
+        assert!(remaining > 24 * 60 && remaining <= 25 * 60);
+    }
+
+    #[test]
+    fn test_is_finished_false_when_paused() {
+        let timer = TimerState::new(25.0, 5.0, 15.0, 4);
+
+        assert!(!timer.is_finished());
+    }
+
+    #[test]
+    fn test_is_finished_false_when_time_remaining() {
+        let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
+        timer.start_work();
+
+        assert!(!timer.is_finished());
+    }
+
+    #[test]
+    fn test_resume_unpauses_timer() {
+        let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
+        assert!(timer.is_paused);
+
+        timer.resume();
+
+        assert!(!timer.is_paused);
+        assert!(timer.start_time > 0);
+    }
+
+    #[test]
+    fn test_stop_resets_to_paused_work() {
+        let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
+        timer.auto_advance = true;
+        timer.current_session_count = 2;
+        timer.start_work();
+
+        timer.stop();
+
+        assert!(matches!(timer.phase, Phase::Work));
+        assert!(timer.is_paused);
+        assert_eq!(timer.current_session_count, 0);
+        assert_eq!(timer.duration_minutes, timer.work_duration);
+    }
+
+    #[test]
+    fn test_next_phase_work_to_break_auto_advance_false() {
+        setup_test_env();
+        let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
+        timer.auto_advance = false;
+        timer.phase = Phase::Work;
+        timer.current_session_count = 0;
+
+        timer.next_phase().unwrap();
+
+        assert!(matches!(timer.phase, Phase::Break));
+        assert!(timer.is_paused);
+        assert_eq!(timer.duration_minutes, 5.0);
+        assert_eq!(timer.current_session_count, 1);
+    }
+
+    #[test]
+    fn test_next_phase_work_to_break_auto_advance_true() {
+        setup_test_env();
+        let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
+        timer.auto_advance = true;
+        timer.phase = Phase::Work;
+        timer.current_session_count = 0;
+
+        timer.next_phase().unwrap();
+
+        assert!(matches!(timer.phase, Phase::Break));
+        assert!(!timer.is_paused);
+        assert_eq!(timer.duration_minutes, 5.0);
+        assert_eq!(timer.current_session_count, 1);
+        assert!(timer.start_time > 0);
+    }
+
+    #[test]
+    fn test_next_phase_work_to_long_break_after_sessions() {
+        setup_test_env();
+        let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
+        timer.auto_advance = false;
+        timer.phase = Phase::Work;
+        timer.current_session_count = 3; // Fourth work session
+
+        timer.next_phase().unwrap();
+
+        assert!(matches!(timer.phase, Phase::LongBreak));
+        assert!(timer.is_paused);
+        assert_eq!(timer.duration_minutes, 15.0);
+        assert_eq!(timer.current_session_count, 0); // Reset after long break
+    }
+
+    #[test]
+    fn test_next_phase_break_to_work() {
+        setup_test_env();
+        let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
+        timer.auto_advance = false;
+        timer.phase = Phase::Break;
+
+        timer.next_phase().unwrap();
+
+        assert!(matches!(timer.phase, Phase::Work));
+        assert!(timer.is_paused);
+        assert_eq!(timer.duration_minutes, 25.0);
+    }
+
+    #[test]
+    fn test_next_phase_long_break_to_work() {
+        setup_test_env();
+        let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
+        timer.auto_advance = false;
+        timer.phase = Phase::LongBreak;
+
+        timer.next_phase().unwrap();
+
+        assert!(matches!(timer.phase, Phase::Work));
+        assert!(timer.is_paused);
+        assert_eq!(timer.duration_minutes, 25.0);
+    }
+
+    #[test]
+    fn test_get_status_output_paused_work() {
+        let timer = TimerState::new(25.0, 5.0, 15.0, 4);
+
+        let status = timer.get_status_output();
+
+        assert_eq!(status.text, "🍅 25:00 ⏸");
+        assert_eq!(status.class, "work-paused");
+        assert!(status.tooltip.contains("Work (1/4)"));
+        assert!(status.tooltip.contains("Paused"));
+        assert_eq!(status.percentage, 0.0);
+    }
+
+    #[test]
+    fn test_get_status_output_running_work() {
+        let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
+        timer.start_work();
+
+        let status = timer.get_status_output();
+
+        assert!(status.text.starts_with("🍅"));
+        assert!(status.text.ends_with("▶"));
+        assert_eq!(status.class, "work");
+        assert!(status.tooltip.contains("Work (1/4)"));
+        assert!(!status.tooltip.contains("Paused"));
+        assert!(status.percentage >= 0.0 && status.percentage <= 100.0);
+    }
+
+    #[test]
+    fn test_get_status_output_paused_break() {
+        let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
+        timer.phase = Phase::Break;
+        timer.duration_minutes = 5.0;
+        timer.is_paused = true;
+
+        let status = timer.get_status_output();
+
+        assert_eq!(status.text, "☕ 05:00 ⏸");
+        assert_eq!(status.class, "break-paused");
+        assert!(status.tooltip.contains("Break"));
+        assert!(status.tooltip.contains("Paused"));
+        // Breaks don't show session count (no parentheses for session number)
+    }
+
+    #[test]
+    fn test_get_status_output_paused_long_break() {
+        let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
+        timer.phase = Phase::LongBreak;
+        timer.duration_minutes = 15.0;
+        timer.is_paused = true;
+
+        let status = timer.get_status_output();
+
+        assert_eq!(status.text, "🏖️ 15:00 ⏸");
+        assert_eq!(status.class, "long-break-paused");
+        assert!(status.tooltip.contains("Long Break"));
+    }
+
+    #[test]
+    fn test_session_count_increments_correctly() {
+        setup_test_env();
+        let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
+        timer.auto_advance = false;
+        timer.phase = Phase::Work;
+
+        // Complete 3 work sessions
+        for i in 0..3 {
+            assert_eq!(timer.current_session_count, i);
+            timer.next_phase().unwrap(); // Work -> Break
+            assert!(matches!(timer.phase, Phase::Break));
+            timer.next_phase().unwrap(); // Break -> Work
+            assert!(matches!(timer.phase, Phase::Work));
+        }
+
+        assert_eq!(timer.current_session_count, 3);
+
+        // Fourth session should trigger long break
+        timer.next_phase().unwrap();
+        assert!(matches!(timer.phase, Phase::LongBreak));
+        assert_eq!(timer.current_session_count, 0); // Reset
+    }
+
+    #[test]
+    fn test_fractional_minutes() {
+        let timer = TimerState::new(0.5, 0.1, 0.2, 4);
+
+        assert_eq!(timer.work_duration, 0.5);
+        assert_eq!(timer.break_duration, 0.1);
+        assert_eq!(timer.long_break_duration, 0.2);
+
+        let remaining = timer.get_remaining_seconds();
+        assert_eq!(remaining, 30); // 0.5 minutes = 30 seconds
+    }
+
+    #[test]
+    fn test_auto_advance_persists_through_phases() {
+        setup_test_env();
+        let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
+        timer.auto_advance = true;
+        timer.phase = Phase::Work;
+
+        // Transition to break
+        timer.next_phase().unwrap();
+        assert!(!timer.is_paused); // Should still be running
+
+        // Transition back to work
+        timer.next_phase().unwrap();
+        assert!(!timer.is_paused); // Should still be running
+    }
+}
