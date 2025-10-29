@@ -11,19 +11,53 @@ struct TestDaemon {
 }
 
 impl TestDaemon {
+    /// Get the path to the tomat binary for testing
+    ///
+    /// This is necessary because:
+    /// - Local development: binary is in target/debug/tomat or target/release/tomat
+    /// - NixOS builds: cargo sets CARGO_BIN_EXE_tomat to the actual binary location
+    /// - Different build profiles may use different target directories
+    fn get_binary_path() -> String {
+        // Check if CARGO_BIN_EXE_tomat is set (preferred method for cargo test)
+        if let Ok(binary_path) = std::env::var("CARGO_BIN_EXE_tomat") {
+            return binary_path;
+        }
+
+        // Fallback: detect based on CARGO_MANIFEST_DIR and profile
+        let profile = if cfg!(debug_assertions) {
+            "debug"
+        } else {
+            "release"
+        };
+
+        if let Ok(manifest_dir) = std::env::var("CARGO_MANIFEST_DIR") {
+            return format!("{}/target/{}/tomat", manifest_dir, profile);
+        }
+
+        // Final fallback for local development
+        format!("target/{}/tomat", profile)
+    }
+
     /// Start a new test daemon with a temporary socket
     fn start() -> Result<Self, Box<dyn std::error::Error>> {
         let temp_dir = tempfile::tempdir()?;
+        let binary_path = Self::get_binary_path();
 
         // Start daemon with custom socket path and testing flag to disable notifications
-        let mut daemon_process = Command::new("target/debug/tomat")
+        let mut daemon_process = Command::new(&binary_path)
             .arg("daemon")
             .arg("run") // Use the internal run command for testing
             .env("XDG_RUNTIME_DIR", temp_dir.path())
             .env("TOMAT_TESTING", "1") // Disable notifications during testing
             .stdout(Stdio::null())
             .stderr(Stdio::null())
-            .spawn()?;
+            .spawn()
+            .map_err(|e| {
+                format!(
+                    "Failed to start daemon with binary '{}': {}",
+                    binary_path, e
+                )
+            })?;
 
         // Wait a bit for daemon to start
         thread::sleep(Duration::from_millis(100));
@@ -41,10 +75,12 @@ impl TestDaemon {
 
     /// Send a command to the test daemon
     fn send_command(&self, args: &[&str]) -> Result<Value, Box<dyn std::error::Error>> {
-        let output = Command::new("target/debug/tomat")
+        let binary_path = Self::get_binary_path();
+        let output = Command::new(&binary_path)
             .args(args)
             .env("XDG_RUNTIME_DIR", self._temp_dir.path())
-            .output()?;
+            .output()
+            .map_err(|e| format!("Failed to run command with binary '{}': {}", binary_path, e))?;
 
         if !output.status.success() {
             return Err(format!(
