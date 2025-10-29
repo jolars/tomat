@@ -169,8 +169,9 @@ impl TimerState {
             }
         };
 
-        // Play sound if enabled
+        // Play sound if enabled and not testing
         if sound_config.enabled
+            && !is_testing()
             && let Some(player) = audio_player
         {
             self.play_transition_sound(sound_config, player, sound_type)?;
