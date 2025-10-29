@@ -14,6 +14,9 @@ pub struct TimerState {
     pub current_session_count: u32,
     pub auto_advance: bool,
     pub is_paused: bool,
+    /// Elapsed seconds when timer was paused (to preserve progress on resume)
+    #[serde(default)]
+    pub paused_elapsed_seconds: Option<u64>,
 }
 
 #[derive(Serialize)]
@@ -44,6 +47,7 @@ impl TimerState {
             current_session_count: 0,
             auto_advance: false,
             is_paused: true, // Start in paused state
+            paused_elapsed_seconds: None,
         }
     }
 
@@ -154,8 +158,25 @@ impl TimerState {
 
     pub fn resume(&mut self) {
         if self.is_paused {
-            self.start_time = current_timestamp();
+            // If we have stored elapsed time from a pause, restore it
+            if let Some(elapsed) = self.paused_elapsed_seconds {
+                // Set start_time so that the elapsed time is preserved
+                self.start_time = current_timestamp() - elapsed;
+                self.paused_elapsed_seconds = None;
+            } else {
+                // First time starting from paused state
+                self.start_time = current_timestamp();
+            }
             self.is_paused = false;
+        }
+    }
+
+    pub fn pause(&mut self) {
+        if !self.is_paused {
+            // Store elapsed time so we can restore it on resume
+            let elapsed = current_timestamp() - self.start_time;
+            self.paused_elapsed_seconds = Some(elapsed);
+            self.is_paused = true;
         }
     }
 
@@ -165,6 +186,7 @@ impl TimerState {
         self.duration_minutes = self.work_duration;
         self.current_session_count = 0;
         self.is_paused = true;
+        self.paused_elapsed_seconds = None;
     }
 
     pub fn get_status_output(&self) -> StatusOutput {
@@ -560,5 +582,35 @@ mod tests {
         // Transition back to work
         timer.next_phase().unwrap();
         assert!(!timer.is_paused); // Should still be running
+    }
+
+    #[test]
+    fn test_pause_preserves_remaining_time() {
+        let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
+        timer.start_work();
+
+        // Simulate some time passing (let's say 5 minutes = 300 seconds)
+        timer.start_time = current_timestamp() - 300;
+
+        // Get remaining time before pause
+        let remaining_before = timer.get_remaining_seconds();
+        assert_eq!(remaining_before, 25 * 60 - 300); // Should be 20 minutes
+
+        // Pause the timer using the pause method
+        timer.pause();
+
+        // Resume the timer
+        timer.resume();
+
+        // Get remaining time after resume
+        let remaining_after = timer.get_remaining_seconds();
+
+        // The fix should make this assertion pass
+        assert!(
+            (remaining_after - remaining_before).abs() <= 1,
+            "Expected remaining time to be preserved after pause/resume. Before: {}, After: {}",
+            remaining_before,
+            remaining_after
+        );
     }
 }

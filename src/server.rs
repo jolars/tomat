@@ -146,12 +146,12 @@ async fn handle_client(
                     message: "Timer resumed".to_string(),
                 }
             } else {
-                // Stop timer if running (return to paused work state)
-                state.stop();
+                // Pause timer if running (preserves progress)
+                state.pause();
                 ServerResponse {
                     success: true,
                     data: serde_json::Value::Null,
-                    message: "Timer stopped".to_string(),
+                    message: "Timer paused".to_string(),
                 }
             }
         }
