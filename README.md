@@ -1,9 +1,9 @@
-# tomat
-
-A Pomodoro timer with daemon support designed for waybar and other status bars.
+# tomat <img src='https://raw.githubusercontent.com/jolars/tomat/refs/heads/main/assets/logo.png' align="right" width="139" />
 
 [![Build Status](https://github.com/jolars/tomat/workflows/Build%20and%20Test/badge.svg)](https://github.com/jolars/tomat/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+A Pomodoro timer with daemon support designed for waybar and other status bars.
 
 ## Features
 
