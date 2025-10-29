@@ -1,3 +1,4 @@
+mod audio;
 mod cli;
 mod config;
 mod server;
@@ -44,13 +45,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let long_break = timer.get_long_break(config.timer.long_break);
             let sessions = timer.get_sessions(config.timer.sessions);
             let auto_advance = timer.get_auto_advance(config.timer.auto_advance);
+            let sound_enabled = timer.get_sound(config.sound.enabled);
+            let system_beep = timer.get_beep(config.sound.system_beep);
+            let volume = timer.get_volume(config.sound.volume);
 
             let args = serde_json::json!({
                 "work": work,
                 "break": break_time,
                 "long_break": long_break,
                 "sessions": sessions,
-                "auto_advance": auto_advance
+                "auto_advance": auto_advance,
+                "sound_enabled": sound_enabled,
+                "system_beep": system_beep,
+                "volume": volume
             });
 
             match send_command("start", args).await {

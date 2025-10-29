@@ -2,6 +2,9 @@ use notify_rust::Notification;
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use crate::audio::{AudioPlayer, SoundType};
+use crate::config::SoundConfig;
+
 #[derive(Serialize, Deserialize, Clone)]
 pub struct TimerState {
     pub phase: Phase,
@@ -101,13 +104,21 @@ impl TimerState {
         }
     }
 
+    #[allow(dead_code)]
     pub fn next_phase(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        let (message, _icon) = match self.phase {
+        self.next_phase_with_sound(&SoundConfig::default(), None)
+    }
+
+    pub fn next_phase_with_sound(
+        &mut self,
+        sound_config: &SoundConfig,
+        audio_player: Option<&AudioPlayer>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let (message, sound_type) = match self.phase {
             Phase::Work => {
                 self.current_session_count += 1;
 
-                // Check if it's time for a long break
-                if self.current_session_count >= self.sessions_until_long_break {
+                let sound_type = if self.current_session_count >= self.sessions_until_long_break {
                     self.current_session_count = 0;
                     if self.auto_advance {
                         self.start_long_break();
@@ -116,7 +127,7 @@ impl TimerState {
                         self.duration_minutes = self.long_break_duration;
                         self.is_paused = true;
                     }
-                    ("Long break time! Take a well-deserved rest 🏖️", "🍅")
+                    SoundType::WorkToLongBreak
                 } else {
                     if self.auto_advance {
                         self.start_break();
@@ -125,8 +136,16 @@ impl TimerState {
                         self.duration_minutes = self.break_duration;
                         self.is_paused = true;
                     }
-                    ("Break time! Take a rest ☕", "🍅")
-                }
+                    SoundType::WorkToBreak
+                };
+
+                let message = if self.current_session_count == 0 {
+                    "Long break time! Take a well-deserved rest 🏖️"
+                } else {
+                    "Break time! Take a short rest ☕"
+                };
+
+                (message, sound_type)
             }
             Phase::Break => {
                 if self.auto_advance {
@@ -136,7 +155,7 @@ impl TimerState {
                     self.duration_minutes = self.work_duration;
                     self.is_paused = true;
                 }
-                ("Back to work! Stay focused 💪", "🍅")
+                ("Back to work! Let's focus 🍅", SoundType::BreakToWork)
             }
             Phase::LongBreak => {
                 if self.auto_advance {
@@ -146,19 +165,88 @@ impl TimerState {
                     self.duration_minutes = self.work_duration;
                     self.is_paused = true;
                 }
-                ("Back to work! You're refreshed and ready 🚀", "🍅")
+                ("Ready for another session! 🚀", SoundType::BreakToWork)
             }
         };
 
+        // Play sound if enabled
+        if sound_config.enabled
+            && let Some(player) = audio_player
+        {
+            self.play_transition_sound(sound_config, player, sound_type)?;
+        }
+
+        // Send notification (existing code)
+        if !is_testing() {
+            self.send_notification(message)?;
+        }
+
+        Ok(())
+    }
+
+    fn play_transition_sound(
+        &self,
+        config: &SoundConfig,
+        player: &AudioPlayer,
+        sound_type: SoundType,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        if config.system_beep {
+            player.play_system_beep();
+            return Ok(());
+        }
+
+        // Check for custom sound file first
+        let custom_file = match sound_type {
+            SoundType::WorkToBreak => &config.work_to_break,
+            SoundType::BreakToWork => &config.break_to_work,
+            SoundType::WorkToLongBreak => &config.work_to_long_break,
+        };
+
+        if let Some(file_path) = custom_file {
+            // Try custom file first
+            if let Err(e) = player.play_custom_file(file_path, config.volume) {
+                eprintln!("Failed to play custom sound '{}': {}", file_path, e);
+                // Fallback to embedded sound
+                self.try_embedded_sound(config, player, sound_type)?;
+            }
+        } else if config.use_embedded {
+            // Use embedded sound
+            self.try_embedded_sound(config, player, sound_type)?;
+        } else {
+            // Fallback to system beep
+            player.play_system_beep();
+        }
+
+        Ok(())
+    }
+
+    fn try_embedded_sound(
+        &self,
+        config: &SoundConfig,
+        player: &AudioPlayer,
+        sound_type: SoundType,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        if let Err(e) = player.play_embedded_sound(sound_type, config.volume) {
+            eprintln!("Failed to play embedded sound: {}", e);
+            // Final fallback to system beep
+            player.play_system_beep();
+        }
+        Ok(())
+    }
+
+    fn send_notification(&self, message: &str) -> Result<(), Box<dyn std::error::Error>> {
         // Send desktop notification (synchronous to avoid cross-platform issues)
         // Skip notifications during testing
-        if std::env::var("TOMAT_TESTING").is_err()
-            && let Err(e) = Notification::new()
-                .summary("Pomodoro Timer")
-                .body(message)
-                .icon("timer")
-                .timeout(3000)
-                .show()
+        if is_testing() {
+            return Ok(());
+        }
+
+        if let Err(e) = Notification::new()
+            .summary("Pomodoro Timer")
+            .body(message)
+            .icon("timer")
+            .timeout(3000)
+            .show()
         {
             eprintln!("Failed to send notification: {}", e);
         }
@@ -300,6 +388,10 @@ impl TimerState {
             percentage,
         }
     }
+}
+
+fn is_testing() -> bool {
+    std::env::var("TOMAT_TESTING").is_ok()
 }
 
 fn current_timestamp() -> u64 {

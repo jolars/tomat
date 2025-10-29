@@ -41,19 +41,6 @@ This document tracks known issues and planned improvements for tomat.
 - Need to decide on data format
 - Consider privacy implications (rotation, optional feature?)
 
-### Sound Notifications
-
-**Issue:** Only desktop notifications currently supported, which can be easily missed.
-
-**Proposed Features:**
-
-- Add `--sound` CLI flag or config option
-- Support system beep or audio file playback
-- Allow custom sound files per phase transition
-- Volume control
-
-**Dependencies:** May need to add audio playback crate (e.g., `rodio`).
-
 ### Custom Notification Messages
 
 **Issue:** Notification messages are hardcoded in `src/timer.rs:105-136`.

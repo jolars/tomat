@@ -9,6 +9,7 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{UnixListener, UnixStream};
 
 use crate::ServerResponse;
+use crate::audio::AudioPlayer;
 use crate::timer::TimerState;
 
 #[derive(Serialize, Deserialize)]
@@ -149,6 +150,7 @@ pub async fn send_command(
 async fn handle_client(
     stream: UnixStream,
     state: &mut TimerState,
+    audio_player: Option<&AudioPlayer>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut reader = BufReader::new(stream);
     let mut line = String::new();
@@ -186,6 +188,21 @@ async fn handle_client(
                 .get("auto_advance")
                 .and_then(|v| v.as_bool())
                 .unwrap_or(false);
+            let _sound_enabled = message
+                .args
+                .get("sound_enabled")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
+            let _system_beep = message
+                .args
+                .get("system_beep")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
+            let _volume = message
+                .args
+                .get("volume")
+                .and_then(|v| v.as_f64())
+                .unwrap_or(0.5) as f32;
 
             // Validate parameters
             if let Err(err_msg) = validate_timer_params(work, break_time, long_break, sessions) {
@@ -239,7 +256,10 @@ async fn handle_client(
             }
         }
         "skip" => {
-            if let Err(e) = state.next_phase() {
+            // Build default sound config (since skip doesn't have sound parameters)
+            let sound_config = crate::config::SoundConfig::default();
+
+            if let Err(e) = state.next_phase_with_sound(&sound_config, audio_player) {
                 eprintln!("Error during phase transition: {}", e);
             }
 
@@ -369,6 +389,23 @@ pub async fn run_daemon() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Tomat daemon listening on {:?}", socket_path);
 
+    // Try to initialize audio player (optional - if it fails, continue without sound)
+    let audio_player = match AudioPlayer::new() {
+        Ok(player) => {
+            println!("Audio system initialized");
+            Some(player)
+        }
+        Err(e) => {
+            if std::env::var("TOMAT_TESTING").is_err() {
+                eprintln!(
+                    "Warning: Audio initialization failed: {}. Sound notifications disabled.",
+                    e
+                );
+            }
+            None
+        }
+    };
+
     // Clean up socket and PID file on exit
     let cleanup = || {
         let _ = std::fs::remove_file(&socket_path);
@@ -377,7 +414,7 @@ pub async fn run_daemon() -> Result<(), Box<dyn std::error::Error>> {
 
     // Set up signal handler for graceful shutdown
     let result = tokio::select! {
-        result = daemon_loop(listener, &mut state) => result,
+        result = daemon_loop(listener, &mut state, audio_player.as_ref()) => result,
         _ = tokio::signal::ctrl_c() => {
             println!("Received interrupt signal, shutting down...");
             Ok(())
@@ -393,12 +430,13 @@ pub async fn run_daemon() -> Result<(), Box<dyn std::error::Error>> {
 async fn daemon_loop(
     listener: UnixListener,
     state: &mut TimerState,
+    audio_player: Option<&AudioPlayer>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     loop {
         tokio::select! {
             // Handle incoming connections
             Ok((stream, _)) = listener.accept() => {
-                if let Err(e) = handle_client(stream, state).await {
+                if let Err(e) = handle_client(stream, state, audio_player).await {
                     eprintln!("Error handling client: {}", e);
                 }
             }
@@ -424,7 +462,10 @@ async fn daemon_loop(
                 }
             } => {
                 if state.is_finished() {
-                    if let Err(e) = state.next_phase() {
+                    // Build default sound config for automatic transitions
+                    let sound_config = crate::config::SoundConfig::default();
+
+                    if let Err(e) = state.next_phase_with_sound(&sound_config, audio_player) {
                         eprintln!("Error during phase transition: {}", e);
                     }
                     // Save state after automatic phase transition

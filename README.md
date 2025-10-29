@@ -18,6 +18,7 @@ for waybar and other status bars.
 - **🖥️ Unix Sockets**: Fast, secure local communication
 - **🌙 Systemd Integration**: Auto-start with user session
 - **📱 Desktop Notifications**: Phase transition alerts
+- **🔊 Sound Notifications**: Audio alerts enabled by default with embedded sounds and customization
 - **💾 Minimal Resources**: Lightweight and efficient
 
 ## Quick Start
@@ -38,6 +39,23 @@ tomat status
 ```
 
 ## Installation
+
+### Prerequisites
+
+On Linux systems, audio notifications require ALSA development libraries:
+
+```bash
+# Ubuntu/Debian
+sudo apt-get install libasound2-dev
+
+# Fedora/RHEL
+sudo dnf install alsa-lib-devel
+
+# Arch Linux
+sudo pacman -S alsa-lib
+```
+
+**Note**: Audio will be automatically disabled if ALSA is not available. The timer will still work normally with desktop notifications only.
 
 ### Quick Install (Recommended)
 
@@ -71,6 +89,32 @@ Tomat can be configured using a TOML file located at
 `~/.config/tomat/config.toml`. This allows you to set default values for timer
 durations and behaviors without specifying them on every command.
 
+### Sound Notifications
+
+By default, tomat plays audio notifications when transitioning between work/break phases:
+
+- **Embedded sounds**: High-quality WAV files built into the application
+- **Linux requirement**: Requires ALSA (Advanced Linux Sound Architecture)
+- **Automatic fallback**: If audio system unavailable, falls back to system beep or disables audio
+- **Customizable**: Override with your own sound files or disable entirely
+- **Volume control**: Adjustable volume level (0.0 to 1.0)
+
+To disable audio notifications:
+
+```toml
+[sound]
+enabled = false
+```
+
+To use custom sound files:
+
+```toml
+[sound]
+work_to_break = "/path/to/your/work-end-sound.wav"
+break_to_work = "/path/to/your/break-end-sound.wav"
+work_to_long_break = "/path/to/your/long-break-start.wav"
+```
+
 ### Example Configuration
 
 Create `~/.config/tomat/config.toml`:
@@ -82,6 +126,16 @@ break_time = 5.0     # Break duration in minutes (default: 5)
 long_break = 15.0    # Long break duration in minutes (default: 15)
 sessions = 4         # Sessions until long break (default: 4)
 auto_advance = false # Auto-advance between phases (default: false)
+
+[sound]
+enabled = true       # Enable sound notifications (default: true)
+system_beep = false  # Use system beep instead of WAV files (default: false)
+use_embedded = true  # Use embedded sounds (default: true)
+volume = 0.5         # Volume level 0.0-1.0 (default: 0.5)
+# Custom sound files (optional - override embedded sounds)
+# work_to_break = "/path/to/work-to-break.wav"
+# break_to_work = "/path/to/break-to-work.wav"
+# work_to_long_break = "/path/to/work-to-long-break.wav"
 ```
 
 ### Priority Order
@@ -101,6 +155,10 @@ You can specify only the values you want to override:
 work = 30.0
 auto_advance = true
 # Other values will use built-in defaults
+
+[sound]
+enabled = false  # Disable all sound notifications
+# Other sound settings will use built-in defaults
 ```
 
 ## Usage

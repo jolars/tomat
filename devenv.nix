@@ -7,6 +7,7 @@
   packages = [
     pkgs.go-task
     pkgs.llvmPackages.bintools
+    pkgs.alsa-lib
   ];
 
   languages.rust = {

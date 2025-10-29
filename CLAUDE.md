@@ -224,4 +224,5 @@ daemon.wait_for_completion(10)?;
 - `libc`: Unix process management (getuid, kill)
 - `notify-rust`: Desktop notifications on phase transitions
 - `fs2`: File locking for daemon instance prevention
+- `rodio`: Audio playbook for sound notifications (optional)
 - `tempfile` (dev): Temporary directories for integration tests

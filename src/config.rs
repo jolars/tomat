@@ -6,6 +6,8 @@ use std::path::PathBuf;
 pub struct Config {
     #[serde(default)]
     pub timer: TimerConfig,
+    #[serde(default)]
+    pub sound: SoundConfig,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -41,6 +43,50 @@ fn default_long_break() -> f32 {
 
 fn default_sessions() -> u32 {
     4
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SoundConfig {
+    /// Enable sound notifications (default: true)
+    #[serde(default)]
+    pub enabled: bool,
+    /// Use system beep instead of any sound files (default: false)
+    #[serde(default)]
+    pub system_beep: bool,
+    /// Use embedded sounds (default: true)
+    #[serde(default = "default_use_embedded")]
+    pub use_embedded: bool,
+    /// Volume level 0.0-1.0 (default: 0.5)
+    #[serde(default = "default_volume")]
+    pub volume: f32,
+    /// Custom sound file for work->break transition (overrides embedded)
+    pub work_to_break: Option<String>,
+    /// Custom sound file for break->work transition (overrides embedded)
+    pub break_to_work: Option<String>,
+    /// Custom sound file for work->long_break transition (overrides embedded)
+    pub work_to_long_break: Option<String>,
+}
+
+fn default_use_embedded() -> bool {
+    true
+}
+
+fn default_volume() -> f32 {
+    0.5
+}
+
+impl Default for SoundConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            system_beep: false,
+            use_embedded: true,
+            volume: 0.5,
+            work_to_break: None,
+            break_to_work: None,
+            work_to_long_break: None,
+        }
+    }
 }
 
 impl Default for TimerConfig {

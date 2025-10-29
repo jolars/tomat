@@ -38,6 +38,15 @@ pub struct TimerArgs {
     /// Automatically advance between timer states (default: from config or false)
     #[arg(short, long, action = ArgAction::SetTrue)]
     pub auto_advance: bool,
+    /// Enable sound notifications
+    #[arg(long, action = ArgAction::SetTrue)]
+    pub sound: bool,
+    /// Use system beep instead of sound files
+    #[arg(long, action = ArgAction::SetTrue)]
+    pub beep: bool,
+    /// Volume level (0.0-1.0)
+    #[arg(long)]
+    pub volume: Option<f32>,
 }
 
 impl TimerArgs {
@@ -65,6 +74,31 @@ impl TimerArgs {
     pub fn get_auto_advance(&self, default: bool) -> bool {
         // If flag is set, it's true; otherwise use default
         if self.auto_advance { true } else { default }
+    }
+
+    /// Get sound enabled with fallback
+    pub fn get_sound(&self, default: bool) -> bool {
+        if self.sound { true } else { default }
+    }
+
+    /// Get beep enabled with fallback
+    pub fn get_beep(&self, default: bool) -> bool {
+        if self.beep { true } else { default }
+    }
+
+    /// Get volume with fallback
+    pub fn get_volume(&self, default: f32) -> f32 {
+        match self.volume {
+            Some(v) if (0.0..=1.0).contains(&v) => v,
+            Some(v) => {
+                eprintln!(
+                    "Warning: Volume {} out of range (0.0-1.0), using {}",
+                    v, default
+                );
+                default
+            }
+            None => default,
+        }
     }
 }
 

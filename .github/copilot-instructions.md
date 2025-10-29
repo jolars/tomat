@@ -10,7 +10,7 @@
 - **Architecture:** Client/server with Unix socket communication
 - **Target:** Linux systems with systemd user services
 - **Purpose:** Lightweight Pomodoro timer for waybar integration
-- **Dependencies:** Standard Rust ecosystem (tokio, clap, serde, chrono, notify-rust, fs2)
+- **Dependencies:** Standard Rust ecosystem (tokio, clap, serde, chrono, notify-rust, fs2, rodio)
 - **Testing:** Comprehensive integration tests (19 tests covering all functionality)
 
 ## Build & Development Environment
