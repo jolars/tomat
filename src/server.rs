@@ -405,3 +405,166 @@ fn is_process_running(pid: u32) -> bool {
         true
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_socket_path_uses_xdg_runtime_dir() {
+        let socket_path = get_socket_path();
+        let path_str = socket_path.to_string_lossy();
+
+        assert!(
+            path_str.contains("tomat.sock"),
+            "Socket path should end with tomat.sock"
+        );
+    }
+
+    #[test]
+    fn test_get_pid_file_path_uses_xdg_runtime_dir() {
+        let pid_path = get_pid_file_path();
+        let path_str = pid_path.to_string_lossy();
+
+        assert!(
+            path_str.contains("tomat.pid"),
+            "PID file path should end with tomat.pid"
+        );
+    }
+
+    #[test]
+    fn test_socket_and_pid_paths_in_same_directory() {
+        let socket_path = get_socket_path();
+        let pid_path = get_pid_file_path();
+
+        assert_eq!(
+            socket_path.parent(),
+            pid_path.parent(),
+            "Socket and PID file should be in the same directory"
+        );
+    }
+
+    #[test]
+    fn test_client_message_serialization() {
+        let message = ClientMessage {
+            command: "start".to_string(),
+            args: serde_json::json!({
+                "work": 25.0,
+                "break": 5.0
+            }),
+        };
+
+        let json = serde_json::to_string(&message).unwrap();
+        let deserialized: ClientMessage = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(deserialized.command, "start");
+        assert_eq!(deserialized.args["work"], 25.0);
+        assert_eq!(deserialized.args["break"], 5.0);
+    }
+
+    #[test]
+    fn test_server_response_serialization() {
+        let response = ServerResponse {
+            success: true,
+            data: serde_json::json!({"text": "🍅 25:00 ⏸"}),
+            message: "Status retrieved".to_string(),
+        };
+
+        let json = serde_json::to_string(&response).unwrap();
+        let deserialized: ServerResponse = serde_json::from_str(&json).unwrap();
+
+        assert!(deserialized.success);
+        assert_eq!(deserialized.message, "Status retrieved");
+        assert_eq!(deserialized.data["text"], "🍅 25:00 ⏸");
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn test_is_process_running_for_self() {
+        let current_pid = std::process::id();
+
+        assert!(
+            is_process_running(current_pid),
+            "Current process should be detected as running"
+        );
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn test_is_process_running_for_nonexistent_pid() {
+        // Use a very high PID that is very unlikely to exist
+        // We try multiple PIDs to avoid flakiness
+        let nonexistent_pids = [99999, 99998, 99997];
+
+        // At least one of these should not exist
+        let any_nonexistent = nonexistent_pids.iter().any(|&pid| !is_process_running(pid));
+
+        assert!(
+            any_nonexistent,
+            "At least one high PID should not be running"
+        );
+    }
+
+    #[test]
+    fn test_client_message_with_all_args() {
+        let message = ClientMessage {
+            command: "start".to_string(),
+            args: serde_json::json!({
+                "work": 30.0,
+                "break": 10.0,
+                "long_break": 20.0,
+                "sessions": 3,
+                "auto_advance": true
+            }),
+        };
+
+        let json = serde_json::to_string(&message).unwrap();
+        let deserialized: ClientMessage = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(deserialized.command, "start");
+        assert_eq!(deserialized.args["work"], 30.0);
+        assert_eq!(deserialized.args["break"], 10.0);
+        assert_eq!(deserialized.args["long_break"], 20.0);
+        assert_eq!(deserialized.args["sessions"], 3);
+        assert_eq!(deserialized.args["auto_advance"], true);
+    }
+
+    #[test]
+    fn test_client_message_with_null_args() {
+        let message = ClientMessage {
+            command: "status".to_string(),
+            args: serde_json::Value::Null,
+        };
+
+        let json = serde_json::to_string(&message).unwrap();
+        let deserialized: ClientMessage = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(deserialized.command, "status");
+        assert!(deserialized.args.is_null());
+    }
+
+    #[test]
+    fn test_server_response_error() {
+        let response = ServerResponse {
+            success: false,
+            data: serde_json::Value::Null,
+            message: "Unknown command".to_string(),
+        };
+
+        let json = serde_json::to_string(&response).unwrap();
+        let deserialized: ServerResponse = serde_json::from_str(&json).unwrap();
+
+        assert!(!deserialized.success);
+        assert_eq!(deserialized.message, "Unknown command");
+        assert!(deserialized.data.is_null());
+    }
+
+    #[test]
+    fn test_paths_are_absolute() {
+        let socket_path = get_socket_path();
+        let pid_path = get_pid_file_path();
+
+        assert!(socket_path.is_absolute(), "Socket path should be absolute");
+        assert!(pid_path.is_absolute(), "PID file path should be absolute");
+    }
+}
