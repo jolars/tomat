@@ -2,7 +2,7 @@
 
 ## Repository Overview
 
-**tomat** is a Pomodoro timer with daemon support designed for waybar and other status bars. It's a small Rust project (~650 lines across multiple modules) that implements a server/client architecture using Unix sockets for inter-process communication.
+**tomat** is a Pomodoro timer with daemon support designed for waybar and other status bars. It's a small Rust project (~700 lines across multiple modules) that implements a server/client architecture using Unix sockets for inter-process communication.
 
 **Key Details:**
 
@@ -10,8 +10,8 @@
 - **Architecture:** Client/server with Unix socket communication
 - **Target:** Linux systems with systemd user services
 - **Purpose:** Lightweight Pomodoro timer for waybar integration
-- **Dependencies:** Standard Rust ecosystem (tokio, clap, serde, chrono, notify-rust)
-- **Testing:** Comprehensive integration tests (11 tests covering all functionality)
+- **Dependencies:** Standard Rust ecosystem (tokio, clap, serde, chrono, notify-rust, fs2)
+- **Testing:** Comprehensive integration tests (15 tests covering all functionality)
 
 ## Build & Development Environment
 
@@ -87,7 +87,7 @@
 1. **Formatting:** `cargo fmt -- --check` (MUST exit with code 0)
 2. **Linting:** `cargo clippy --all-targets --all-features -- -D warnings` (MUST exit with code 0, no warnings allowed)
 3. **Compilation:** `cargo check` (MUST pass)
-4. **Tests:** `cargo test` (11 integration tests must pass)
+4. **Tests:** `cargo test` (15 integration tests must pass)
 
 **Pre-commit hooks are configured** in `.pre-commit-config.yaml` and will run clippy and rustfmt automatically if using the Nix devenv.
 
@@ -102,7 +102,7 @@
 │   ├── server.rs             # Unix socket server, daemon logic, and process management
 │   └── timer.rs              # Timer state management and phase transitions
 ├── tests/
-│   └── cli.rs                # Integration tests (11 tests)
+│   └── cli.rs                # Integration tests (15 tests)
 ├── Cargo.toml               # Dependencies and metadata, includes cargo-deb config
 ├── Cargo.lock               # Dependency lockfile
 ├── Taskfile.yml             # Task runner commands (dev, lint, build-release, test-*)
@@ -145,6 +145,7 @@ The project is organized into three main modules:
 - `dirs`: Standard directory discovery
 - `libc`: Unix user ID access and process management
 - `notify-rust`: Desktop notifications for phase transitions
+- `fs2`: File locking for daemon instance prevention (prevents race conditions)
 - `tempfile` (dev-dependency): Temporary directories for integration tests
 
 ## Continuous Integration
@@ -201,7 +202,7 @@ Your changes will be validated against:
    # Or individual steps
    cargo fmt
    cargo clippy --all-targets --all-features -- -D warnings
-   cargo test  # Runs 11 integration tests
+   cargo test  # Runs 15 integration tests
    ```
 
 3. **Test systemd integration:**
@@ -216,7 +217,7 @@ Your changes will be validated against:
 - **PID files:** Daemon creates `$XDG_RUNTIME_DIR/tomat.pid` for process management
 - **Daemon cleanup:** Automatic cleanup of socket and PID files on graceful shutdown
 - **Dependencies:** Clean build downloads ~60 crates, takes ~10 seconds
-- **Testing:** 11 integration tests validate all functionality including daemon management
+- **Testing:** 15 integration tests validate all functionality including daemon management
 - **Systemd:** Service expects `tomat daemon run` command (updated from plain `tomat daemon`)
 - **Notifications:** Automatically disabled during testing via `TOMAT_TESTING` environment variable
 
@@ -252,7 +253,8 @@ Your changes will be validated against:
 - **Manual control:** `tomat daemon start|stop|status` for development and user convenience
 - **Systemd integration:** `tomat daemon run` for production deployment  
   (Note: systemd service file updated from `tomat daemon` to `tomat daemon run`)
-- **Process safety:** PID file tracking, duplicate instance prevention, stale file cleanup
+- **Process safety:** PID file tracking with exclusive file locking, duplicate instance prevention, stale file cleanup
+- **File locking:** Uses `fs2::FileExt::try_lock_exclusive()` on PID file to prevent race conditions
 - **Background operation:** Detached process with stdio redirection
 
 ### Status Output Format
@@ -282,7 +284,7 @@ The timer provides JSON output optimized for waybar and other status bars:
 
 ### Testing Infrastructure
 
-- **Integration tests:** 11 comprehensive tests covering all functionality
+- **Integration tests:** 15 comprehensive tests covering all functionality
 - **Isolated environments:** Each test uses temporary directories and custom socket paths
 - **Timing handling:** Tests use fractional minutes (0.05 = 3 seconds) for fast execution
 - **Notification suppression:** Tests automatically disable desktop notifications

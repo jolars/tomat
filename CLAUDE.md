@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**tomat** is a Pomodoro timer with daemon support designed for waybar and other status bars. It's a small Rust project (~650 lines) implementing a client-server architecture using Unix sockets for inter-process communication.
+**tomat** is a Pomodoro timer with daemon support designed for waybar and other status bars. It's a small Rust project (~700 lines) implementing a client-server architecture using Unix sockets for inter-process communication.
 
 ## Essential Commands
 
@@ -19,7 +19,7 @@ task dev
 cargo build                    # Development build
 cargo build --release          # Release build
 
-# Run tests (11 integration tests)
+# Run tests (15 integration tests)
 cargo test
 
 # Run specific test categories
@@ -62,10 +62,10 @@ cargo build && ./target/debug/tomat daemon start
 
 ### Module Structure
 
-- **`src/main.rs`** (200 lines): CLI parsing with clap, command dispatching
-- **`src/server.rs`** (408 lines): Unix socket server, daemon lifecycle, client request handling, PID file management
-- **`src/timer.rs`** (279 lines): Timer state machine, phase transitions, status output formatting, desktop notifications
-- **`tests/cli.rs`** (537 lines): 11 comprehensive integration tests with `TestDaemon` helper
+- **`src/main.rs`** (133 lines): CLI parsing with clap, command dispatching
+- **`src/server.rs`** (902 lines): Unix socket server, daemon lifecycle, client request handling, PID file management with file locking
+- **`src/timer.rs`** (616 lines): Timer state machine, phase transitions, status output formatting, desktop notifications
+- **`tests/cli.rs`** (636 lines): 15 comprehensive integration tests with `TestDaemon` helper
 
 ### Communication Flow
 
@@ -86,8 +86,9 @@ JSON Status Output (optimized for waybar)
 **Client-Server Architecture:**
 - Single binary with subcommands: `daemon start|stop|status|run`, `start`, `stop`, `status`, `skip`, `toggle`
 - Daemon listens on Unix socket at `$XDG_RUNTIME_DIR/tomat.sock`
-- PID file tracking at `$XDG_RUNTIME_DIR/tomat.pid`
+- PID file tracking at `$XDG_RUNTIME_DIR/tomat.pid` with exclusive file locking
 - Line-delimited JSON protocol for communication
+- File locking prevents multiple daemon instances and race conditions
 
 **Timer State Machine:**
 - Phases: Work → Break → Work → ... → LongBreak (after N sessions)
@@ -222,4 +223,5 @@ daemon.wait_for_completion(10)?;
 - `chrono`: Time handling
 - `libc`: Unix process management (getuid, kill)
 - `notify-rust`: Desktop notifications on phase transitions
+- `fs2`: File locking for daemon instance prevention
 - `tempfile` (dev): Temporary directories for integration tests
