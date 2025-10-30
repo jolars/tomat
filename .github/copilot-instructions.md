@@ -2,7 +2,7 @@
 
 ## Repository Overview
 
-**tomat** is a Pomodoro timer with daemon support designed for waybar and other status bars. It's a small Rust project (~700 lines across multiple modules) that implements a server/client architecture using Unix sockets for inter-process communication.
+**tomat** is a Pomodoro timer with daemon support designed for waybar and other status bars. It's a small Rust project (~800 lines across multiple modules) that implements a server/client architecture using Unix sockets for inter-process communication.
 
 **Key Details:**
 
@@ -99,10 +99,14 @@
 /
 ├── src/
 │   ├── main.rs               # CLI parsing and command dispatching
+│   ├── config.rs             # Configuration system (timer, sound, notification settings)
 │   ├── server.rs             # Unix socket server, daemon logic, and process management
-│   └── timer.rs              # Timer state management and phase transitions
+│   └── timer.rs              # Timer state management, phase transitions, and notification system
 ├── tests/
 │   └── cli.rs                # Integration tests (19 tests)
+├── assets/
+│   ├── icon.png              # Embedded notification icon
+│   └── sounds/               # Embedded audio files
 ├── Cargo.toml               # Dependencies and metadata, includes cargo-deb config
 ├── Cargo.lock               # Dependency lockfile
 ├── Taskfile.yml             # Task runner commands (dev, lint, build-release, test-*)
@@ -121,11 +125,12 @@
 
 ### Code Architecture
 
-The project is organized into three main modules:
+The project is organized into four main modules:
 
 - **`main.rs`**: CLI parsing with clap and command dispatching to server/client functions
-- **`server.rs`**: Unix socket server implementation, client communication handling, daemon process management (PID files, graceful shutdown), and timer event loop
-- **`timer.rs`**: Timer state management, phase transitions, status output formatting, desktop notifications, and auto-advance logic
+- **`config.rs`**: Configuration system with timer, sound, and notification settings loaded from TOML
+- **`server.rs`**: Unix socket server implementation, client communication handling, daemon process management (PID files, graceful shutdown), timer event loop, and configuration loading
+- **`timer.rs`**: Timer state management, phase transitions, status output formatting, desktop notifications with embedded icon system, and auto-advance logic
 - **`tests/cli.rs`**: Comprehensive integration tests covering all functionality
 
 **Communication flow:**
@@ -146,6 +151,7 @@ The project is organized into three main modules:
 - `libc`: Unix user ID access and process management
 - `notify-rust`: Desktop notifications for phase transitions
 - `fs2`: File locking for daemon instance prevention (prevents race conditions)
+- `toml`: Configuration file parsing
 - `tempfile` (dev-dependency): Temporary directories for integration tests
 
 ## Continuous Integration
@@ -247,6 +253,8 @@ Your changes will be validated against:
 - **Logging:** Uses `println!`/`eprintln!` for output
 - **State persistence:** None - state lost on daemon restart
 - **Notifications:** Desktop notifications sent automatically on phase transitions via `notify-rust`
+- **Icon system:** Embedded icon with automatic caching to `~/.cache/tomat/icon.png` for mako compatibility
+- **Configuration:** TOML-based configuration for timer, sound, and notification settings
 
 ### Daemon Management
 
@@ -282,9 +290,47 @@ The timer provides JSON output optimized for waybar and other status bars:
 - **State:** ▶ (playing/running), ⏸ (paused)
 - **Format:** `{icon} {time} {state_symbol}`
 
+### Configuration System
+
+The application uses a TOML configuration file located at `~/.config/tomat/config.toml` with three main sections:
+
+**Timer Configuration:**
+```toml
+[timer]
+work = 25.0           # Work duration in minutes
+break = 5.0          # Break duration in minutes  
+long_break = 15.0    # Long break duration in minutes
+sessions = 4         # Sessions until long break
+auto_advance = false # Auto-continue to next phase
+```
+
+**Sound Configuration:**
+```toml
+[sound]
+enabled = true        # Enable sound notifications
+system_beep = false  # Use system beep
+use_embedded = true  # Use embedded sound files
+volume = 0.5         # Volume level (0.0-1.0)
+```
+
+**Notification Configuration:**
+```toml
+[notification]
+enabled = true        # Enable desktop notifications
+icon = "auto"         # Icon mode: "auto", "theme", or path
+timeout = 3000        # Timeout in milliseconds
+```
+
+**Icon Modes:**
+- `"auto"`: Uses embedded icon, cached to `~/.cache/tomat/icon.png` (mako-compatible)
+- `"theme"`: Uses system theme icon (`"timer"`)
+- Custom path: e.g., `"/path/to/custom/icon.png"`
+
 ### Testing Infrastructure
 
 - **Integration tests:** 19 comprehensive tests covering all functionality
+- **Configuration tests:** Validate TOML parsing and defaults for all config sections
+- **Icon system tests:** Test embedded icon caching and different icon modes
 - **Isolated environments:** Each test uses temporary directories and custom socket paths
 - **Timing handling:** Tests use fractional minutes (0.05 = 3 seconds) for fast execution
 - **Notification suppression:** Tests automatically disable desktop notifications

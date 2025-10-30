@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**tomat** is a Pomodoro timer with daemon support designed for waybar and other status bars. It's a small Rust project (~700 lines) implementing a client-server architecture using Unix sockets for inter-process communication.
+**tomat** is a Pomodoro timer with daemon support designed for waybar and other status bars. It's a small Rust project (~800 lines) implementing a client-server architecture using Unix sockets for inter-process communication.
 
 ## Essential Commands
 
@@ -63,8 +63,9 @@ cargo build && ./target/debug/tomat daemon start
 ### Module Structure
 
 - **`src/main.rs`** (133 lines): CLI parsing with clap, command dispatching
-- **`src/server.rs`** (902 lines): Unix socket server, daemon lifecycle, client request handling, PID file management with file locking
-- **`src/timer.rs`** (616 lines): Timer state machine, phase transitions, status output formatting, desktop notifications
+- **`src/config.rs`** (289 lines): Configuration system with timer, sound, and notification settings
+- **`src/server.rs`** (950 lines): Unix socket server, daemon lifecycle, client request handling, PID file management with file locking
+- **`src/timer.rs`** (870 lines): Timer state machine, phase transitions, status output formatting, desktop notifications with icon management
 - **`tests/cli.rs`** (636 lines): 19 comprehensive integration tests with `TestDaemon` helper
 
 ### Communication Flow
@@ -109,6 +110,50 @@ JSON Status Output (optimized for waybar)
 - Visual indicators: 🍅 (work), ☕ (break), 🏖️ (long break), ▶ (running), ⏸ (paused)
 - CSS classes: `work`, `work-paused`, `break`, `break-paused`, `long-break`, `long-break-paused`
 
+**Notification System:**
+- Desktop notifications via `notify-rust` with configurable icons
+- Embedded icon system with automatic caching to `~/.cache/tomat/icon.png`
+- Three icon modes: `"auto"` (embedded), `"theme"` (system), or custom path
+- Configurable timeout and enable/disable options
+
+## Configuration
+
+### Config File Structure
+
+Configuration is loaded from `~/.config/tomat/config.toml`:
+
+```toml
+[timer]
+work = 25.0           # Work session duration in minutes
+break = 5.0          # Break duration in minutes
+long_break = 15.0    # Long break duration in minutes
+sessions = 4         # Number of work sessions before long break
+auto_advance = false # Whether to automatically continue to next phase
+
+[sound]
+enabled = true        # Enable sound notifications
+system_beep = false  # Use system beep instead of sound files
+use_embedded = true  # Use embedded sound files
+volume = 0.5         # Volume level (0.0 to 1.0)
+# Custom sound files (optional - will override embedded sounds)
+# work_to_break = "/path/to/custom/work-to-break.wav"
+# break_to_work = "/path/to/custom/break-to-work.wav" 
+# work_to_long_break = "/path/to/custom/work-to-long-break.wav"
+
+[notification]
+enabled = true        # Enable desktop notifications
+icon = "auto"         # Icon mode: "auto" (embedded), "theme" (system), or path
+timeout = 3000        # Notification timeout in milliseconds
+```
+
+### Icon Configuration
+
+The notification system supports three icon modes:
+
+- **`"auto"` (default)**: Uses embedded icon, cached to `~/.cache/tomat/icon.png`
+- **`"theme"`**: Uses system theme icon (`"timer"`)
+- **Custom path**: e.g., `"/path/to/custom/icon.png"`
+
 ## Testing
 
 ### Integration Test Pattern
@@ -142,6 +187,8 @@ daemon.wait_for_completion(10)?;
 2. **Timer control** (tests 234-313): Toggle pause/resume, stop/start
 3. **Daemon lifecycle** (tests 419-537): Start, stop, status, duplicate detection
 4. **Edge cases** (tests 350-416): Manual skip, fractional minutes
+5. **Configuration** (config tests): Timer, sound, and notification configuration parsing
+6. **Icon management** (timer tests): Embedded icon caching and different icon modes
 
 ## Protocol Details
 
@@ -212,6 +259,8 @@ daemon.wait_for_completion(10)?;
 - **Timer precision:** 1-second resolution with tokio::time::sleep
 - **Process management:** SIGTERM with 5-second timeout, then SIGKILL
 - **Systemd integration:** Service uses `tomat daemon run` command (not just `tomat daemon`)
+- **Notifications:** Desktop notifications with embedded icon system for mako compatibility
+- **Icon caching:** Embedded icon automatically cached to `~/.cache/tomat/icon.png`
 - **Commit style:** Use Conventional Commits (feat:, fix:, docs:, test:, refactor:)
 - **CI requirements:** Must pass clippy with `-D warnings` (zero warnings allowed)
 
