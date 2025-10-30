@@ -10,10 +10,8 @@ use std::path::PathBuf;
 mod cli;
 
 fn main() -> Result<()> {
-    // Generate man page
     generate_man_page()?;
 
-    // Embed icon file
     embed_icon_file()?;
 
     Ok(())
