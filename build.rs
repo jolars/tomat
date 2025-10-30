@@ -16,6 +16,9 @@ fn main() -> Result<()> {
     // Generate sound files
     generate_sound_files()?;
 
+    // Embed icon file
+    embed_icon_file()?;
+
     Ok(())
 }
 
@@ -95,5 +98,11 @@ fn create_placeholder_wav(path: &Path) -> Result<()> {
     ];
 
     fs::write(path, wav_header)?;
+    Ok(())
+}
+
+fn embed_icon_file() -> Result<()> {
+    // Tell Cargo to embed the icon file and rebuild if it changes
+    println!("cargo:rerun-if-changed=assets/icon.png");
     Ok(())
 }

@@ -1,9 +1,49 @@
 use notify_rust::Notification;
 use serde::{Deserialize, Serialize};
+use std::fs;
+use std::io::Write;
+use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::audio::{AudioPlayer, SoundType};
 use crate::config::SoundConfig;
+
+// Embed the icon file at compile time
+static ICON_DATA: &[u8] = include_bytes!("../assets/icon.png");
+
+/// Get the path to the cached icon file, creating it if necessary
+fn get_icon_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
+    // Use XDG cache directory
+    let cache_dir = match dirs::cache_dir() {
+        Some(dir) => dir.join("tomat"),
+        None => {
+            // Fallback to ~/.cache/tomat if XDG cache dir is not available
+            match dirs::home_dir() {
+                Some(home) => home.join(".cache").join("tomat"),
+                None => return Err("Could not determine cache directory".into()),
+            }
+        }
+    };
+
+    // Create cache directory if it doesn't exist
+    fs::create_dir_all(&cache_dir)?;
+
+    let icon_path = cache_dir.join("icon.png");
+
+    // Write icon file if it doesn't exist or if it's outdated
+    if !icon_path.exists() || is_icon_outdated(&icon_path)? {
+        let mut file = fs::File::create(&icon_path)?;
+        file.write_all(ICON_DATA)?;
+    }
+
+    Ok(icon_path)
+}
+
+/// Check if the cached icon file is outdated compared to the embedded data
+fn is_icon_outdated(icon_path: &PathBuf) -> Result<bool, Box<dyn std::error::Error>> {
+    let existing_data = fs::read(icon_path)?;
+    Ok(existing_data != ICON_DATA)
+}
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct TimerState {
@@ -242,13 +282,21 @@ impl TimerState {
             return Ok(());
         }
 
-        if let Err(e) = Notification::new()
-            .summary("Tomat")
-            .body(message)
-            .icon("timer")
-            .timeout(3000)
-            .show()
-        {
+        let mut notification = Notification::new();
+        notification.summary("Tomat").body(message).timeout(3000);
+
+        // Try to use the cached icon, fall back to icon name if it fails
+        if let Ok(icon_path) = get_icon_path() {
+            if let Some(icon_path_str) = icon_path.to_str() {
+                notification.icon(icon_path_str);
+            } else {
+                notification.icon("timer");
+            }
+        } else {
+            notification.icon("timer");
+        }
+
+        if let Err(e) = notification.show() {
             eprintln!("Failed to send notification: {}", e);
         }
 
@@ -715,5 +763,28 @@ mod tests {
             remaining_before,
             remaining_after
         );
+    }
+
+    #[test]
+    fn test_icon_path_creation() {
+        // Test that the icon path function works and creates the cache directory
+        let icon_path = get_icon_path().expect("Should be able to get icon path");
+
+        // The icon file should exist after calling get_icon_path
+        assert!(icon_path.exists(), "Icon file should be created");
+
+        // The icon file should have the correct extension
+        assert_eq!(icon_path.extension().unwrap(), "png");
+
+        // The icon file should contain the embedded data
+        let file_data = std::fs::read(&icon_path).expect("Should be able to read icon file");
+        assert_eq!(
+            file_data, ICON_DATA,
+            "Icon file should contain the embedded data"
+        );
+
+        // Calling get_icon_path again should not change the file
+        let icon_path2 = get_icon_path().expect("Should be able to get icon path again");
+        assert_eq!(icon_path, icon_path2, "Icon path should be consistent");
     }
 }
