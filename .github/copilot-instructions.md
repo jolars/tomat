@@ -107,6 +107,9 @@
 ├── assets/
 │   ├── icon.png              # Embedded notification icon
 │   └── sounds/               # Embedded audio files
+├── images/
+│   ├── logo.svg              # Source logo (visual identity)
+│   └── logo.png              # Generated logo for GitHub/docs
 ├── Cargo.toml               # Dependencies and metadata, includes cargo-deb config
 ├── Cargo.lock               # Dependency lockfile
 ├── Taskfile.yml             # Task runner commands (dev, lint, build-release, test-*)

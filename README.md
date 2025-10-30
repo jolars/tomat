@@ -1,4 +1,4 @@
-# Tomat <img src='https://raw.githubusercontent.com/jolars/tomat/refs/heads/main/assets/logo.svg' align="right" width="139" />
+# Tomat <img src='https://raw.githubusercontent.com/jolars/tomat/refs/heads/main/images/logo.svg' align="right" width="139" />
 
 [![Build Status](https://github.com/jolars/tomat/workflows/Build%20and%20Test/badge.svg)](https://github.com/jolars/tomat/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -123,6 +123,12 @@ volume = 0.5         # Volume level (0.0-1.0)
 enabled = true        # Enable desktop notifications
 icon = "auto"         # Icon mode: "auto", "theme", or custom path
 timeout = 3000        # Notification timeout in milliseconds
+```
+
+**💡 Tip**: Copy the complete example config:
+```bash
+mkdir -p ~/.config/tomat
+curl -o ~/.config/tomat/config.toml https://raw.githubusercontent.com/jolars/tomat/main/config-example.toml
 ```
 
 ## Waybar Integration
