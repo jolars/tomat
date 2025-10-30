@@ -126,6 +126,7 @@ timeout = 3000        # Notification timeout in milliseconds
 ```
 
 **💡 Tip**: Copy the complete example config:
+
 ```bash
 mkdir -p ~/.config/tomat
 cp examples/config.toml ~/.config/tomat/config.toml
@@ -154,12 +155,24 @@ Add to your waybar config (`~/.config/waybar/config`):
 Add CSS styling (`~/.config/waybar/style.css`):
 
 ```css
-#custom-tomat.work { background-color: #ff6b6b; }
-#custom-tomat.work-paused { background-color: #ff9999; }
-#custom-tomat.break { background-color: #4ecdc4; }
-#custom-tomat.break-paused { background-color: #7dd3db; }
-#custom-tomat.long-break { background-color: #45b7d1; }
-#custom-tomat.long-break-paused { background-color: #74c0db; }
+#custom-tomat.work {
+  background-color: #ff6b6b;
+}
+#custom-tomat.work-paused {
+  background-color: #ff9999;
+}
+#custom-tomat.break {
+  background-color: #4ecdc4;
+}
+#custom-tomat.break-paused {
+  background-color: #7dd3db;
+}
+#custom-tomat.long-break {
+  background-color: #45b7d1;
+}
+#custom-tomat.long-break-paused {
+  background-color: #74c0db;
+}
 ```
 
 **💡 Tip**: See [`examples/`](examples/) for complete waybar config and styling examples.
@@ -172,12 +185,13 @@ Tomat provides waybar-optimized JSON output:
 {
   "text": "🍅 24:30 ▶",
   "tooltip": "Work (1/4) - 25.0min",
-  "class": "work", 
+  "class": "work",
   "percentage": 2.0
 }
 ```
 
 **Visual Indicators:**
+
 - **Icons**: 🍅 (work), ☕ (break), 🏖️ (long break)
 - **State**: ▶ (running), ⏸ (paused)
 - **CSS Classes**: `work`, `work-paused`, `break`, `break-paused`, `long-break`, `long-break-paused`
@@ -189,7 +203,7 @@ For detailed guides and advanced configuration:
 - **[📋 Documentation Index](https://github.com/jolars/tomat/blob/main/docs/index.md)** - Complete documentation overview
 - **[📁 Examples](https://github.com/jolars/tomat/tree/main/examples)** - Ready-to-use configurations (waybar, systemd, etc.)
 - **[📖 Configuration Guide](https://github.com/jolars/tomat/blob/main/docs/configuration.md)** - Complete configuration options
-- **[🔗 Integration Guide](https://github.com/jolars/tomat/blob/main/docs/integration.md)** - Waybar, systemd, and notification setup  
+- **[🔗 Integration Guide](https://github.com/jolars/tomat/blob/main/docs/integration.md)** - Waybar, systemd, and notification setup
 - **[👨‍💻 Development Guide](https://github.com/jolars/tomat/blob/main/docs/development.md)** - Contributing and architecture
 - **[🐛 Troubleshooting](https://github.com/jolars/tomat/blob/main/docs/troubleshooting.md)** - Common issues and solutions
 
@@ -218,7 +232,7 @@ tomat skip           # Move to break early
 # Long focus session
 tomat start --work 45 --break 15
 
-# Sprint session  
+# Sprint session
 tomat start --work 15 --break 5 --auto-advance
 
 # Deep work (no interruptions)
@@ -264,9 +278,10 @@ Contributions welcome! See the [Development Guide](https://github.com/jolars/tom
 
 - Setting up the development environment
 - Code quality standards
-- Testing infrastructure  
+- Testing infrastructure
 - Architecture overview
 
 ---
 
 **Happy focusing! 🍅**
+
