@@ -17,7 +17,8 @@ for waybar and other status bars.
 - **🔄 Process Management**: Built-in daemon start/stop/status commands
 - **🖥️ Unix Sockets**: Fast, secure local communication
 - **🌙 Systemd Integration**: Auto-start with user session
-- **📱 Desktop Notifications**: Phase transition alerts
+- **📱 Desktop Notifications**: Phase transition alerts with configurable icons
+- **🖼️ Icon System**: Embedded icon with mako compatibility and custom icon support
 - **🔊 Sound Notifications**: Audio alerts enabled by default with embedded sounds and customization
 - **💾 Minimal Resources**: Lightweight and efficient
 
@@ -154,6 +155,33 @@ volume = 0.5         # Volume level 0.0-1.0 (default: 0.5)
 # work_to_break = "/path/to/work-to-break.wav"
 # break_to_work = "/path/to/break-to-work.wav"
 # work_to_long_break = "/path/to/work-to-long-break.wav"
+
+[notification]
+enabled = true        # Enable desktop notifications (default: true)
+icon = "auto"         # Icon mode: "auto", "theme", or path (default: "auto")
+timeout = 3000        # Notification timeout in milliseconds (default: 3000)
+```
+
+### Desktop Notifications
+
+Desktop notifications are shown when transitioning between phases. The notification system supports three icon modes:
+
+- **`"auto"` (default)**: Uses embedded icon, automatically cached to `~/.cache/tomat/icon.png` (works with mako and other notification daemons)
+- **`"theme"`**: Uses system theme icon (`"timer"`)
+- **Custom path**: Specify a custom icon file, e.g., `"/home/user/my-icon.png"`
+
+To disable desktop notifications:
+
+```toml
+[notification]
+enabled = false
+```
+
+To use a custom icon:
+
+```toml
+[notification]
+icon = "/path/to/custom/icon.png"
 ```
 
 ### Priority Order

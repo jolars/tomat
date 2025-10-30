@@ -6,13 +6,51 @@ use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::audio::{AudioPlayer, SoundType};
-use crate::config::SoundConfig;
+use crate::config::{NotificationConfig, SoundConfig};
 
 // Embed the icon file at compile time
 static ICON_DATA: &[u8] = include_bytes!("../assets/icon.png");
 
+/// Get the appropriate icon for notifications based on configuration
+fn get_notification_icon(
+    config: &NotificationConfig,
+) -> Result<String, Box<dyn std::error::Error>> {
+    match config.icon.as_str() {
+        "auto" => {
+            // Use embedded icon
+            let icon_path = get_cached_icon_path()?;
+            icon_path
+                .to_str()
+                .ok_or("Icon path contains invalid UTF-8".into())
+                .map(|s| s.to_string())
+        }
+        "theme" => {
+            // Use system theme icon
+            Ok("timer".to_string())
+        }
+        custom_path => {
+            // Use custom icon path
+            let path = PathBuf::from(custom_path);
+            if path.exists() {
+                Ok(custom_path.to_string())
+            } else {
+                // Fall back to embedded icon if custom path doesn't exist
+                eprintln!(
+                    "Warning: Custom icon path '{}' not found, falling back to embedded icon",
+                    custom_path
+                );
+                let icon_path = get_cached_icon_path()?;
+                icon_path
+                    .to_str()
+                    .ok_or("Icon path contains invalid UTF-8".into())
+                    .map(|s| s.to_string())
+            }
+        }
+    }
+}
+
 /// Get the path to the cached icon file, creating it if necessary
-fn get_icon_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
+fn get_cached_icon_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
     // Use XDG cache directory
     let cache_dir = match dirs::cache_dir() {
         Some(dir) => dir.join("tomat"),
@@ -146,12 +184,17 @@ impl TimerState {
 
     #[allow(dead_code)]
     pub fn next_phase(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        self.next_phase_with_sound(&SoundConfig::default(), None)
+        self.next_phase_with_configs(
+            &SoundConfig::default(),
+            &NotificationConfig::default(),
+            None,
+        )
     }
 
-    pub fn next_phase_with_sound(
+    pub fn next_phase_with_configs(
         &mut self,
         sound_config: &SoundConfig,
+        notification_config: &NotificationConfig,
         audio_player: Option<&AudioPlayer>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let (message, sound_type) = match self.phase {
@@ -218,8 +261,8 @@ impl TimerState {
         }
 
         // Send notification (existing code)
-        if !is_testing() {
-            self.send_notification(message)?;
+        if !is_testing() && notification_config.enabled {
+            self.send_notification(message, notification_config)?;
         }
 
         Ok(())
@@ -275,7 +318,11 @@ impl TimerState {
         Ok(())
     }
 
-    fn send_notification(&self, message: &str) -> Result<(), Box<dyn std::error::Error>> {
+    fn send_notification(
+        &self,
+        message: &str,
+        config: &NotificationConfig,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         // Send desktop notification (synchronous to avoid cross-platform issues)
         // Skip notifications during testing
         if is_testing() {
@@ -283,17 +330,23 @@ impl TimerState {
         }
 
         let mut notification = Notification::new();
-        notification.summary("Tomat").body(message).timeout(3000);
+        notification
+            .summary("Tomat")
+            .body(message)
+            .timeout(config.timeout as i32);
 
-        // Try to use the cached icon, fall back to icon name if it fails
-        if let Ok(icon_path) = get_icon_path() {
-            if let Some(icon_path_str) = icon_path.to_str() {
-                notification.icon(icon_path_str);
-            } else {
+        // Use configured icon
+        match get_notification_icon(config) {
+            Ok(icon) => {
+                notification.icon(&icon);
+            }
+            Err(e) => {
+                eprintln!(
+                    "Warning: Failed to get notification icon: {}, falling back to 'timer'",
+                    e
+                );
                 notification.icon("timer");
             }
-        } else {
-            notification.icon("timer");
         }
 
         if let Err(e) = notification.show() {
@@ -768,9 +821,9 @@ mod tests {
     #[test]
     fn test_icon_path_creation() {
         // Test that the icon path function works and creates the cache directory
-        let icon_path = get_icon_path().expect("Should be able to get icon path");
+        let icon_path = get_cached_icon_path().expect("Should be able to get icon path");
 
-        // The icon file should exist after calling get_icon_path
+        // The icon file should exist after calling get_cached_icon_path
         assert!(icon_path.exists(), "Icon file should be created");
 
         // The icon file should have the correct extension
@@ -783,8 +836,53 @@ mod tests {
             "Icon file should contain the embedded data"
         );
 
-        // Calling get_icon_path again should not change the file
-        let icon_path2 = get_icon_path().expect("Should be able to get icon path again");
+        // Calling get_cached_icon_path again should not change the file
+        let icon_path2 = get_cached_icon_path().expect("Should be able to get icon path again");
         assert_eq!(icon_path, icon_path2, "Icon path should be consistent");
+    }
+
+    #[test]
+    fn test_notification_icon_config() {
+        use crate::config::NotificationConfig;
+
+        // Test "auto" mode
+        let config = NotificationConfig {
+            enabled: true,
+            icon: "auto".to_string(),
+            timeout: 3000,
+        };
+        let icon = get_notification_icon(&config).expect("Should get auto icon");
+        assert!(
+            icon.ends_with("icon.png"),
+            "Auto icon should be cached icon path"
+        );
+
+        // Test "theme" mode
+        let config = NotificationConfig {
+            enabled: true,
+            icon: "theme".to_string(),
+            timeout: 3000,
+        };
+        let icon = get_notification_icon(&config).expect("Should get theme icon");
+        assert_eq!(icon, "timer", "Theme icon should be 'timer'");
+
+        // Test custom path mode (with existing file)
+        let temp_icon = std::env::temp_dir().join("test_icon.png");
+        std::fs::write(&temp_icon, b"fake icon data").expect("Should create temp icon");
+
+        let config = NotificationConfig {
+            enabled: true,
+            icon: temp_icon.to_str().unwrap().to_string(),
+            timeout: 3000,
+        };
+        let icon = get_notification_icon(&config).expect("Should get custom icon");
+        assert_eq!(
+            icon,
+            temp_icon.to_str().unwrap(),
+            "Custom icon should match path"
+        );
+
+        // Clean up
+        std::fs::remove_file(&temp_icon).ok();
     }
 }

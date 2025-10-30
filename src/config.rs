@@ -8,6 +8,8 @@ pub struct Config {
     pub timer: TimerConfig,
     #[serde(default)]
     pub sound: SoundConfig,
+    #[serde(default)]
+    pub notification: NotificationConfig,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -43,6 +45,32 @@ fn default_long_break() -> f32 {
 
 fn default_sessions() -> u32 {
     4
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct NotificationConfig {
+    /// Enable desktop notifications (default: true)
+    #[serde(default = "default_notification_enabled")]
+    pub enabled: bool,
+    /// Icon to use for notifications (default: "auto")
+    /// "auto" = use embedded icon, "theme" = use system theme icon, or path to custom icon
+    #[serde(default = "default_icon")]
+    pub icon: String,
+    /// Notification timeout in milliseconds (default: 3000)
+    #[serde(default = "default_timeout")]
+    pub timeout: u32,
+}
+
+fn default_notification_enabled() -> bool {
+    true
+}
+
+fn default_icon() -> String {
+    "auto".to_string()
+}
+
+fn default_timeout() -> u32 {
+    3000
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -101,6 +129,16 @@ impl Default for TimerConfig {
     }
 }
 
+impl Default for NotificationConfig {
+    fn default() -> Self {
+        Self {
+            enabled: default_notification_enabled(),
+            icon: default_icon(),
+            timeout: default_timeout(),
+        }
+    }
+}
+
 impl Config {
     /// Get the config file path
     pub fn config_path() -> Option<PathBuf> {
@@ -150,6 +188,11 @@ mod tests {
         assert_eq!(config.timer.long_break, 15.0);
         assert_eq!(config.timer.sessions, 4);
         assert!(!config.timer.auto_advance);
+
+        // Test notification defaults
+        assert!(config.notification.enabled);
+        assert_eq!(config.notification.icon, "auto");
+        assert_eq!(config.notification.timeout, 3000);
     }
 
     #[test]
@@ -163,6 +206,17 @@ mod tests {
         assert_eq!(deserialized.timer.long_break, config.timer.long_break);
         assert_eq!(deserialized.timer.sessions, config.timer.sessions);
         assert_eq!(deserialized.timer.auto_advance, config.timer.auto_advance);
+
+        // Test notification serialization
+        assert_eq!(
+            deserialized.notification.enabled,
+            config.notification.enabled
+        );
+        assert_eq!(deserialized.notification.icon, config.notification.icon);
+        assert_eq!(
+            deserialized.notification.timeout,
+            config.notification.timeout
+        );
     }
 
     #[test]
@@ -229,5 +283,36 @@ mod tests {
         assert_eq!(config.timer.work, 30.0);
         assert_eq!(config.timer.break_time, 7.0);
         assert_eq!(config.timer.long_break, 20.0);
+    }
+
+    #[test]
+    fn test_notification_config() {
+        let toml_str = r#"
+            [notification]
+            enabled = false
+            icon = "/path/to/custom/icon.png"
+            timeout = 5000
+        "#;
+
+        let config: Config = toml::from_str(toml_str).unwrap();
+        assert!(!config.notification.enabled);
+        assert_eq!(config.notification.icon, "/path/to/custom/icon.png");
+        assert_eq!(config.notification.timeout, 5000);
+
+        // Timer should still use defaults
+        assert_eq!(config.timer.work, 25.0);
+    }
+
+    #[test]
+    fn test_partial_notification_config() {
+        let toml_str = r#"
+            [notification]
+            icon = "theme"
+        "#;
+
+        let config: Config = toml::from_str(toml_str).unwrap();
+        assert!(config.notification.enabled); // Should use default
+        assert_eq!(config.notification.icon, "theme");
+        assert_eq!(config.notification.timeout, 3000); // Should use default
     }
 }

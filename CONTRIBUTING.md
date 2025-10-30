@@ -179,7 +179,7 @@ For new features, please include:
 
 #### Areas for Contribution
 
-- **New features**: Configuration files, additional status bar integrations
+- **New features**: Additional status bar integrations, advanced scheduling
 - **Performance**: Optimization opportunities
 - **Platform support**: Windows/macOS compatibility
 - **Error handling**: Better error messages and recovery

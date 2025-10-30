@@ -150,6 +150,7 @@ pub async fn send_command(
 async fn handle_client(
     stream: UnixStream,
     state: &mut TimerState,
+    config: &crate::config::Config,
     audio_player: Option<&AudioPlayer>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut reader = BufReader::new(stream);
@@ -256,10 +257,9 @@ async fn handle_client(
             }
         }
         "skip" => {
-            // Build default sound config (since skip doesn't have sound parameters)
-            let sound_config = crate::config::SoundConfig::default();
-
-            if let Err(e) = state.next_phase_with_sound(&sound_config, audio_player) {
+            if let Err(e) =
+                state.next_phase_with_configs(&config.sound, &config.notification, audio_player)
+            {
                 eprintln!("Error during phase transition: {}", e);
             }
 
@@ -387,6 +387,10 @@ pub async fn run_daemon() -> Result<(), Box<dyn std::error::Error>> {
         TimerState::new(25.0, 5.0, 15.0, 4)
     });
 
+    // Load configuration
+    let config = crate::config::Config::load();
+    println!("Configuration loaded");
+
     println!("Tomat daemon listening on {:?}", socket_path);
 
     // Try to initialize audio player (optional - if it fails, continue without sound)
@@ -414,7 +418,7 @@ pub async fn run_daemon() -> Result<(), Box<dyn std::error::Error>> {
 
     // Set up signal handler for graceful shutdown
     let result = tokio::select! {
-        result = daemon_loop(listener, &mut state, audio_player.as_ref()) => result,
+        result = daemon_loop(listener, &mut state, &config, audio_player.as_ref()) => result,
         _ = tokio::signal::ctrl_c() => {
             println!("Received interrupt signal, shutting down...");
             Ok(())
@@ -430,13 +434,14 @@ pub async fn run_daemon() -> Result<(), Box<dyn std::error::Error>> {
 async fn daemon_loop(
     listener: UnixListener,
     state: &mut TimerState,
+    config: &crate::config::Config,
     audio_player: Option<&AudioPlayer>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     loop {
         tokio::select! {
             // Handle incoming connections
             Ok((stream, _)) = listener.accept() => {
-                if let Err(e) = handle_client(stream, state, audio_player).await {
+                if let Err(e) = handle_client(stream, state, config, audio_player).await {
                     eprintln!("Error handling client: {}", e);
                 }
             }
@@ -462,10 +467,7 @@ async fn daemon_loop(
                 }
             } => {
                 if state.is_finished() {
-                    // Build default sound config for automatic transitions
-                    let sound_config = crate::config::SoundConfig::default();
-
-                    if let Err(e) = state.next_phase_with_sound(&sound_config, audio_player) {
+                    if let Err(e) = state.next_phase_with_configs(&config.sound, &config.notification, audio_player) {
                         eprintln!("Error during phase transition: {}", e);
                     }
                     // Save state after automatic phase transition
