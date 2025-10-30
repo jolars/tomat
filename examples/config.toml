@@ -8,17 +8,17 @@
 #   cp config-example.toml ~/.config/tomat/config.toml
 
 [timer]
-work = 25.0           # Work session duration in minutes (default: 25.0)
+work = 25.0          # Work session duration in minutes (default: 25.0)
 break = 5.0          # Break duration in minutes (default: 5.0)
 long_break = 15.0    # Long break duration in minutes (default: 15.0)
 sessions = 4         # Number of work sessions before long break (default: 4)
 auto_advance = false # Whether to automatically continue to next phase (default: false)
 
 [sound]
-enabled = true        # Enable sound notifications (default: true)
-system_beep = false  # Use system beep instead of sound files (default: false)
-use_embedded = true  # Use embedded sound files (default: true)
-volume = 0.5         # Volume level 0.0-1.0 (default: 0.5)
+enabled = true      # Enable sound notifications (default: true)
+system_beep = false # Use system beep instead of sound files (default: false)
+use_embedded = true # Use embedded sound files (default: true)
+volume = 0.5        # Volume level 0.0-1.0 (default: 0.5)
 
 # Custom sound files (optional - will override embedded sounds)
 # work_to_break = "/path/to/custom/work-to-break.wav"
@@ -26,9 +26,9 @@ volume = 0.5         # Volume level 0.0-1.0 (default: 0.5)
 # work_to_long_break = "/path/to/custom/work-to-long-break.wav"
 
 [notification]
-enabled = true       # Enable desktop notifications (default: true)
-icon = "auto"        # Icon mode (default: "auto")
-timeout = 10000      # Notification timeout in milliseconds (default: 3000)
+enabled = true  # Enable desktop notifications (default: true)
+icon = "auto"   # Icon mode (default: "auto")
+timeout = 10000 # Notification timeout in milliseconds (default: 3000)
 
 # Icon mode options:
 # "auto"               - Use embedded icon, cached to ~/.cache/tomat/icon.png (works with mako)
@@ -53,3 +53,4 @@ timeout = 10000      # Notification timeout in milliseconds (default: 3000)
 # Custom notification timeout:
 # [notification]
 # timeout = 5000  # 5 seconds
+

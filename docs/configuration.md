@@ -129,14 +129,14 @@ Here's a complete configuration file with all options:
 # ~/.config/tomat/config.toml
 
 [timer]
-work = 25.0           # Work session duration in minutes
+work = 25.0          # Work session duration in minutes
 break = 5.0          # Break duration in minutes
 long_break = 15.0    # Long break duration in minutes
 sessions = 4         # Number of work sessions before long break
 auto_advance = false # Whether to automatically continue to next phase
 
 [sound]
-enabled = true        # Enable sound notifications
+enabled = true       # Enable sound notifications
 system_beep = false  # Use system beep instead of sound files
 use_embedded = true  # Use embedded sound files
 volume = 0.5         # Volume level (0.0 to 1.0)
@@ -146,9 +146,9 @@ volume = 0.5         # Volume level (0.0 to 1.0)
 # work_to_long_break = "/path/to/custom/work-to-long-break.wav"
 
 [notification]
-enabled = true                           # Enable desktop notifications
-icon = "auto"                           # Icon to use: "auto" (embedded), "theme" (system), or "/path/to/icon.png" (custom)
-timeout = 10000                          # Notification timeout in milliseconds
+enabled = true  # Enable desktop notifications
+icon = "auto"   # Icon to use: "auto" (embedded), "theme" (system), or "/path/to/icon.png" (custom)
+timeout = 10000 # Notification timeout in milliseconds
 ```
 
 ## Troubleshooting Configuration
