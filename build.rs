@@ -168,14 +168,11 @@ fn generate_og_image(tree: &resvg::usvg::Tree, output_path: &str) -> Result<()> 
         fs::create_dir_all(parent)?;
     }
 
-    // Load the text SVG and modify it for white text
     let text_svg_path = "images/logo-text.svg";
     let text_tree = if std::path::Path::new(text_svg_path).exists() {
         match fs::read_to_string(text_svg_path) {
             Ok(svg_data) => {
-                // Replace black text with white text for visibility against dark background
-                let white_svg_data = svg_data.replace("fill=\"#000000\"", "fill=\"#ffffff\"");
-                resvg::usvg::Tree::from_str(&white_svg_data, &resvg::usvg::Options::default()).ok()
+                resvg::usvg::Tree::from_str(&svg_data, &resvg::usvg::Options::default()).ok()
             }
             Err(_e) => None,
         }
@@ -248,7 +245,7 @@ fn generate_og_image(tree: &resvg::usvg::Tree, output_path: &str) -> Result<()> 
                 text_scale, text_scale,
             ));
 
-        // Render white text directly
+        // Render text as-is
         resvg::render(&text_tree, text_transform, &mut pixmap.as_mut());
 
         println!("Generated: {} (with logo and text from SVG)", output_path);
