@@ -243,7 +243,7 @@ impl TimerState {
         }
 
         if let Err(e) = Notification::new()
-            .summary("Pomodoro Timer")
+            .summary("Tomat")
             .body(message)
             .icon("timer")
             .timeout(3000)
