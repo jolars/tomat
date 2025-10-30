@@ -1,0 +1,12 @@
+[Unit]
+Description=Tomat Pomodoro Timer Daemon
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.cargo/bin/tomat daemon run
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

@@ -128,12 +128,13 @@ timeout = 3000        # Notification timeout in milliseconds
 **💡 Tip**: Copy the complete example config:
 ```bash
 mkdir -p ~/.config/tomat
-curl -o ~/.config/tomat/config.toml https://raw.githubusercontent.com/jolars/tomat/main/config-example.toml
+cp examples/config.toml ~/.config/tomat/config.toml
+# Edit as needed
 ```
 
 ## Waybar Integration
 
-Add to your waybar config:
+Add to your waybar config (`~/.config/waybar/config`):
 
 ```json
 {
@@ -150,7 +151,7 @@ Add to your waybar config:
 }
 ```
 
-Add CSS styling:
+Add CSS styling (`~/.config/waybar/style.css`):
 
 ```css
 #custom-tomat.work { background-color: #ff6b6b; }
@@ -160,6 +161,8 @@ Add CSS styling:
 #custom-tomat.long-break { background-color: #45b7d1; }
 #custom-tomat.long-break-paused { background-color: #74c0db; }
 ```
+
+**💡 Tip**: See [`examples/`](examples/) for complete waybar config and styling examples.
 
 ## JSON Output
 
@@ -184,6 +187,7 @@ Tomat provides waybar-optimized JSON output:
 For detailed guides and advanced configuration:
 
 - **[📋 Documentation Index](https://github.com/jolars/tomat/blob/main/docs/index.md)** - Complete documentation overview
+- **[📁 Examples](https://github.com/jolars/tomat/tree/main/examples)** - Ready-to-use configurations (waybar, systemd, etc.)
 - **[📖 Configuration Guide](https://github.com/jolars/tomat/blob/main/docs/configuration.md)** - Complete configuration options
 - **[🔗 Integration Guide](https://github.com/jolars/tomat/blob/main/docs/integration.md)** - Waybar, systemd, and notification setup  
 - **[👨‍💻 Development Guide](https://github.com/jolars/tomat/blob/main/docs/development.md)** - Contributing and architecture

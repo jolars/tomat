@@ -1,0 +1,12 @@
+{
+  "modules-right": ["custom/tomat"],
+  "custom/tomat": {
+    "exec": "tomat status",
+    "interval": 1,
+    "return-type": "json",
+    "format": "{text}",
+    "tooltip": true,
+    "on-click": "tomat toggle",
+    "on-click-right": "tomat skip"
+  }
+}

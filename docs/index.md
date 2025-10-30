@@ -53,7 +53,8 @@ Welcome to the tomat documentation! This guide will help you get the most out of
 
 - **[Main Repository](https://github.com/jolars/tomat)** - Source code and issue tracking
 - **[Crates.io Page](https://crates.io/crates/tomat)** - Official package page
-- **[Example Config](../config-example.toml)** - Complete configuration example
+- **[📁 Examples Directory](../examples/)** - Ready-to-use configurations
+- **[Example Config](../examples/config.toml)** - Complete configuration example
 - **[License](../LICENSE)** - MIT License details
 
 ## Support

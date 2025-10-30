@@ -1,0 +1,74 @@
+/* Tomat styling for waybar */
+
+#custom-tomat {
+  padding: 0 10px;
+  margin: 0 5px;
+  border-radius: 5px;
+  font-weight: bold;
+}
+
+/* Work sessions */
+#custom-tomat.work {
+  background-color: #ff6b6b;
+  color: #ffffff;
+}
+
+#custom-tomat.work-paused {
+  background-color: #ff9999;
+  color: #ffffff;
+}
+
+/* Break sessions */
+#custom-tomat.break {
+  background-color: #4ecdc4;
+  color: #ffffff;
+}
+
+#custom-tomat.break-paused {
+  background-color: #7dd3db;
+  color: #ffffff;
+}
+
+/* Long break sessions */
+#custom-tomat.long-break {
+  background-color: #45b7d1;
+  color: #ffffff;
+}
+
+#custom-tomat.long-break-paused {
+  background-color: #74c0db;
+  color: #ffffff;
+}
+
+/* Alternative color scheme (uncomment to use) */
+/*
+#custom-tomat.work {
+  background-color: #e74c3c;
+  color: #ffffff;
+}
+
+#custom-tomat.work-paused {
+  background-color: #c0392b;
+  color: #ffffff;
+}
+
+#custom-tomat.break {
+  background-color: #2ecc71;
+  color: #ffffff;
+}
+
+#custom-tomat.break-paused {
+  background-color: #27ae60;
+  color: #ffffff;
+}
+
+#custom-tomat.long-break {
+  background-color: #3498db;
+  color: #ffffff;
+}
+
+#custom-tomat.long-break-paused {
+  background-color: #2980b9;
+  color: #ffffff;
+}
+*/
