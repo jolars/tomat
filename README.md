@@ -2,9 +2,9 @@
 
 [![Build Status](https://github.com/jolars/tomat/workflows/Build%20and%20Test/badge.svg)](https://github.com/jolars/tomat/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Crates.io](https://img.shields.io/crates/v/tomat.svg)](https://crates.io/crates/tomat)
 
-Tomat ("tomato" in Swedish 🇸🇪) is a Pomodoro timer with daemon support designed
-for waybar and other status bars.
+Tomat ("tomato" in Swedish 🇸🇪) is a Pomodoro timer with daemon support designed for waybar and other status bars.
 
 ## Features
 
@@ -19,7 +19,7 @@ for waybar and other status bars.
 - **🌙 Systemd Integration**: Auto-start with user session
 - **📱 Desktop Notifications**: Phase transition alerts with configurable icons
 - **🖼️ Icon System**: Embedded icon with mako compatibility and custom icon support
-- **🔊 Sound Notifications**: Audio alerts enabled by default with embedded sounds and customization
+- **🔊 Sound Notifications**: Audio alerts with embedded sounds and customization
 - **💾 Minimal Resources**: Lightweight and efficient
 
 ## Quick Start
@@ -34,8 +34,6 @@ tomat start
 
 # Check status (perfect for waybar)
 tomat status
-
-# Optional: Configure defaults in ~/.config/tomat/config.toml
 ```
 
 ## Installation
@@ -57,364 +55,208 @@ sudo pacman -S alsa-lib
 
 **Note**: Audio will be automatically disabled if ALSA is not available. The timer will still work normally with desktop notifications only.
 
-### Quick Install (Recommended)
+### Install from Crates.io
 
 ```bash
-# Install from crates.io
 cargo install tomat
+```
 
+### Quick Setup with Systemd
+
+```bash
 # Set up systemd service for auto-start
 mkdir -p ~/.config/systemd/user
 curl -o ~/.config/systemd/user/tomat.service https://raw.githubusercontent.com/jolars/tomat/main/tomat.service
-systemctl --user daemon-reload
 systemctl --user enable tomat.service
 systemctl --user start tomat.service
 ```
 
-**Note**: Ensure `~/.cargo/bin` is in your PATH.
+## Basic Usage
 
-### Install from Source
-
-```bash
-# Clone and install
-git clone https://github.com/jolars/tomat.git
-cd tomat
-./install.sh
-```
-
-This installs the binary and sets up the systemd service automatically.
-
-### Manual Installation
+### Start Timer
 
 ```bash
-# Install from crates.io or build from source
-cargo install tomat
-# OR
-cargo install --path .
+# Start with defaults (25min work, 5min break)
+tomat start
 
-# Set up systemd service
-mkdir -p ~/.config/systemd/user
-cp tomat.service ~/.config/systemd/user/
-systemctl --user daemon-reload
-systemctl --user enable tomat.service
-systemctl --user start tomat.service
+# Custom durations
+tomat start --work 30 --break 10 --long-break 20 --sessions 3
+
+# Auto-advance between phases
+tomat start --auto-advance
 ```
 
-**Note**: Ensure `~/.cargo/bin` is in your PATH.
+### Control Timer
 
-## Configuration
-
-Tomat can be configured using a TOML file located at
-`~/.config/tomat/config.toml`. This allows you to set default values for timer
-durations and behaviors without specifying them on every command.
-
-### Sound Notifications
-
-By default, tomat plays audio notifications when transitioning between work/break phases:
-
-- **Embedded sounds**: High-quality WAV files built into the application
-- **Linux requirement**: Requires ALSA (Advanced Linux Sound Architecture)
-- **Automatic fallback**: If audio system unavailable, falls back to system beep or disables audio
-- **Customizable**: Override with your own sound files or disable entirely
-- **Volume control**: Adjustable volume level (0.0 to 1.0)
-
-To disable audio notifications:
-
-```toml
-[sound]
-enabled = false
+```bash
+tomat status    # Get current status (JSON for waybar)
+tomat toggle    # Pause/resume timer
+tomat skip      # Skip to next phase
+tomat stop      # Stop timer and return to idle
 ```
-
-To use custom sound files:
-
-```toml
-[sound]
-work_to_break = "/path/to/your/work-end-sound.wav"
-break_to_work = "/path/to/your/break-end-sound.wav"
-work_to_long_break = "/path/to/your/long-break-start.wav"
-```
-
-### Example Configuration
-
-Create `~/.config/tomat/config.toml`:
-
-```toml
-[timer]
-work = 25.0        # Work duration in minutes (default: 25)
-break = 5.0        # Break duration in minutes (default: 5)
-long_break = 15.0  # Long break duration in minutes (default: 15)
-sessions = 4       # Sessions until long break (default: 4)
-auto_advance = false # Auto-advance between phases (default: false)
-
-[sound]
-enabled = true       # Enable sound notifications (default: true)
-system_beep = false  # Use system beep instead of WAV files (default: false)
-use_embedded = true  # Use embedded sounds (default: true)
-volume = 0.5         # Volume level 0.0-1.0 (default: 0.5)
-# Custom sound files (optional - override embedded sounds)
-# work_to_break = "/path/to/work-to-break.wav"
-# break_to_work = "/path/to/break-to-work.wav"
-# work_to_long_break = "/path/to/work-to-long-break.wav"
-
-[notification]
-enabled = true        # Enable desktop notifications (default: true)
-icon = "auto"         # Icon mode: "auto", "theme", or path (default: "auto")
-timeout = 3000        # Notification timeout in milliseconds (default: 3000)
-```
-
-### Desktop Notifications
-
-Desktop notifications are shown when transitioning between phases. The notification system supports three icon modes:
-
-- **`"auto"` (default)**: Uses embedded icon, automatically cached to `~/.cache/tomat/icon.png` (works with mako and other notification daemons)
-- **`"theme"`**: Uses system theme icon (`"timer"`)
-- **Custom path**: Specify a custom icon file, e.g., `"/home/user/my-icon.png"`
-
-To disable desktop notifications:
-
-```toml
-[notification]
-enabled = false
-```
-
-To use a custom icon:
-
-```toml
-[notification]
-icon = "/path/to/custom/icon.png"
-```
-
-### Priority Order
-
-Settings are applied in this order (later overrides earlier):
-
-1. **Built-in defaults**: 25min work, 5min break, 15min long break, 4 sessions
-2. **Config file**: Values from `~/.config/tomat/config.toml`
-3. **CLI arguments**: Flags passed to `tomat start`
-
-### Partial Configuration
-
-You can specify only the values you want to override:
-
-```toml
-[timer]
-work = 30.0
-auto_advance = true
-# Other values will use built-in defaults
-
-[sound]
-enabled = false  # Disable all sound notifications
-# Other sound settings will use built-in defaults
-```
-
-## Usage
 
 ### Daemon Management
 
 ```bash
-# Start daemon in background
-tomat daemon start
-
-# Check daemon status
-tomat daemon status
-
-# Stop daemon
-tomat daemon stop
+tomat daemon start    # Start background daemon
+tomat daemon stop     # Stop daemon
+tomat daemon status   # Check daemon status
 ```
 
-### Timer Control
+## Configuration
 
-```bash
-# Start Pomodoro (25min work, 5min break by default)
-tomat start
+Create `~/.config/tomat/config.toml` to customize defaults:
 
-# Start with custom durations and auto-advance
-tomat start --work 30 --break 10 --auto-advance
+```toml
+[timer]
+work = 25.0           # Work duration in minutes
+break = 5.0          # Break duration in minutes
+long_break = 15.0    # Long break duration in minutes
+sessions = 4         # Sessions until long break
+auto_advance = false # Auto-continue to next phase
 
-# Toggle pause/resume
-tomat toggle
+[sound]
+enabled = true        # Enable sound notifications
+volume = 0.5         # Volume level (0.0-1.0)
 
-# Skip to next phase
-tomat skip
-
-# Stop current session
-tomat stop
-
-# Get status (JSON for waybar)
-tomat status
+[notification]
+enabled = true        # Enable desktop notifications
+icon = "auto"         # Icon mode: "auto", "theme", or custom path
+timeout = 3000        # Notification timeout in milliseconds
 ```
-
-### Auto-advance Behavior
-
-By default (`--auto-advance=false`):
-
-- Timer transitions to next phase but **pauses**
-- You manually resume with `tomat toggle` or `tomat start`
-- Gives you control over when breaks start/end
-
-With `--auto-advance=true`:
-
-- Timer automatically continues through all phases
-- No manual intervention needed
-- Traditional Pomodoro timer behavior
 
 ## Waybar Integration
-
-### Configuration
 
 Add to your waybar config:
 
 ```json
-"custom/pomodoro": {
-    "format": "{}",
+{
+  "modules-right": ["custom/tomat"],
+  "custom/tomat": {
     "exec": "tomat status",
-    "return-type": "json",
     "interval": 1,
+    "return-type": "json",
+    "format": "{text}",
+    "tooltip": true,
     "on-click": "tomat toggle",
-    "on-click-right": "tomat skip",
-    "on-click-middle": "tomat start"
+    "on-click-right": "tomat skip"
+  }
 }
 ```
 
-### Styling
-
-The status output provides CSS classes for styling:
+Add CSS styling:
 
 ```css
-#custom-pomodoro.work {
-  background: #2d5a27;
-  color: #ffffff;
-}
-
-#custom-pomodoro.work-paused {
-  background: #1a3a16;
-  color: #cccccc;
-}
-
-#custom-pomodoro.break {
-  background: #8b4513;
-  color: #ffffff;
-}
-
-#custom-pomodoro.break-paused {
-  background: #5c2e09;
-  color: #cccccc;
-}
-
-#custom-pomodoro.long-break {
-  background: #1e3a8a;
-  color: #ffffff;
-}
-
-#custom-pomodoro.long-break-paused {
-  background: #0f1e5c;
-  color: #cccccc;
-}
+#custom-tomat.work { background-color: #ff6b6b; }
+#custom-tomat.work-paused { background-color: #ff9999; }
+#custom-tomat.break { background-color: #4ecdc4; }
+#custom-tomat.break-paused { background-color: #7dd3db; }
+#custom-tomat.long-break { background-color: #45b7d1; }
+#custom-tomat.long-break-paused { background-color: #74c0db; }
 ```
 
-## Output Format
+## JSON Output
 
-The `tomat status` command returns JSON optimized for status bars:
+Tomat provides waybar-optimized JSON output:
 
 ```json
 {
   "text": "🍅 24:30 ▶",
   "tooltip": "Work (1/4) - 25.0min",
-  "class": "work",
+  "class": "work", 
   "percentage": 2.0
 }
 ```
 
-### Visual Indicators
-
+**Visual Indicators:**
 - **Icons**: 🍅 (work), ☕ (break), 🏖️ (long break)
 - **State**: ▶ (running), ⏸ (paused)
-- **Format**: `{icon} {time} {state}`
+- **CSS Classes**: `work`, `work-paused`, `break`, `break-paused`, `long-break`, `long-break-paused`
 
-### CSS Classes
+## Documentation
 
-- `work` / `work-paused` - Work session running/paused
-- `break` / `break-paused` - Break session running/paused
-- `long-break` / `long-break-paused` - Long break running/paused
+For detailed guides and advanced configuration:
 
-## Architecture
-
-```
-┌─────────────────┐    Unix Socket     ┌──────────────────┐
-│   tomat start   │ ──────────────────▶│   tomat daemon   │
-│   tomat status  │                    │                  │
-│   tomat toggle  │ ◀──────────────────│  Timer State     │
-│   tomat stop    │    JSON Response   │  Notifications   │
-└─────────────────┘                    └──────────────────┘
-     (Client)                              (Background)
-```
-
-- **Daemon**: Runs continuously, manages timer state and notifications
-- **Client**: Sends commands via Unix socket (`$XDG_RUNTIME_DIR/tomat.sock`)
-- **Persistence**: Timer survives waybar restarts and system suspend/resume
+- **[📋 Documentation Index](https://github.com/jolars/tomat/blob/main/docs/index.md)** - Complete documentation overview
+- **[📖 Configuration Guide](https://github.com/jolars/tomat/blob/main/docs/configuration.md)** - Complete configuration options
+- **[🔗 Integration Guide](https://github.com/jolars/tomat/blob/main/docs/integration.md)** - Waybar, systemd, and notification setup  
+- **[👨‍💻 Development Guide](https://github.com/jolars/tomat/blob/main/docs/development.md)** - Contributing and architecture
+- **[🐛 Troubleshooting](https://github.com/jolars/tomat/blob/main/docs/troubleshooting.md)** - Common issues and solutions
 
 ## Examples
 
 ### Basic Workflow
 
 ```bash
-# Start daemon
+# One-time setup
+cargo install tomat
 tomat daemon start
 
-# Begin a Pomodoro session
-tomat start --work 25 --break 5
-
-# Status shows: 🍅 24:30 ▶
-tomat status
-
-# Pause for interruption
-tomat toggle
-# Status shows: 🍅 24:30 ⏸
-
-# Resume work
-tomat toggle
-# Status shows: 🍅 24:29 ▶
-
-# When work completes (auto_advance=false default)
-# Status shows: ☕ 05:00 ⏸
-
-# Start break manually
-tomat toggle
-# Status shows: ☕ 04:59 ▶
+# Daily usage
+tomat start          # Begin 25min work session
+# ... work on your task ...
+tomat status         # Check remaining time
+tomat toggle         # Take a quick pause
+tomat skip           # Move to break early
+# ... enjoy your break ...
+# Timer automatically suggests when to return to work
 ```
 
-### Automatic Mode
+### Custom Sessions
 
 ```bash
-# Start with auto-advance (no manual resume needed)
-tomat start --work 25 --break 5 --auto-advance
+# Long focus session
+tomat start --work 45 --break 15
 
-# Timer automatically flows: Work ▶ → Break ▶ → Work ▶ → ...
-# No manual intervention required
+# Sprint session  
+tomat start --work 15 --break 5 --auto-advance
+
+# Deep work (no interruptions)
+tomat start --work 90 --break 30 --sessions 2
 ```
 
-## Development
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed development documentation.
+### Integration Examples
 
 ```bash
-# Quick development workflow
-cargo build
-tomat daemon start
-tomat start --work 0.1 --break 0.05  # Fast testing
-cargo test  # Run 11 integration tests
+# Check if currently working
+tomat status | jq -r '.class' | grep -q work && echo "Focus time!"
+
+# Get remaining time
+tomat status | jq -r '.tooltip'
+
+# Waybar click handlers
+tomat toggle    # Left click to pause/resume
+tomat skip      # Right click to skip phase
 ```
+
+## Architecture
+
+```
+Client Commands  →  Unix Socket  →  Daemon Process  →  Timer State  →  JSON Output
+     ↓                  ↓               ↓              ↓              ↓
+tomat start      $XDG_RUNTIME_DIR/  Background     Work/Break/    {"text": "🍅 25:00 ▶",
+tomat status     tomat.sock         Service        LongBreak       "class": "work"}
+tomat toggle                                       Phases
+```
+
+- **Daemon**: Runs continuously, manages timer state and notifications
+- **Client**: Sends commands via Unix socket for fast communication
+- **Persistence**: Timer survives waybar restarts and system suspend/resume
+- **Notifications**: Desktop alerts and optional sound notifications on phase transitions
 
 ## License
 
-MIT License - see the [LICENSE](LICENSE) file.
+MIT License - see [LICENSE](https://github.com/jolars/tomat/blob/main/LICENSE) for details.
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make changes with tests
-4. Run `cargo test` and `cargo clippy`
-5. Submit a pull request
+Contributions welcome! See the [Development Guide](https://github.com/jolars/tomat/blob/main/docs/DEVELOPMENT.md) for details on:
 
-Bug reports and feature requests welcome via [GitHub Issues](https://github.com/jolars/tomat/issues).
+- Setting up the development environment
+- Code quality standards
+- Testing infrastructure  
+- Architecture overview
+
+---
+
+**Happy focusing! 🍅**
