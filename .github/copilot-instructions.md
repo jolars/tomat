@@ -109,7 +109,8 @@
 │   └── sounds/               # Embedded audio files
 ├── images/
 │   ├── logo.svg              # Source logo (visual identity)
-│   └── logo.png              # Generated logo for GitHub/docs
+│   ├── logo.png              # Generated logo for GitHub/docs (256x256)
+│   └── og.png                # Generated social media image (1280x640)
 ├── Cargo.toml               # Dependencies and metadata, includes cargo-deb config
 ├── Cargo.lock               # Dependency lockfile
 ├── Taskfile.yml             # Task runner commands (dev, lint, build-release, test-*)
@@ -256,8 +257,11 @@ Your changes will be validated against:
 - **Logging:** Uses `println!`/`eprintln!` for output
 - **State persistence:** None - state lost on daemon restart
 - **Notifications:** Desktop notifications sent automatically on phase transitions via `notify-rust`
-- **Icon system:** Embedded icon with automatic caching to `~/.cache/tomat/icon.png` for mako compatibility
-- **Configuration:** TOML-based configuration for timer, sound, and notification settings
+#### Icon System
+- **Embedded icon**: Automatically cached to `~/.cache/tomat/icon.png` for mako compatibility
+- **Image generation**: `build.rs` automatically generates PNG files from `images/logo.svg`
+- **Generated files**: `assets/icon.png` (48x48), `images/logo.png` (256x256), `images/og.png` (1280x640)
+- **Configuration**: TOML-based configuration for timer, sound, and notification settings
 
 ### Daemon Management
 
