@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.1.0](https://github.com/jolars/tomat/compare/v2.0.0...v2.1.0) (2025-10-30)
+
+### Features
+
+* add icon and enable it in notifications ([70c047a](https://github.com/jolars/tomat/commit/70c047a20ab08744300ebec2f072a59a15e7bb87))
+* change summary field in notification to "Tomato" ([e9e7c70](https://github.com/jolars/tomat/commit/e9e7c7024776f1123471f47f384ef6926ada0c98))
+* **config:** add configuration section for notifications ([ff7f8ce](https://github.com/jolars/tomat/commit/ff7f8ce7b4f2852ee7704bb3c0d91c074ab7d87c))
+* update logo ([ee3559d](https://github.com/jolars/tomat/commit/ee3559db697a7d13ab10dcfd6d66402f9ad61b64))
+
 ## [2.0.0](https://github.com/jolars/tomat/compare/v1.0.0...v2.0.0) (2025-10-29)
 
 ### ⚠ BREAKING CHANGES
