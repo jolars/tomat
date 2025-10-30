@@ -143,7 +143,7 @@ volume = 0.5         # Volume level (0.0 to 1.0)
 [notification]
 enabled = true        # Enable desktop notifications
 icon = "auto"         # Icon mode: "auto" (embedded), "theme" (system), or path
-timeout = 3000        # Notification timeout in milliseconds
+timeout = 5000        # Notification timeout in milliseconds
 ```
 
 ### Icon Configuration

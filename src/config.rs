@@ -56,7 +56,7 @@ pub struct NotificationConfig {
     /// "auto" = use embedded icon, "theme" = use system theme icon, or path to custom icon
     #[serde(default = "default_icon")]
     pub icon: String,
-    /// Notification timeout in milliseconds (default: 3000)
+    /// Notification timeout in milliseconds (default: 10000)
     #[serde(default = "default_timeout")]
     pub timeout: u32,
 }
@@ -70,7 +70,7 @@ fn default_icon() -> String {
 }
 
 fn default_timeout() -> u32 {
-    3000
+    10000
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -192,7 +192,7 @@ mod tests {
         // Test notification defaults
         assert!(config.notification.enabled);
         assert_eq!(config.notification.icon, "auto");
-        assert_eq!(config.notification.timeout, 3000);
+        assert_eq!(config.notification.timeout, 10000);
     }
 
     #[test]
@@ -313,6 +313,6 @@ mod tests {
         let config: Config = toml::from_str(toml_str).unwrap();
         assert!(config.notification.enabled); // Should use default
         assert_eq!(config.notification.icon, "theme");
-        assert_eq!(config.notification.timeout, 3000); // Should use default
+        assert_eq!(config.notification.timeout, 10000); // Should use default
     }
 }

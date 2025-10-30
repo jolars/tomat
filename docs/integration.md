@@ -81,17 +81,20 @@ Tomat provides waybar-optimized JSON output:
 ```
 
 **Fields:**
+
 - **text**: Display text with icon and status symbols
 - **tooltip**: Detailed information for hover
 - **class**: CSS class for styling
 - **percentage**: Progress percentage (0-100)
 
 **CSS Classes:**
+
 - `work` / `work-paused` - Work session running/paused
 - `break` / `break-paused` - Break session running/paused
 - `long-break` / `long-break-paused` - Long break running/paused
 
 **Visual Indicators:**
+
 - **Icons**: 🍅 (work), ☕ (break), 🏖️ (long break)
 - **State**: ▶ (running), ⏸ (paused)
 
@@ -163,7 +166,7 @@ For custom mako styling, add to `~/.config/mako/config`:
 background-color=#2d3748
 text-color=#ffffff
 border-color=#4a5568
-default-timeout=3000
+default-timeout=10000
 ```
 
 ### Dunst (X11)
@@ -182,7 +185,7 @@ Custom dunst rules (`~/.config/dunst/dunstrc`):
 appname = "Tomat"
 background = "#2d3748"
 foreground = "#ffffff"
-timeout = 3000
+timeout = 10000
 ```
 
 ### Custom Notification Icons
@@ -247,6 +250,7 @@ tomat status 2>/dev/null | jq -r '.text // "🍅 Not running"' > /tmp/tomat-stat
 ### GNOME
 
 For GNOME Shell integration, tomat works with:
+
 - **Desktop notifications**: Via `notify-rust`
 - **System tray**: Via waybar or other status bars
 - **Keyboard shortcuts**: Set up custom shortcuts for `tomat toggle`, `tomat skip`
@@ -254,6 +258,7 @@ For GNOME Shell integration, tomat works with:
 ### KDE Plasma
 
 Tomat integrates well with KDE:
+
 - **Panel widgets**: Use command output widget with `tomat status`
 - **Notifications**: Works with KDE notification system
 - **Global shortcuts**: Set up via System Settings
@@ -261,6 +266,7 @@ Tomat integrates well with KDE:
 ### Window Managers (i3, sway, etc.)
 
 Perfect for minimal setups:
+
 - **Status bars**: Waybar, polybar, i3status
 - **Keybindings**: Direct tomat commands
 - **Notifications**: Works with any notification daemon
@@ -319,6 +325,8 @@ tomat toggle 2>/dev/null || true
 ### IDE Plugins
 
 While tomat doesn't have official IDE plugins, you can integrate via:
+
 - **Terminal commands**: Most IDEs support terminal integration
 - **Status bar**: Display tomat status in IDE status bar
 - **Notifications**: Desktop notifications work across all applications
+

@@ -28,7 +28,7 @@ volume = 0.5         # Volume level 0.0-1.0 (default: 0.5)
 [notification]
 enabled = true       # Enable desktop notifications (default: true)
 icon = "auto"        # Icon mode (default: "auto")
-timeout = 3000       # Notification timeout in milliseconds (default: 3000)
+timeout = 10000      # Notification timeout in milliseconds (default: 3000)
 
 # Icon mode options:
 # "auto"               - Use embedded icon, cached to ~/.cache/tomat/icon.png (works with mako)

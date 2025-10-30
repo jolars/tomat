@@ -3,6 +3,7 @@
 Tomat supports comprehensive configuration via a TOML file located at `~/.config/tomat/config.toml`. This allows you to set default values for timer durations and behaviors without specifying them on every command.
 
 **💡 Quick Start**: Copy the [complete example config](../config-example.toml):
+
 ```bash
 mkdir -p ~/.config/tomat
 cp config-example.toml ~/.config/tomat/config.toml
@@ -73,7 +74,7 @@ Desktop notifications are shown when transitioning between phases. The notificat
 [notification]
 enabled = true        # Enable desktop notifications (default: true)
 icon = "auto"         # Icon mode: "auto", "theme", or path (default: "auto")
-timeout = 3000        # Notification timeout in milliseconds (default: 3000)
+timeout = 10000        # Notification timeout in milliseconds (default: 3000)
 ```
 
 To disable desktop notifications:
@@ -141,13 +142,13 @@ use_embedded = true  # Use embedded sound files
 volume = 0.5         # Volume level (0.0 to 1.0)
 # Custom sound files (optional - will override embedded sounds)
 # work_to_break = "/path/to/custom/work-to-break.wav"
-# break_to_work = "/path/to/custom/break-to-work.wav" 
+# break_to_work = "/path/to/custom/break-to-work.wav"
 # work_to_long_break = "/path/to/custom/work-to-long-break.wav"
 
 [notification]
 enabled = true                           # Enable desktop notifications
 icon = "auto"                           # Icon to use: "auto" (embedded), "theme" (system), or "/path/to/icon.png" (custom)
-timeout = 3000                          # Notification timeout in milliseconds
+timeout = 10000                          # Notification timeout in milliseconds
 ```
 
 ## Troubleshooting Configuration
@@ -169,3 +170,4 @@ timeout = 3000                          # Notification timeout in milliseconds
 1. **No notifications**: Check if notification daemon is running
 2. **Icon not showing**: Try different icon modes (`"auto"`, `"theme"`, custom path)
 3. **Mako compatibility**: Use `icon = "auto"` for best mako support
+

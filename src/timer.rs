@@ -849,7 +849,7 @@ mod tests {
         let config = NotificationConfig {
             enabled: true,
             icon: "auto".to_string(),
-            timeout: 3000,
+            timeout: 10000,
         };
         let icon = get_notification_icon(&config).expect("Should get auto icon");
         assert!(
@@ -861,7 +861,7 @@ mod tests {
         let config = NotificationConfig {
             enabled: true,
             icon: "theme".to_string(),
-            timeout: 3000,
+            timeout: 10000,
         };
         let icon = get_notification_icon(&config).expect("Should get theme icon");
         assert_eq!(icon, "timer", "Theme icon should be 'timer'");
@@ -873,7 +873,7 @@ mod tests {
         let config = NotificationConfig {
             enabled: true,
             icon: temp_icon.to_str().unwrap().to_string(),
-            timeout: 3000,
+            timeout: 10000,
         };
         let icon = get_notification_icon(&config).expect("Should get custom icon");
         assert_eq!(
