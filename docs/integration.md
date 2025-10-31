@@ -233,6 +233,76 @@ interval = "once"
 json = true
 ```
 
+### i3blocks
+
+i3blocks works perfectly with tomat's existing formats:
+
+#### Simple Integration
+
+```ini
+[tomat]
+command=tomat status --output plain
+interval=1
+```
+
+#### With Click Support
+
+```ini
+[tomat]
+command=tomat status --output plain
+interval=1
+signal=10
+```
+
+Add click handling with environment variables:
+```bash
+#!/bin/bash
+# ~/.config/i3blocks/scripts/tomat-click
+case $BLOCK_BUTTON in
+    1) tomat toggle ;;     # Left click: toggle
+    3) tomat skip ;;       # Right click: skip
+esac
+pkill -RTMIN+10 i3blocks   # Refresh the block
+```
+
+Then set as the command: `command=~/.config/i3blocks/scripts/tomat-click`
+
+#### Rich Integration with Colors
+
+```ini
+[tomat]
+command=~/.config/i3blocks/scripts/tomat-rich
+interval=1
+```
+
+Parser script using waybar JSON:
+```bash
+#!/bin/bash
+# ~/.config/i3blocks/scripts/tomat-rich
+OUTPUT=$(tomat status --output waybar 2>/dev/null)
+if [ $? -eq 0 ]; then
+    TEXT=$(echo "$OUTPUT" | jq -r '.text')
+    CLASS=$(echo "$OUTPUT" | jq -r '.class')
+    
+    echo "$TEXT"           # Full text
+    echo "$TEXT"           # Short text
+    
+    # Set color based on timer state
+    case "$CLASS" in
+        "work") echo "#ff6b6b" ;;
+        "work-paused") echo "#ff9999" ;;
+        "break") echo "#4ecdc4" ;;
+        "break-paused") echo "#7dd3db" ;;
+        "long-break") echo "#45b7d1" ;;
+        "long-break-paused") echo "#74c0db" ;;
+    esac
+else
+    echo "🍅 Not running"
+    echo ""
+    echo "#888888"
+fi
+```
+
 ### i3bar/i3status
 
 For direct i3bar integration or i3status, you can use the plain text format:
