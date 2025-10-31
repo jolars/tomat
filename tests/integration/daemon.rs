@@ -43,7 +43,7 @@ fn test_daemon_status_when_not_running() -> Result<(), Box<dyn std::error::Error
         let stdout = String::from_utf8_lossy(&output.stdout);
 
         // If we get JSON status, then there's a daemon running elsewhere - that's actually OK
-        if let Ok(_) = serde_json::from_str::<serde_json::Value>(&stdout) {
+        if serde_json::from_str::<serde_json::Value>(&stdout).is_ok() {
             // There's a daemon running somewhere else, which is fine for this test
             return Ok(());
         }

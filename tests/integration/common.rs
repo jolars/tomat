@@ -132,28 +132,28 @@ impl TestDaemon {
             }
 
             // Check if timer shows 00:00 (completed but not yet transitioned)
-            if let Some(text) = status.get("text").and_then(|v| v.as_str()) {
-                if text.contains("00:00") && !timer_completed {
-                    // Timer reached 00:00, wait a moment for automatic transition
-                    thread::sleep(Duration::from_millis(1500));
-                    timer_completed = true;
-                    continue;
-                }
+            if let Some(text) = status.get("text").and_then(|v| v.as_str())
+                && text.contains("00:00")
+                && !timer_completed
+            {
+                // Timer reached 00:00, wait a moment for automatic transition
+                thread::sleep(Duration::from_millis(1500));
+                timer_completed = true;
+                continue;
             }
 
             // Check for state after completion
-            if timer_completed {
-                if let Some(class) = status.get("class").and_then(|v| v.as_str()) {
-                    if let Some(ref initial) = initial_phase {
-                        // Check for auto_advance=false: should be paused in new phase
-                        if class.contains("paused") && !class.contains(initial) {
-                            return Ok(()); // Successfully transitioned to paused state
-                        }
-                        // Check for auto_advance=true: should be running in new phase
-                        if !class.contains("paused") && !class.contains(initial) {
-                            return Ok(()); // Successfully transitioned to running state
-                        }
-                    }
+            if timer_completed
+                && let Some(class) = status.get("class").and_then(|v| v.as_str())
+                && let Some(ref initial) = initial_phase
+            {
+                // Check for auto_advance=false: should be paused in new phase
+                if class.contains("paused") && !class.contains(initial) {
+                    return Ok(()); // Successfully transitioned to paused state
+                }
+                // Check for auto_advance=true: should be running in new phase
+                if !class.contains("paused") && !class.contains(initial) {
+                    return Ok(()); // Successfully transitioned to running state
                 }
             }
 
