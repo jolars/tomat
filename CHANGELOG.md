@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.2.0](https://github.com/jolars/tomat/compare/v2.1.0...v2.2.0) (2025-10-31)
+
+### Features
+
+* add `--output` option ([8ccda87](https://github.com/jolars/tomat/commit/8ccda87a4f112384cef26b02d03fea875de2adfb))
+* add `i3status-rs` to output formats ([0515bd9](https://github.com/jolars/tomat/commit/0515bd994c22d120cf1faaf3c4a03cec70c6e78a))
+* change default timer duration to 5 seconds ([5d96283](https://github.com/jolars/tomat/commit/5d96283bb153b222a1acf1a5f9db73a272320c68))
+
+### Bug Fixes
+
+* fix lint errors ([94b4175](https://github.com/jolars/tomat/commit/94b41756677d7a4fc1f17b43c850561238944d48))
+
 ## [2.1.0](https://github.com/jolars/tomat/compare/v2.0.0...v2.1.0) (2025-10-30)
 
 ### Features
