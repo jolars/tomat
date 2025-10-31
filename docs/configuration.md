@@ -1,6 +1,8 @@
 # Configuration Guide
 
-Tomat supports comprehensive configuration via a TOML file located at `~/.config/tomat/config.toml`. This allows you to set default values for timer durations and behaviors without specifying them on every command.
+Tomat supports comprehensive configuration via a TOML file located at
+`~/.config/tomat/config.toml`. This allows you to set default values for timer
+durations and behaviors without specifying them on every command.
 
 **💡 Quick Start**: Copy the [complete example config](../config-example.toml):
 
@@ -25,11 +27,13 @@ auto_advance = false # Auto-advance between phases (default: false)
 
 ### Sound Notifications
 
-By default, tomat plays audio notifications when transitioning between work/break phases:
+By default, tomat plays audio notifications when transitioning between
+work/break phases:
 
 - **Embedded sounds**: High-quality WAV files built into the application
 - **Linux requirement**: Requires ALSA (Advanced Linux Sound Architecture)
-- **Automatic fallback**: If audio system unavailable, falls back to system beep or disables audio
+- **Automatic fallback**: If audio system unavailable, falls back to system beep
+  or disables audio
 - **Customizable**: Override with your own sound files or disable entirely
 - **Volume control**: Adjustable volume level (0.0 to 1.0)
 
@@ -64,9 +68,11 @@ work_to_long_break = "/home/user/sounds/long-break.wav"
 
 ### Desktop Notifications
 
-Desktop notifications are shown when transitioning between phases. The notification system supports three icon modes:
+Desktop notifications are shown when transitioning between phases. The
+notification system supports three icon modes:
 
-- **`"auto"` (default)**: Uses embedded icon, automatically cached to `~/.cache/tomat/icon.png` (works with mako and other notification daemons)
+- **`"auto"` (default)**: Uses embedded icon, automatically cached to
+  `~/.cache/tomat/icon.png` (works with mako and other notification daemons)
 - **`"theme"`**: Uses system theme icon (`"timer"`)
 - **Custom path**: Specify a custom icon file, e.g., `"/home/user/my-icon.png"`
 
@@ -161,12 +167,14 @@ timeout = 10000 # Notification timeout in milliseconds
 
 ### Audio Issues
 
-1. **ALSA not available**: Audio will be automatically disabled if ALSA is not available
+1. **ALSA not available**: Audio will be automatically disabled if ALSA is not
+   available
 2. **Custom sound files**: Ensure files exist and are in WAV format
 3. **Volume issues**: Check system volume and tomat volume setting
 
 ### Notification Issues
 
 1. **No notifications**: Check if notification daemon is running
-2. **Icon not showing**: Try different icon modes (`"auto"`, `"theme"`, custom path)
+2. **Icon not showing**: Try different icon modes (`"auto"`, `"theme"`, custom
+   path)
 3. **Mako compatibility**: Use `icon = "auto"` for best mako support

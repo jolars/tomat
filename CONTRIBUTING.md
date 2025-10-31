@@ -1,6 +1,7 @@
 # Contributing Guide
 
-Thank you for your interest in contributing to tomat! This guide will help you get started.
+Thank you for your interest in contributing to tomat! This guide will help you
+get started.
 
 ## Development Setup
 
@@ -149,8 +150,7 @@ Template:
 2. Run timer: `tomat start --work 25`
 3. Check status: `tomat status`
 
-**Expected:** Timer shows running state
-**Actual:** Timer shows paused state
+**Expected:** Timer shows running state **Actual:** Timer shows paused state
 
 **Output:**
 

@@ -1,10 +1,12 @@
 # Integration Guide
 
-This guide covers integrating tomat with various status bars and notification systems.
+This guide covers integrating tomat with various status bars and notification
+systems.
 
 ## Waybar Integration
 
-Tomat is designed specifically for waybar integration with rich JSON output and CSS styling support.
+Tomat is designed specifically for waybar integration with rich JSON output and
+CSS styling support.
 
 ### Basic Waybar Configuration
 
@@ -115,7 +117,8 @@ systemctl --user start tomat.service
 
 ### Manual Service File
 
-If you prefer to create the service file manually (`~/.config/systemd/user/tomat.service`):
+If you prefer to create the service file manually
+(`~/.config/systemd/user/tomat.service`):
 
 ```ini
 [Unit]

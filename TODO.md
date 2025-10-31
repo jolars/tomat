@@ -8,7 +8,8 @@ This document tracks known issues and planned improvements for tomat.
 
 **Location:** `src/server.rs:130-131`, `src/server.rs:223-224`
 
-**Issue:** Errors during phase transitions are only logged to stderr, not visible to user.
+**Issue:** Errors during phase transitions are only logged to stderr, not
+visible to user.
 
 **Proposed Fix:**
 
@@ -26,7 +27,8 @@ This document tracks known issues and planned improvements for tomat.
 
 **Status Bars:**
 
-- [ ] **polybar** - Popular modular status bar (already supported via plain format)
+- [ ] **polybar** - Popular modular status bar (already supported via plain
+      format)
 - [ ] **py3status** - Python-based extensible i3status replacement
 - [ ] **bumblebee-status** - Modular status bar toolkit
 - [ ] **goblocks** - Fast statusbar written in Go

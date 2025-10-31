@@ -1,17 +1,20 @@
 # Development Guide
 
-This guide covers contributing to tomat, understanding the architecture, and development workflows.
+This guide covers contributing to tomat, understanding the architecture, and
+development workflows.
 
 ## Contributing
 
-We welcome contributions to tomat! This project follows standard open-source practices with a focus on code quality and thorough testing.
+We welcome contributions to tomat! This project follows standard open-source
+practices with a focus on code quality and thorough testing.
 
 ### Quick Contribution Checklist
 
 Before submitting any changes:
 
 - [ ] **Formatting**: `cargo fmt -- --check` (MUST exit with code 0)
-- [ ] **Linting**: `cargo clippy --all-targets --all-features -- -D warnings` (MUST exit with code 0, no warnings allowed)
+- [ ] **Linting**: `cargo clippy --all-targets --all-features -- -D warnings`
+      (MUST exit with code 0, no warnings allowed)
 - [ ] **Compilation**: `cargo check` (MUST pass)
 - [ ] **Tests**: `cargo test` (all integration tests must pass)
 
@@ -19,15 +22,17 @@ Before submitting any changes:
 
 1. **Fork and clone** the repository
 2. **Install prerequisites**:
+
    ```bash
    # Rust toolchain (specified in rust-toolchain.toml)
    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-   
+
    # ALSA development libraries (for audio)
    sudo apt-get install libasound2-dev  # Ubuntu/Debian
    sudo dnf install alsa-lib-devel      # Fedora/RHEL
    sudo pacman -S alsa-lib              # Arch Linux
    ```
+
 3. **Quick development check**:
    ```bash
    task dev  # Runs: cargo check → cargo test → cargo clippy
@@ -76,7 +81,8 @@ cargo build && ./target/debug/tomat daemon start
 
 All code changes MUST pass these checks before commit:
 
-1. **Zero clippy warnings**: `cargo clippy --all-targets --all-features -- -D warnings`
+1. **Zero clippy warnings**:
+   `cargo clippy --all-targets --all-features -- -D warnings`
 2. **Proper formatting**: `cargo fmt -- --check`
 3. **All tests pass**: `cargo test`
 4. **Compilation success**: `cargo check`
@@ -84,20 +90,28 @@ All code changes MUST pass these checks before commit:
 #### Code Style
 
 - **Error handling**: Uses `Box<dyn std::error::Error>` for simplicity
-- **Comments**: Only add comments when they match existing style or explain complex logic
-- **Dependencies**: Use existing libraries when possible, avoid adding new dependencies unless absolutely necessary
-- **Commit style**: Use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, `test:`, `refactor:`)
+- **Comments**: Only add comments when they match existing style or explain
+  complex logic
+- **Dependencies**: Use existing libraries when possible, avoid adding new
+  dependencies unless absolutely necessary
+- **Commit style**: Use
+  [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`,
+  `docs:`, `test:`, `refactor:`)
 
 ### Architecture Overview
 
-Tomat is designed as a small, focused Rust project (~800 lines) with a client-server architecture.
+Tomat is designed as a small, focused Rust project (~800 lines) with a
+client-server architecture.
 
 #### Module Structure
 
 - **`src/main.rs`** (133 lines): CLI parsing with clap, command dispatching
-- **`src/config.rs`** (289 lines): Configuration system with timer, sound, and notification settings
-- **`src/server.rs`** (950 lines): Unix socket server, daemon lifecycle, client request handling, PID file management
-- **`src/timer.rs`** (870 lines): Timer state machine, phase transitions, status output formatting, desktop notifications
+- **`src/config.rs`** (289 lines): Configuration system with timer, sound, and
+  notification settings
+- **`src/server.rs`** (950 lines): Unix socket server, daemon lifecycle, client
+  request handling, PID file management
+- **`src/timer.rs`** (870 lines): Timer state machine, phase transitions, status
+  output formatting, desktop notifications
 - **`tests/cli.rs`** (636 lines): 19 comprehensive integration tests
 
 #### Communication Flow
@@ -117,15 +131,19 @@ JSON Status Output (optimized for waybar)
 #### Key Design Decisions
 
 **Client-Server Architecture:**
-- Single binary with subcommands: `daemon start|stop|status|run`, `start`, `stop`, `status`, `skip`, `toggle`
+
+- Single binary with subcommands: `daemon start|stop|status|run`, `start`,
+  `stop`, `status`, `skip`, `toggle`
 - Daemon listens on Unix socket at `$XDG_RUNTIME_DIR/tomat.sock`
 - PID file tracking at `$XDG_RUNTIME_DIR/tomat.pid` with exclusive file locking
 - Line-delimited JSON protocol for communication
 
 **Timer State Machine:**
+
 - Phases: Work → Break → Work → ... → LongBreak (after N sessions)
 - Two modes controlled by `--auto-advance` flag:
-  - `false` (default): Timer transitions to next phase but **pauses**, requiring manual resume
+  - `false` (default): Timer transitions to next phase but **pauses**, requiring
+    manual resume
   - `true`: Timer automatically continues through all phases
 - Timer starts in paused work state, never returns to "idle"
 
@@ -151,14 +169,18 @@ daemon.wait_for_completion(10)?;
 ```
 
 **Key testing features:**
-- **Isolated environments**: Each test uses `tempfile::tempdir()` with custom `XDG_RUNTIME_DIR`
+
+- **Isolated environments**: Each test uses `tempfile::tempdir()` with custom
+  `XDG_RUNTIME_DIR`
 - **Fast execution**: Fractional minutes (0.05 = 3 seconds) for rapid testing
-- **Notification suppression**: `TOMAT_TESTING=1` env var disables desktop notifications
+- **Notification suppression**: `TOMAT_TESTING=1` env var disables desktop
+  notifications
 - **Automatic cleanup**: `TestDaemon` Drop impl kills daemon process
 
 #### Test Categories
 
-1. **Auto-advance behavior**: Verify `auto_advance=false` pauses after transitions, `auto_advance=true` continues automatically
+1. **Auto-advance behavior**: Verify `auto_advance=false` pauses after
+   transitions, `auto_advance=true` continues automatically
 2. **Timer control**: Toggle pause/resume, stop/start
 3. **Daemon lifecycle**: Start, stop, status, duplicate detection
 4. **Edge cases**: Manual skip, fractional minutes
@@ -192,16 +214,23 @@ daemon.wait_for_completion(10)?;
 ### Technical Implementation Details
 
 #### Process Management
+
 - **Daemon lifecycle**: SIGTERM with 5-second timeout, then SIGKILL
-- **PID file locking**: Uses `fs2::FileExt::try_lock_exclusive()` to prevent race conditions
-- **Socket cleanup**: Automatic cleanup of socket and PID files on graceful shutdown
+- **PID file locking**: Uses `fs2::FileExt::try_lock_exclusive()` to prevent
+  race conditions
+- **Socket cleanup**: Automatic cleanup of socket and PID files on graceful
+  shutdown
 
 #### Notification System
+
 - **Desktop notifications**: Via `notify-rust` with embedded icon system
-- **Icon caching**: Embedded icon automatically cached to `~/.cache/tomat/icon.png`
-- **Mako compatibility**: Default "auto" icon mode works with mako out of the box
+- **Icon caching**: Embedded icon automatically cached to
+  `~/.cache/tomat/icon.png`
+- **Mako compatibility**: Default "auto" icon mode works with mako out of the
+  box
 
 #### Configuration System
+
 - **TOML-based**: Configuration loaded from `~/.config/tomat/config.toml`
 - **Hierarchical**: Built-in defaults → config file → CLI arguments
 - **Partial configuration**: Users can override only specific values
@@ -251,7 +280,8 @@ The project uses automated semantic versioning:
 
 1. **Conventional Commits**: Commit messages determine version bumps
 2. **Automated CI**: GitHub Actions handle testing and releases
-3. **Semantic Versioning**: `feat:` → minor, `fix:` → patch, `BREAKING CHANGE:` → major
+3. **Semantic Versioning**: `feat:` → minor, `fix:` → patch, `BREAKING CHANGE:`
+   → major
 
 ### Getting Help
 
@@ -261,3 +291,4 @@ The project uses automated semantic versioning:
 - **Testing**: Comprehensive CI pipeline ensures quality
 
 The project maintainer is responsive and welcoming to new contributors!
+

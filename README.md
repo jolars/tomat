@@ -4,22 +4,28 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Crates.io](https://img.shields.io/crates/v/tomat.svg)](https://crates.io/crates/tomat)
 
-Tomat ("tomato" in Swedish 🇸🇪) is a Pomodoro timer with daemon support designed for waybar and other status bars.
+Tomat ("tomato" in Swedish 🇸🇪) is a Pomodoro timer with daemon support designed
+for waybar and other status bars.
 
 ## Features
 
 - **🍅 Pomodoro Technique**: Work/break cycles with configurable durations
 - **⚙️ TOML Configuration**: Persistent defaults via XDG config directory
 - **⚡ Daemon Architecture**: Robust background service that survives restarts
-- **📊 Waybar Integration**: JSON output with CSS classes for seamless integration
-- **🎮 Visual Indicators**: Play ▶ and pause ⏸ symbols for clear state indication
-- **🔧 Auto-advance Control**: Choose between manual or automatic phase transitions
+- **📊 Waybar Integration**: JSON output with CSS classes for seamless
+  integration
+- **🎮 Visual Indicators**: Play ▶ and pause ⏸ symbols for clear state
+  indication
+- **🔧 Auto-advance Control**: Choose between manual or automatic phase
+  transitions
 - **🔄 Process Management**: Built-in daemon start/stop/status commands
 - **🖥️ Unix Sockets**: Fast, secure local communication
 - **🌙 Systemd Integration**: Auto-start with user session
 - **📱 Desktop Notifications**: Phase transition alerts with configurable icons
-- **🖼️ Icon System**: Embedded icon with mako compatibility and custom icon support
-- **🔊 Sound Notifications**: Audio alerts with embedded sounds and customization
+- **🖼️ Icon System**: Embedded icon with mako compatibility and custom icon
+  support
+- **🔊 Sound Notifications**: Audio alerts with embedded sounds and
+  customization
 - **💾 Minimal Resources**: Lightweight and efficient
 
 ## Quick Start
@@ -53,7 +59,8 @@ sudo dnf install alsa-lib-devel
 sudo pacman -S alsa-lib
 ```
 
-**Note**: Audio will be automatically disabled if ALSA is not available. The timer will still work normally with desktop notifications only.
+**Note**: Audio will be automatically disabled if ALSA is not available. The
+timer will still work normally with desktop notifications only.
 
 ### Install from Crates.io
 
@@ -175,7 +182,8 @@ Add CSS styling (`~/.config/waybar/style.css`):
 }
 ```
 
-**💡 Tip**: See [`examples/`](examples/) for complete waybar config and styling examples.
+**💡 Tip**: See [`examples/`](examples/) for complete waybar config and styling
+examples.
 
 ## JSON Output
 
@@ -194,18 +202,25 @@ Tomat provides waybar-optimized JSON output:
 
 - **Icons**: 🍅 (work), ☕ (break), 🏖️ (long break)
 - **State**: ▶ (running), ⏸ (paused)
-- **CSS Classes**: `work`, `work-paused`, `break`, `break-paused`, `long-break`, `long-break-paused`
+- **CSS Classes**: `work`, `work-paused`, `break`, `break-paused`, `long-break`,
+  `long-break-paused`
 
 ## Documentation
 
 For detailed guides and advanced configuration:
 
-- **[📋 Documentation Index](https://github.com/jolars/tomat/blob/main/docs/index.md)** - Complete documentation overview
-- **[📁 Examples](https://github.com/jolars/tomat/tree/main/examples)** - Ready-to-use configurations (waybar, systemd, etc.)
-- **[📖 Configuration Guide](https://github.com/jolars/tomat/blob/main/docs/configuration.md)** - Complete configuration options
-- **[🔗 Integration Guide](https://github.com/jolars/tomat/blob/main/docs/integration.md)** - Waybar, systemd, and notification setup
-- **[👨‍💻 Development Guide](https://github.com/jolars/tomat/blob/main/docs/development.md)** - Contributing and architecture
-- **[🐛 Troubleshooting](https://github.com/jolars/tomat/blob/main/docs/troubleshooting.md)** - Common issues and solutions
+- **[📋 Documentation Index](https://github.com/jolars/tomat/blob/main/docs/index.md)** -
+  Complete documentation overview
+- **[📁 Examples](https://github.com/jolars/tomat/tree/main/examples)** -
+  Ready-to-use configurations (waybar, systemd, etc.)
+- **[📖 Configuration Guide](https://github.com/jolars/tomat/blob/main/docs/configuration.md)** -
+  Complete configuration options
+- **[🔗 Integration Guide](https://github.com/jolars/tomat/blob/main/docs/integration.md)** -
+  Waybar, systemd, and notification setup
+- **[👨‍💻 Development Guide](https://github.com/jolars/tomat/blob/main/docs/development.md)** -
+  Contributing and architecture
+- **[🐛 Troubleshooting](https://github.com/jolars/tomat/blob/main/docs/troubleshooting.md)** -
+  Common issues and solutions
 
 ## Examples
 
@@ -266,15 +281,19 @@ tomat toggle                                       Phases
 - **Daemon**: Runs continuously, manages timer state and notifications
 - **Client**: Sends commands via Unix socket for fast communication
 - **Persistence**: Timer survives waybar restarts and system suspend/resume
-- **Notifications**: Desktop alerts and optional sound notifications on phase transitions
+- **Notifications**: Desktop alerts and optional sound notifications on phase
+  transitions
 
 ## License
 
-MIT License - see [LICENSE](https://github.com/jolars/tomat/blob/main/LICENSE) for details.
+MIT License - see [LICENSE](https://github.com/jolars/tomat/blob/main/LICENSE)
+for details.
 
 ## Contributing
 
-Contributions welcome! See the [Development Guide](https://github.com/jolars/tomat/blob/main/docs/DEVELOPMENT.md) for details on:
+Contributions welcome! See the
+[Development Guide](https://github.com/jolars/tomat/blob/main/docs/DEVELOPMENT.md)
+for details on:
 
 - Setting up the development environment
 - Code quality standards
