@@ -1,6 +1,6 @@
 # Integration Guide
 
-This guide covers integrating tomat with various status bars, notification systems, and desktop environments.
+This guide covers integrating tomat with various status bars and notification systems.
 
 ## Waybar Integration
 
@@ -214,11 +214,12 @@ json = true
 button = "left"
 cmd = "tomat toggle"
 [[block.click]]
-button = "right" 
+button = "right"
 cmd = "tomat skip"
 ```
 
 The i3status-rs format provides:
+
 - `text`: Display text with timer and status icons
 - `short_text`: Same as text (for abbreviated display)
 - `state`: Timer state mapping (Critical=work, Good=break, Info=paused)
@@ -255,6 +256,7 @@ signal=10
 ```
 
 Add click handling with environment variables:
+
 ```bash
 #!/bin/bash
 # ~/.config/i3blocks/scripts/tomat-click
@@ -276,6 +278,7 @@ interval=1
 ```
 
 Parser script using waybar JSON:
+
 ```bash
 #!/bin/bash
 # ~/.config/i3blocks/scripts/tomat-rich
@@ -283,10 +286,10 @@ OUTPUT=$(tomat status --output waybar 2>/dev/null)
 if [ $? -eq 0 ]; then
     TEXT=$(echo "$OUTPUT" | jq -r '.text')
     CLASS=$(echo "$OUTPUT" | jq -r '.class')
-    
+
     echo "$TEXT"           # Full text
     echo "$TEXT"           # Short text
-    
+
     # Set color based on timer state
     case "$CLASS" in
         "work") echo "#ff6b6b" ;;
@@ -326,6 +329,7 @@ read_file tomat {
 ```
 
 Helper script:
+
 ```bash
 #!/bin/bash
 while true; do
@@ -378,89 +382,3 @@ With a helper script that runs periodically:
 # Update tomat status for i3status
 tomat status 2>/dev/null | jq -r '.text // "🍅 Not running"' > /tmp/tomat-status
 ```
-
-## Desktop Environment Integration
-
-### GNOME
-
-For GNOME Shell integration, tomat works with:
-
-- **Desktop notifications**: Via `notify-rust`
-- **System tray**: Via waybar or other status bars
-- **Keyboard shortcuts**: Set up custom shortcuts for `tomat toggle`, `tomat skip`
-
-### KDE Plasma
-
-Tomat integrates well with KDE:
-
-- **Panel widgets**: Use command output widget with `tomat status`
-- **Notifications**: Works with KDE notification system
-- **Global shortcuts**: Set up via System Settings
-
-### Window Managers (i3, sway, etc.)
-
-Perfect for minimal setups:
-
-- **Status bars**: Waybar, polybar, i3status
-- **Keybindings**: Direct tomat commands
-- **Notifications**: Works with any notification daemon
-
-## Audio System Integration
-
-### ALSA (Default)
-
-Works out of the box on most Linux systems:
-
-```bash
-# Check ALSA availability
-aplay -l
-```
-
-### PulseAudio/PipeWire
-
-Tomat works through ALSA compatibility layer:
-
-```bash
-# Usually works automatically
-# No additional configuration needed
-```
-
-### Troubleshooting Audio
-
-1. **No sound**: Check ALSA installation and permissions
-2. **Wrong device**: Audio automatically uses default ALSA device
-3. **Volume issues**: Adjust system volume and tomat volume in config
-
-## Development Integration
-
-### Editor Integration
-
-Use tomat with your development workflow:
-
-```bash
-# Start timer when beginning work
-alias work="tomat start && echo 'Focus time! 🍅'"
-
-# Quick status check
-alias focus="tomat status | jq -r '.tooltip'"
-```
-
-### Git Hooks
-
-Integrate with git workflow:
-
-```bash
-# .git/hooks/pre-commit
-#!/bin/bash
-# Pause timer during commits
-tomat toggle 2>/dev/null || true
-```
-
-### IDE Plugins
-
-While tomat doesn't have official IDE plugins, you can integrate via:
-
-- **Terminal commands**: Most IDEs support terminal integration
-- **Status bar**: Display tomat status in IDE status bar
-- **Notifications**: Desktop notifications work across all applications
-
