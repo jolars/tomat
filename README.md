@@ -116,20 +116,20 @@ Create `~/.config/tomat/config.toml` to customize defaults:
 
 ```toml
 [timer]
-work = 25.0           # Work duration in minutes
+work = 25.0          # Work duration in minutes
 break = 5.0          # Break duration in minutes
 long_break = 15.0    # Long break duration in minutes
 sessions = 4         # Sessions until long break
 auto_advance = false # Auto-continue to next phase
 
 [sound]
-enabled = true        # Enable sound notifications
+enabled = true       # Enable sound notifications
 volume = 0.5         # Volume level (0.0-1.0)
 
 [notification]
-enabled = true        # Enable desktop notifications
-icon = "auto"         # Icon mode: "auto", "theme", or custom path
-timeout = 10000        # Notification timeout in milliseconds
+enabled = true       # Enable desktop notifications
+icon = "auto"        # Icon mode: "auto", "theme", or custom path
+timeout = 10000      # Notification timeout in milliseconds
 ```
 
 **💡 Tip**: Copy the complete example config:
@@ -229,9 +229,9 @@ For detailed guides and advanced configuration:
 ```bash
 # One-time setup
 cargo install tomat
-tomat daemon start
 
 # Daily usage
+tomat daemon start
 tomat start          # Begin 25min work session
 # ... work on your task ...
 tomat status         # Check remaining time

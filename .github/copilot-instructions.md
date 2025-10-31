@@ -2,7 +2,10 @@
 
 ## Repository Overview
 
-**tomat** is a Pomodoro timer with daemon support designed for waybar and other status bars. It's a small Rust project (~800 lines across multiple modules) that implements a server/client architecture using Unix sockets for inter-process communication.
+**tomat** is a Pomodoro timer with daemon support designed for waybar and other
+status bars. It's a small Rust project (~800 lines across multiple modules) that
+implements a server/client architecture using Unix sockets for inter-process
+communication.
 
 **Key Details:**
 
@@ -10,8 +13,10 @@
 - **Architecture:** Client/server with Unix socket communication
 - **Target:** Linux systems with systemd user services
 - **Purpose:** Lightweight Pomodoro timer for waybar integration
-- **Dependencies:** Standard Rust ecosystem (tokio, clap, serde, chrono, notify-rust, fs2, rodio)
-- **Testing:** Comprehensive integration tests (19 tests covering all functionality)
+- **Dependencies:** Standard Rust ecosystem (tokio, clap, serde, chrono,
+  notify-rust, fs2, rodio)
+- **Testing:** Comprehensive integration tests (19 tests covering all
+  functionality)
 
 ## Build & Development Environment
 
@@ -32,7 +37,8 @@
    task dev
    ```
 
-   This runs: `cargo check` → `cargo test` → `cargo clippy --all-targets --all-features -- -D warnings`
+   This runs: `cargo check` → `cargo test` →
+   `cargo clippy --all-targets --all-features -- -D warnings`
 
 2. **Individual commands:**
 
@@ -85,11 +91,13 @@
 **CRITICAL:** All code changes MUST pass these checks before commit:
 
 1. **Formatting:** `cargo fmt -- --check` (MUST exit with code 0)
-2. **Linting:** `cargo clippy --all-targets --all-features -- -D warnings` (MUST exit with code 0, no warnings allowed)
+2. **Linting:** `cargo clippy --all-targets --all-features -- -D warnings` (MUST
+   exit with code 0, no warnings allowed)
 3. **Compilation:** `cargo check` (MUST pass)
 4. **Tests:** `cargo test` (19 integration tests must pass)
 
-**Pre-commit hooks are configured** in `.pre-commit-config.yaml` and will run clippy and rustfmt automatically if using the Nix devenv.
+**Pre-commit hooks are configured** in `.pre-commit-config.yaml` and will run
+clippy and rustfmt automatically if using the Nix devenv.
 
 ## Project Layout & Architecture
 
@@ -131,19 +139,30 @@
 
 The project is organized into four main modules:
 
-- **`main.rs`**: CLI parsing with clap and command dispatching to server/client functions
-- **`config.rs`**: Configuration system with timer, sound, and notification settings loaded from TOML
-- **`server.rs`**: Unix socket server implementation, client communication handling, daemon process management (PID files, graceful shutdown), timer event loop, and configuration loading
-- **`timer.rs`**: Timer state management, phase transitions, status output formatting (with Format enum for waybar JSON and plain text), desktop notifications with embedded icon system, and auto-advance logic
+- **`main.rs`**: CLI parsing with clap and command dispatching to server/client
+  functions
+- **`config.rs`**: Configuration system with timer, sound, and notification
+  settings loaded from TOML
+- **`server.rs`**: Unix socket server implementation, client communication
+  handling, daemon process management (PID files, graceful shutdown), timer
+  event loop, and configuration loading
+- **`timer.rs`**: Timer state management, phase transitions, status output
+  formatting (with Format enum for waybar JSON and plain text), desktop
+  notifications with embedded icon system, and auto-advance logic
 - **`tests/cli.rs`**: Comprehensive integration tests covering all functionality
 
 **Communication flow:**
 
-- **Single binary** with subcommands: `daemon start|stop|status|run`, `start`, `stop`, `status`, `skip`, `toggle`
-- **Daemon mode:** Runs continuously, listens on Unix socket at `$XDG_RUNTIME_DIR/tomat.sock`
+- **Single binary** with subcommands: `daemon start|stop|status|run`, `start`,
+  `stop`, `status`, `skip`, `toggle`
+- **Daemon mode:** Runs continuously, listens on Unix socket at
+  `$XDG_RUNTIME_DIR/tomat.sock`
 - **Client mode:** All other commands send requests to daemon via socket
-- **Timer state:** Manages work/break/long-break phases with configurable auto-advance behavior
-- **Status output:** Supports waybar (JSON) and plain (text) formats via `--output` option. Includes CSS classes and visual indicators (play ▶/pause ⏸ symbols)
+- **Timer state:** Manages work/break/long-break phases with configurable
+  auto-advance behavior
+- **Status output:** Supports waybar (JSON) and plain (text) formats via
+  `--output` option. Includes CSS classes and visual indicators (play ▶/pause
+  ⏸ symbols)
 
 ### Key Dependencies
 
@@ -225,13 +244,19 @@ Your changes will be validated against:
 
 ### Common Gotchas
 
-- **Socket path:** Uses `$XDG_RUNTIME_DIR/tomat.sock` or `/run/user/$UID/tomat.sock`
-- **PID files:** Daemon creates `$XDG_RUNTIME_DIR/tomat.pid` for process management
-- **Daemon cleanup:** Automatic cleanup of socket and PID files on graceful shutdown
+- **Socket path:** Uses `$XDG_RUNTIME_DIR/tomat.sock` or
+  `/run/user/$UID/tomat.sock`
+- **PID files:** Daemon creates `$XDG_RUNTIME_DIR/tomat.pid` for process
+  management
+- **Daemon cleanup:** Automatic cleanup of socket and PID files on graceful
+  shutdown
 - **Dependencies:** Clean build downloads ~60 crates, takes ~10 seconds
-- **Testing:** 19 integration tests validate all functionality including daemon management
-- **Systemd:** Service expects `tomat daemon run` command (updated from plain `tomat daemon`)
-- **Notifications:** Automatically disabled during testing via `TOMAT_TESTING` environment variable
+- **Testing:** 19 integration tests validate all functionality including daemon
+  management
+- **Systemd:** Service expects `tomat daemon run` command (updated from plain
+  `tomat daemon`)
+- **Notifications:** Automatically disabled during testing via `TOMAT_TESTING`
+  environment variable
 
 ### Build Timing
 
@@ -247,33 +272,44 @@ Your changes will be validated against:
 - **Auto-advance:** Configurable via `--auto-advance` flag (default: false)
   - `false`: Timer transitions to next phase but pauses (requires manual resume)
   - `true`: Timer continues automatically through all phases
-- **Visual indicators:** Play symbol ▶ when running, pause symbol ⏸ when paused
-- **Phase transitions:** Work → Break → Work → ... → Long Break (after N sessions)
+- **Visual indicators:** Play symbol ▶ when running, pause symbol ⏸ when
+  paused
+- **Phase transitions:** Work → Break → Work → ... → Long Break (after N
+  sessions)
 
 ### Technical Details
 
 - **Error handling:** Uses `Box<dyn std::error::Error>` for simplicity
 - **Communication:** Line-delimited JSON over Unix sockets
 - **Timer precision:** 1-second resolution with tokio timers
-- **Process management:** SIGTERM → SIGKILL graceful shutdown with 5-second timeout
+- **Process management:** SIGTERM → SIGKILL graceful shutdown with 5-second
+  timeout
 - **Logging:** Uses `println!`/`eprintln!` for output
 - **State persistence:** None - state lost on daemon restart
-- **Notifications:** Desktop notifications sent automatically on phase transitions via `notify-rust`
+- **Notifications:** Desktop notifications sent automatically on phase
+  transitions via `notify-rust`
 
 #### Icon System
 
-- **Embedded icon**: Automatically cached to `~/.cache/tomat/icon.png` for mako compatibility
-- **Image generation**: `build.rs` automatically generates PNG files from `images/logo.svg`
-- **Generated files**: `assets/icon.png` (48x48), `images/logo.png` (256x256), `images/og.png` (1280x640)
-- **Configuration**: TOML-based configuration for timer, sound, and notification settings
+- **Embedded icon**: Automatically cached to `~/.cache/tomat/icon.png` for mako
+  compatibility
+- **Image generation**: `build.rs` automatically generates PNG files from
+  `images/logo.svg`
+- **Generated files**: `assets/icon.png` (48x48), `images/logo.png` (256x256),
+  `images/og.png` (1280x640)
+- **Configuration**: TOML-based configuration for timer, sound, and notification
+  settings
 
 ### Daemon Management
 
-- **Manual control:** `tomat daemon start|stop|status` for development and user convenience
+- **Manual control:** `tomat daemon start|stop|status` for development and user
+  convenience
 - **Systemd integration:** `tomat daemon run` for production deployment  
   (Note: systemd service file updated from `tomat daemon` to `tomat daemon run`)
-- **Process safety:** PID file tracking with exclusive file locking, duplicate instance prevention, stale file cleanup
-- **File locking:** Uses `fs2::FileExt::try_lock_exclusive()` on PID file to prevent race conditions
+- **Process safety:** PID file tracking with exclusive file locking, duplicate
+  instance prevention, stale file cleanup
+- **File locking:** Uses `fs2::FileExt::try_lock_exclusive()` on PID file to
+  prevent race conditions
 - **Background operation:** Detached process with stdio redirection
 
 ### Status Output Format
@@ -322,11 +358,13 @@ tomat status --output plain   # Plain text output
 - **State:** ▶ (playing/running), ⏸ (paused)
 - **Format:** `{icon} {time} {state_symbol}`
 
-**Note:** The Format enum infrastructure is in place to support additional formats (polybar, i3bar) in the future.
+**Note:** The Format enum infrastructure is in place to support additional
+formats (polybar, i3bar) in the future.
 
 ### Configuration System
 
-The application uses a TOML configuration file located at `~/.config/tomat/config.toml` with three main sections:
+The application uses a TOML configuration file located at
+`~/.config/tomat/config.toml` with three main sections:
 
 **Timer Configuration:**
 
@@ -360,20 +398,28 @@ timeout = 3000        # Timeout in milliseconds
 
 **Icon Modes:**
 
-- `"auto"`: Uses embedded icon, cached to `~/.cache/tomat/icon.png` (mako-compatible)
+- `"auto"`: Uses embedded icon, cached to `~/.cache/tomat/icon.png`
+  (mako-compatible)
 - `"theme"`: Uses system theme icon (`"timer"`)
 - Custom path: e.g., `"/path/to/custom/icon.png"`
 
 ### Testing Infrastructure
 
 - **Integration tests:** 19 comprehensive tests covering all functionality
-- **Configuration tests:** Validate TOML parsing and defaults for all config sections
+- **Configuration tests:** Validate TOML parsing and defaults for all config
+  sections
 - **Icon system tests:** Test embedded icon caching and different icon modes
-- **Isolated environments:** Each test uses temporary directories and custom socket paths
-- **Timing handling:** Tests use fractional minutes (0.05 = 3 seconds) for fast execution
-- **Notification suppression:** Tests automatically disable desktop notifications
+- **Isolated environments:** Each test uses temporary directories and custom
+  socket paths
+- **Timing handling:** Tests use fractional minutes (0.05 = 3 seconds) for fast
+  execution
+- **Notification suppression:** Tests automatically disable desktop
+  notifications
 - **Daemon lifecycle:** Tests cover start, stop, status, and error conditions
 
 ## Trust These Instructions
 
-These instructions have been validated by running all commands and testing the build pipeline. Only perform additional exploration if you encounter errors not covered here or if instructions appear outdated. The project structure is simple and well-contained - avoid over-engineering solutions.
+These instructions have been validated by running all commands and testing the
+build pipeline. Only perform additional exploration if you encounter errors not
+covered here or if instructions appear outdated. The project structure is simple
+and well-contained - avoid over-engineering solutions.

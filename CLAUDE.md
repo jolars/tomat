@@ -9,8 +9,8 @@ development tasks.
 ## Project Overview
 
 **tomat** is a Pomodoro timer with daemon support designed for waybar and other
-status bars. It's a small Rust project (~800 lines) implementing a
-client-server architecture using Unix sockets for inter-process communication.
+status bars. It's a small Rust project (~800 lines) implementing a client-server
+architecture using Unix sockets for inter-process communication.
 
 ## Essential Commands
 
@@ -71,10 +71,15 @@ cargo build && ./target/debug/tomat daemon start
 ### Module Structure
 
 - **`src/main.rs`** (133 lines): CLI parsing with clap, command dispatching
-- **`src/config.rs`** (289 lines): Configuration system with timer, sound, and notification settings
-- **`src/server.rs`** (950 lines): Unix socket server, daemon lifecycle, client request handling, PID file management with file locking
-- **`src/timer.rs`** (870 lines): Timer state machine, phase transitions, status output formatting with Format enum (waybar JSON and plain text), desktop notifications with icon management
-- **`tests/cli.rs`** (636 lines): 19 comprehensive integration tests with `TestDaemon` helper
+- **`src/config.rs`** (289 lines): Configuration system with timer, sound, and
+  notification settings
+- **`src/server.rs`** (950 lines): Unix socket server, daemon lifecycle, client
+  request handling, PID file management with file locking
+- **`src/timer.rs`** (870 lines): Timer state machine, phase transitions, status
+  output formatting with Format enum (waybar JSON and plain text), desktop
+  notifications with icon management
+- **`tests/cli.rs`** (636 lines): 19 comprehensive integration tests with
+  `TestDaemon` helper
 
 ### Communication Flow
 
@@ -94,7 +99,8 @@ Status Output
 
 **Client-Server Architecture:**
 
-- Single binary with subcommands: `daemon start|stop|status|run`, `start`, `stop`, `status`, `skip`, `toggle`
+- Single binary with subcommands: `daemon start|stop|status|run`, `start`,
+  `stop`, `status`, `skip`, `toggle`
 - Daemon listens on Unix socket at `$XDG_RUNTIME_DIR/tomat.sock`
 - PID file tracking at `$XDG_RUNTIME_DIR/tomat.pid` with exclusive file locking
 - Line-delimited JSON protocol for communication
@@ -104,7 +110,8 @@ Status Output
 
 - Phases: Work → Break → Work → ... → LongBreak (after N sessions)
 - Two modes controlled by `--auto-advance` flag:
-  - `false` (default): Timer transitions to next phase but **pauses**, requiring manual resume
+  - `false` (default): Timer transitions to next phase but **pauses**, requiring
+    manual resume
   - `true`: Timer automatically continues through all phases
 - Timer starts in paused work state, never returns to "idle"
 - Checked every 1 second in daemon loop (see `server.rs:207-228`)
@@ -112,19 +119,25 @@ Status Output
 **Auto-advance Implementation:**
 
 - Phase transitions in `timer.rs:90-153` (`next_phase()` method)
-- When `auto_advance=false`: calls `self.phase = Phase::X; self.is_paused = true`
-- When `auto_advance=true`: calls `self.start_X()` which sets `self.is_paused = false`
+- When `auto_advance=false`: calls
+  `self.phase = Phase::X; self.is_paused = true`
+- When `auto_advance=true`: calls `self.start_X()` which sets
+  `self.is_paused = false`
 - Manual skip command (`tomat skip`) respects the current auto-advance setting
 
 **Status Output Formats:**
 
 - Supports `waybar` (JSON) and `plain` (text) formats
-- Specified via `--output` option on `status` command (e.g., `tomat status --output plain`)
+- Specified via `--output` option on `status` command (e.g.,
+  `tomat status --output plain`)
 - **Waybar format:** JSON with `text`, `tooltip`, `class`, `percentage` fields
 - **Plain format:** Simple text string (e.g., "🍅 24:30 ▶")
-- Visual indicators: 🍅 (work), ☕ (break), 🏖️ (long break), ▶ (running), ⏸ (paused)
-- CSS classes (waybar only): `work`, `work-paused`, `break`, `break-paused`, `long-break`, `long-break-paused`
-- **Note:** Format infrastructure in place to support additional formats (polybar, i3bar) in the future
+- Visual indicators: 🍅 (work), ☕ (break), 🏖️ (long break), ▶ (running), ⏸
+  (paused)
+- CSS classes (waybar only): `work`, `work-paused`, `break`, `break-paused`,
+  `long-break`, `long-break-paused`
+- **Note:** Format infrastructure in place to support additional formats
+  (polybar, i3bar) in the future
 
 **Notification System:**
 
@@ -167,7 +180,8 @@ timeout = 5000        # Notification timeout in milliseconds
 
 The notification system supports three icon modes:
 
-- **`"auto"` (default)**: Uses embedded icon, cached to `~/.cache/tomat/icon.png`
+- **`"auto"` (default)**: Uses embedded icon, cached to
+  `~/.cache/tomat/icon.png`
 - **`"theme"`**: Uses system theme icon (`"timer"`)
 - **Custom path**: e.g., `"/path/to/custom/icon.png"`
 
@@ -194,19 +208,25 @@ daemon.wait_for_completion(10)?;
 
 **Key testing features:**
 
-- Isolated environments: Each test uses `tempfile::tempdir()` with custom `XDG_RUNTIME_DIR`
+- Isolated environments: Each test uses `tempfile::tempdir()` with custom
+  `XDG_RUNTIME_DIR`
 - Fast execution: Fractional minutes (0.05 = 3 seconds) for rapid testing
-- Notification suppression: `TOMAT_TESTING=1` env var disables desktop notifications
+- Notification suppression: `TOMAT_TESTING=1` env var disables desktop
+  notifications
 - Automatic cleanup: `TestDaemon` Drop impl kills daemon process
 
 ### Test Categories
 
-1. **Auto-advance behavior** (tests 150-347): Verify `auto_advance=false` pauses after transitions, `auto_advance=true` continues automatically
+1. **Auto-advance behavior** (tests 150-347): Verify `auto_advance=false` pauses
+   after transitions, `auto_advance=true` continues automatically
 2. **Timer control** (tests 234-313): Toggle pause/resume, stop/start
-3. **Daemon lifecycle** (tests 419-537): Start, stop, status, duplicate detection
+3. **Daemon lifecycle** (tests 419-537): Start, stop, status, duplicate
+   detection
 4. **Edge cases** (tests 350-416): Manual skip, fractional minutes
-5. **Configuration** (config tests): Timer, sound, and notification configuration parsing
-6. **Icon management** (timer tests): Embedded icon caching and different icon modes
+5. **Configuration** (config tests): Timer, sound, and notification
+   configuration parsing
+6. **Icon management** (timer tests): Embedded icon caching and different icon
+   modes
 
 ## Protocol Details
 
@@ -267,7 +287,8 @@ daemon.wait_for_completion(10)?;
 ### Modifying Timer Behavior
 
 1. Update `TimerState` struct in `src/timer.rs:5-17` if new fields needed
-2. Modify state machine logic in `next_phase()` (`timer.rs:90-153`), `start_work()`, etc.
+2. Modify state machine logic in `next_phase()` (`timer.rs:90-153`),
+   `start_work()`, etc.
 3. Update status output in `get_status_output()` (`timer.rs:170-270`)
 4. Test both `auto_advance=true` and `auto_advance=false` modes
 
@@ -275,14 +296,16 @@ daemon.wait_for_completion(10)?;
 
 1. Add new variant to `Format` enum in `src/timer.rs:11-16`
 2. Update `FromStr` implementation to parse new format in `src/timer.rs:18-30`
-3. Modify `get_status_output()` to handle format-specific output in `src/timer.rs:413+`
+3. Modify `get_status_output()` to handle format-specific output in
+   `src/timer.rs:413+`
 4. Update `StatusOutput` struct if new fields are needed for specific formats
 5. Update CLI and documentation to reflect newly supported formats
 6. Test format parsing and output with various status bar configurations
 
 ### Debugging Tips
 
-- Run daemon in foreground: `cargo build && ./target/debug/tomat daemon run` (see output directly)
+- Run daemon in foreground: `cargo build && ./target/debug/tomat daemon run`
+  (see output directly)
 - Test output: `cargo test -- --nocapture` (see println! statements)
 - Check socket: `ss -lx | grep tomat` (verify daemon is listening)
 - Inspect PID: `cat $XDG_RUNTIME_DIR/tomat.pid` and `ps -p <PID>`
@@ -294,11 +317,16 @@ daemon.wait_for_completion(10)?;
 - **State persistence:** None - timer state is lost on daemon restart
 - **Timer precision:** 1-second resolution with tokio::time::sleep
 - **Process management:** SIGTERM with 5-second timeout, then SIGKILL
-- **Systemd integration:** Service uses `tomat daemon run` command (not just `tomat daemon`)
-- **Notifications:** Desktop notifications with embedded icon system for mako compatibility
-- **Icon caching:** Embedded icon automatically cached to `~/.cache/tomat/icon.png`
-- **Commit style:** Use Conventional Commits (feat:, fix:, docs:, test:, refactor:)
-- **CI requirements:** Must pass clippy with `-D warnings` (zero warnings allowed)
+- **Systemd integration:** Service uses `tomat daemon run` command (not just
+  `tomat daemon`)
+- **Notifications:** Desktop notifications with embedded icon system for mako
+  compatibility
+- **Icon caching:** Embedded icon automatically cached to
+  `~/.cache/tomat/icon.png`
+- **Commit style:** Use Conventional Commits (feat:, fix:, docs:, test:,
+  refactor:)
+- **CI requirements:** Must pass clippy with `-D warnings` (zero warnings
+  allowed)
 
 ## Dependencies
 
