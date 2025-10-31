@@ -26,9 +26,9 @@ volume = 0.5        # Volume level 0.0-1.0 (default: 0.5)
 # work_to_long_break = "/path/to/custom/work-to-long-break.wav"
 
 [notification]
-enabled = true       # Enable desktop notifications (default: true)
-icon = "auto"        # Icon mode (default: "auto")
-timeout = 3000       # Notification timeout in milliseconds (default: 3000)
+enabled = true # Enable desktop notifications (default: true)
+icon = "auto"  # Icon mode (default: "auto")
+timeout = 5000 # Notification timeout in milliseconds (default: 3000)
 
 # Icon mode options:
 # "auto"               - Use embedded icon, cached to ~/.cache/tomat/icon.png (works with mako)
@@ -53,4 +53,3 @@ timeout = 3000       # Notification timeout in milliseconds (default: 3000)
 # Custom notification timeout:
 # [notification]
 # timeout = 5000  # 5 seconds
-

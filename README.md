@@ -129,7 +129,7 @@ volume = 0.5         # Volume level (0.0-1.0)
 [notification]
 enabled = true        # Enable desktop notifications
 icon = "auto"         # Icon mode: "auto", "theme", or custom path
-timeout = 3000        # Notification timeout in milliseconds
+timeout = 4000        # Notification timeout in milliseconds
 ```
 
 **💡 Tip**: Copy the complete example config:
@@ -303,4 +303,3 @@ for details on:
 ---
 
 **Happy focusing! 🍅**
-

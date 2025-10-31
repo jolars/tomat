@@ -5,6 +5,7 @@ Tomat supports comprehensive configuration via a TOML file located at
 durations and behaviors without specifying them on every command.
 
 **💡 Quick Start**: Copy the [complete example config](../config-example.toml):
+
 ```bash
 mkdir -p ~/.config/tomat
 cp config-example.toml ~/.config/tomat/config.toml
@@ -79,7 +80,7 @@ notification system supports three icon modes:
 [notification]
 enabled = true        # Enable desktop notifications (default: true)
 icon = "auto"         # Icon mode: "auto", "theme", or path (default: "auto")
-timeout = 3000        # Notification timeout in milliseconds (default: 3000)
+timeout = 5000        # Notification timeout in milliseconds (default: 3000)
 ```
 
 To disable desktop notifications:
@@ -147,13 +148,13 @@ use_embedded = true  # Use embedded sound files
 volume = 0.5         # Volume level (0.0 to 1.0)
 # Custom sound files (optional - will override embedded sounds)
 # work_to_break = "/path/to/custom/work-to-break.wav"
-# break_to_work = "/path/to/custom/break-to-work.wav" 
+# break_to_work = "/path/to/custom/break-to-work.wav"
 # work_to_long_break = "/path/to/custom/work-to-long-break.wav"
 
 [notification]
 enabled = true                           # Enable desktop notifications
 icon = "auto"                           # Icon to use: "auto" (embedded), "theme" (system), or "/path/to/icon.png" (custom)
-timeout = 3000                          # Notification timeout in milliseconds
+timeout = 5000                          # Notification timeout in milliseconds
 ```
 
 ## Troubleshooting Configuration
