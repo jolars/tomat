@@ -16,7 +16,7 @@ cp config-example.toml ~/.config/tomat/config.toml
 
 ```toml
 [timer]
-work = 25.0           # Work session duration in minutes (default: 25)
+work = 25.0          # Work session duration in minutes (default: 25)
 break = 5.0          # Break duration in minutes (default: 5)
 long_break = 15.0    # Long break duration in minutes (default: 15)
 sessions = 4         # Sessions until long break (default: 4)
@@ -170,4 +170,3 @@ timeout = 10000 # Notification timeout in milliseconds
 1. **No notifications**: Check if notification daemon is running
 2. **Icon not showing**: Try different icon modes (`"auto"`, `"theme"`, custom path)
 3. **Mako compatibility**: Use `icon = "auto"` for best mako support
-
