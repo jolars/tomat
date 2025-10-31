@@ -147,6 +147,7 @@ pub enum StatusOutput {
 }
 
 impl StatusOutput {
+    #[allow(dead_code)]
     pub fn get_text(&self) -> &str {
         match self {
             StatusOutput::Waybar { text, .. } => text,
@@ -799,7 +800,7 @@ mod tests {
                 assert_eq!(class, "work");
                 assert!(tooltip.contains("Work (1/4)"));
                 assert!(!tooltip.contains("Paused"));
-                assert!(percentage >= 0.0 && percentage <= 100.0);
+                assert!((0.0..=100.0).contains(&percentage));
             }
             _ => panic!("Expected Waybar format for default"),
         }
