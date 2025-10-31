@@ -18,6 +18,33 @@ This document tracks known issues and planned improvements for tomat.
 
 ## Low Priority - Features
 
+### Additional Status Bar Integration
+
+**Issue:** Support for more status bar applications to broaden compatibility.
+
+**Status Bar Applications to Support:**
+
+**Status Bars:**
+
+- [ ] **polybar** - Popular modular status bar (already supported via plain format)
+- [ ] **py3status** - Python-based extensible i3status replacement
+- [ ] **bumblebee-status** - Modular status bar toolkit
+- [ ] **goblocks** - Fast statusbar written in Go
+- [ ] **dwmblocks** - Modular status bar for dwm
+
+**Implementation Ideas:**
+
+- Dedicated output formats: `--output polybar` etc
+- Plugin architecture for extensible output formats
+- Template-based output formatting
+- Consider standardized status protocol (if any emerge)
+
+**Research Needed:**
+
+- Survey most popular status bar setups in Linux community
+- Investigate specific JSON/config formats each application expects
+- Check for any emerging status bar protocol standards
+
 ### History and Statistics Tracking
 
 **Issue:** No way to track completed Pomodoros or view productivity statistics.
