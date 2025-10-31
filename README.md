@@ -181,12 +181,12 @@ Add CSS styling (`~/.config/waybar/style.css`):
 }
 ```
 
-**💡 Tip**: See [`examples/`](examples/) for complete waybar config and styling
-examples.
+**💡 Tip**: See [`examples/`](examples/) for configuration examples for waybar
+and other status bars.
 
-## JSON Output
+## Output
 
-Tomat provides waybar-optimized JSON output:
+By default, Tomat provides waybar-optimized JSON output:
 
 ```json
 {
@@ -197,12 +197,11 @@ Tomat provides waybar-optimized JSON output:
 }
 ```
 
-**Visual Indicators:**
+Outupt can be styled by using the css classes `work`, `work-paused`, `break`,
+`break-paused`, `long-break`, and `long-break-paused`.
 
-- **Icons**: 🍅 (work), ☕ (break), 🏖️ (long break)
-- **State**: ▶ (running), ⏸ (paused)
-- **CSS Classes**: `work`, `work-paused`, `break`, `break-paused`, `long-break`,
-  `long-break-paused`
+The output type can be changed via the `-o` (`--output`) flag, with options
+`waybar` (default), `i3status-rs`, and `plain`.
 
 ## Documentation
 
@@ -216,8 +215,6 @@ For detailed guides and advanced configuration:
   Complete configuration options
 - **[🔗 Integration Guide](https://github.com/jolars/tomat/blob/main/docs/integration.md)** -
   Waybar, systemd, and notification setup
-- **[👨‍💻 Development Guide](https://github.com/jolars/tomat/blob/main/docs/development.md)** -
-  Contributing and architecture
 - **[🐛 Troubleshooting](https://github.com/jolars/tomat/blob/main/docs/troubleshooting.md)** -
   Common issues and solutions
 
@@ -253,52 +250,26 @@ tomat start --work 15 --break 5 --auto-advance
 tomat start --work 90 --break 30 --sessions 2
 ```
 
-### Integration Examples
-
-```bash
-# Check if currently working
-tomat status | jq -r '.class' | grep -q work && echo "Focus time!"
-
-# Get remaining time
-tomat status | jq -r '.tooltip'
-
-# Waybar click handlers
-tomat toggle    # Left click to pause/resume
-tomat skip      # Right click to skip phase
-```
-
 ## Architecture
 
+Tomat uses a client-daemon architecture with Unix socket communication to allow
+fast and reliable interactions, with persistent timer state managed by the
+daemon.
+
 ```
-Client Commands  →  Unix Socket  →  Daemon Process  →  Timer State  →  JSON Output
-     ↓                  ↓               ↓              ↓              ↓
-tomat start      $XDG_RUNTIME_DIR/  Background     Work/Break/    {"text": "🍅 25:00 ▶",
-tomat status     tomat.sock         Service        LongBreak       "class": "work"}
+Client Commands  →  Unix Socket  →    Daemon   →  Timer State    →    Output
+     ↓                  ↓               ↓              ↓                 ↓
+tomat start      $XDG_RUNTIME_DIR/  Background     Work/Break/   {"text": "🍅 25:00 ▶",
+tomat status     tomat.sock         Service        LongBreak      "class": "work"}
 tomat toggle                                       Phases
 ```
 
 - **Daemon**: Runs continuously, manages timer state and notifications
-- **Client**: Sends commands via Unix socket for fast communication
+- **Client**: Sends commands via Unix socket
 - **Persistence**: Timer survives waybar restarts and system suspend/resume
 - **Notifications**: Desktop alerts and optional sound notifications on phase
   transitions
 
-## License
-
-MIT License - see [LICENSE](https://github.com/jolars/tomat/blob/main/LICENSE)
-for details.
-
 ## Contributing
 
-Contributions welcome! See the
-[Development Guide](https://github.com/jolars/tomat/blob/main/docs/DEVELOPMENT.md)
-for details on:
-
-- Setting up the development environment
-- Code quality standards
-- Testing infrastructure
-- Architecture overview
-
----
-
-**Happy focusing! 🍅**
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for details.

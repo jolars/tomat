@@ -9,8 +9,6 @@ your Pomodoro timer.
   options and examples
 - **[🔗 Integration Guide](integration.md)** - Waybar, systemd, notification
   systems, and desktop environment setup
-- **[👨‍💻 Development Guide](development.md)** - Contributing, architecture, and
-  development workflows
 - **[🐛 Troubleshooting](troubleshooting.md)** - Common issues and their
   solutions
 
@@ -18,11 +16,10 @@ your Pomodoro timer.
 
 1. **First time?** Start with the main [README](../README.md) for installation
    and basic usage
-2. **Setting up waybar?** Check the
+2. **Setting up your status bar?** Check the
    [Integration Guide](integration.md#waybar-integration)
 3. **Want to customize?** See the [Configuration Guide](configuration.md)
 4. **Having problems?** Try the [Troubleshooting Guide](troubleshooting.md)
-5. **Want to contribute?** Read the [Development Guide](development.md)
 
 ## What's Covered
 
@@ -43,14 +40,6 @@ your Pomodoro timer.
 - Desktop environment integration
 - Development workflow integration
 
-### [Development Guide](development.md)
-
-- Contributing guidelines and code quality standards
-- Architecture overview and design decisions
-- Testing infrastructure and patterns
-- Adding new features and commands
-- Debugging tips and release process
-
 ### [Troubleshooting Guide](troubleshooting.md)
 
 - Installation and dependency issues
@@ -68,6 +57,7 @@ your Pomodoro timer.
 - **[📁 Examples Directory](../examples/)** - Ready-to-use configurations
 - **[Example Config](../examples/config.toml)** - Complete configuration example
 - **[License](../LICENSE)** - MIT License details
+- **[Contribution guide](../CONTRIBUTING.md)** - How to contribute to tomat
 
 ## Support
 
@@ -81,4 +71,3 @@ your Pomodoro timer.
 ---
 
 _Happy focusing! 🍅_
-

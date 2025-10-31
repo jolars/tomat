@@ -1,312 +1,288 @@
-# Contributing Guide
+## Contributing
 
-Thank you for your interest in contributing to tomat! This guide will help you
-get started.
+We welcome contributions to tomat! This project follows standard open-source
+practices with a focus on code quality and thorough testing.
 
-## Development Setup
+### Quick Contribution Checklist
 
-### Prerequisites
+Before submitting any changes:
 
-- Rust stable toolchain
-- Git
-- Optional: [Task](https://taskfile.dev/) for development workflows
+- [ ] **Formatting**: `cargo fmt -- --check` (MUST exit with code 0)
+- [ ] **Linting**: `cargo clippy --all-targets --all-features -- -D warnings`
+      (MUST exit with code 0, no warnings allowed)
+- [ ] **Compilation**: `cargo check` (MUST pass)
+- [ ] **Tests**: `cargo test` (all integration tests must pass)
 
-### Initial Setup
+### Getting Started
 
-```bash
-# Clone the repository
-git clone https://github.com/jolars/tomat.git
-cd tomat
+1. **Fork and clone** the repository
+2. **Install prerequisites**:
 
-# Build the project
-cargo build
+   ```bash
+   # Rust toolchain (specified in rust-toolchain.toml)
+   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-# Run tests
-cargo test
+   # ALSA development libraries (for audio)
+   sudo apt-get install libasound2-dev  # Ubuntu/Debian
+   sudo dnf install alsa-lib-devel      # Fedora/RHEL
+   sudo pacman -S alsa-lib              # Arch Linux
+   ```
 
-# Run linting
-cargo clippy --all-targets --all-features -- -D warnings
-
-# Format code
-cargo fmt
-```
+3. **Quick development check**:
+   ```bash
+   task dev  # Runs: cargo check → cargo test → cargo clippy
+   ```
 
 ### Development Workflow
 
-```bash
-# Quick development check
-task dev  # or manually: cargo check && cargo test && cargo clippy
+#### Essential Build Commands
 
-# Start daemon for testing
+**Always run commands from the repository root.**
+
+```bash
+# Quick development check (recommended)
+task dev
+
+# Individual commands
+cargo check                    # Check compilation without building
+cargo test                     # Run all tests (19 integration tests)
+cargo clippy --all-targets --all-features -- -D warnings  # Lint
+cargo fmt                      # Format code
+cargo fmt -- --check          # Check formatting
+
+# Build commands
+cargo build                    # Development build
+cargo build --release          # Release build
+```
+
+#### Testing Your Changes
+
+```bash
+# Build and start daemon for testing
 cargo build && ./target/debug/tomat daemon start
 
-# Test with short durations
-./target/debug/tomat start --work 0.1 --break-time 0.05
+# Test with short durations for fast feedback
+./target/debug/tomat start --work 0.1 --break 0.05  # 6s work, 3s break
+./target/debug/tomat status
+./target/debug/tomat toggle
 
-# Stop daemon
+# Stop daemon when done
 ./target/debug/tomat daemon stop
 ```
 
-## Project Structure
+### Code Quality Standards
+
+#### Mandatory Requirements
+
+All code changes MUST pass these checks before commit:
+
+1. **Zero clippy warnings**:
+   `cargo clippy --all-targets --all-features -- -D warnings`
+2. **Proper formatting**: `cargo fmt -- --check`
+3. **All tests pass**: `cargo test`
+4. **Compilation success**: `cargo check`
+
+#### Code Style
+
+- **Error handling**: Uses `Box<dyn std::error::Error>` for simplicity
+- **Comments**: Only add comments when they match existing style or explain
+  complex logic
+- **Dependencies**: Use existing libraries when possible, avoid adding new
+  dependencies unless absolutely necessary
+- **Commit style**: Use
+  [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`,
+  `docs:`, `test:`, `refactor:`)
+
+### Architecture Overview
+
+Tomat is designed as a small, focused Rust project (~800 lines) with a
+client-server architecture.
+
+#### Module Structure
+
+- **`src/main.rs`** (133 lines): CLI parsing with clap, command dispatching
+- **`src/config.rs`** (289 lines): Configuration system with timer, sound, and
+  notification settings
+- **`src/server.rs`** (950 lines): Unix socket server, daemon lifecycle, client
+  request handling, PID file management
+- **`src/timer.rs`** (870 lines): Timer state machine, phase transitions, status
+  output formatting, desktop notifications
+- **`tests/cli.rs`** (636 lines): 19 comprehensive integration tests
+
+#### Communication Flow
 
 ```
-tomat/
-├── src/
-│   ├── main.rs               # CLI parsing and command dispatching
-│   ├── server.rs             # Unix socket server and daemon logic
-│   └── timer.rs              # Timer state management
-├── tests/
-│   ├── cli.rs                # Integration tests (11 tests)
-│   └── README.md             # Test documentation
-├── docs/                     # Documentation
-└── ...
+Client CLI Commands
+       ↓
+Unix Socket ($XDG_RUNTIME_DIR/tomat.sock)
+       ↓
+Daemon Process (background)
+       ↓
+TimerState (Work/Break/LongBreak phases)
+       ↓
+JSON Status Output (optimized for waybar)
 ```
 
-## Contributing Guidelines
+#### Key Design Decisions
 
-### Code Style
+**Client-Server Architecture:**
 
-- **Formatting**: Use `cargo fmt` (enforced by CI)
-- **Linting**: Pass `cargo clippy --all-targets --all-features -- -D warnings`
-- **Error handling**: Use `Box<dyn std::error::Error>` for simplicity
-- **Comments**: Only add comments for complex logic or public APIs
+- Single binary with subcommands: `daemon start|stop|status|run`, `start`,
+  `stop`, `status`, `skip`, `toggle`
+- Daemon listens on Unix socket at `$XDG_RUNTIME_DIR/tomat.sock`
+- PID file tracking at `$XDG_RUNTIME_DIR/tomat.pid` with exclusive file locking
+- Line-delimited JSON protocol for communication
 
-### Testing
+**Timer State Machine:**
 
-- **Integration tests**: All new functionality must have integration tests
-- **Test isolation**: Use temporary directories and custom socket paths
-- **Fast tests**: Use fractional minutes (e.g., 0.05 = 3 seconds) for speed
-- **Comprehensive coverage**: Test both auto-advance modes
+- Phases: Work → Break → Work → ... → LongBreak (after N sessions)
+- Two modes controlled by `--auto-advance` flag:
+  - `false` (default): Timer transitions to next phase but **pauses**, requiring
+    manual resume
+  - `true`: Timer automatically continues through all phases
+- Timer starts in paused work state, never returns to "idle"
 
-### Commit Messages
+### Testing Infrastructure
 
-Use [Conventional Commits](https://www.conventionalcommits.org/) format:
+#### Integration Test Pattern
 
-```
-feat: add auto-advance functionality
-fix: resolve daemon cleanup on exit
-docs: update waybar integration guide
-test: add daemon lifecycle tests
-refactor: simplify timer state machine
-```
-
-### Pull Request Process
-
-1. **Fork and branch**:
-
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-2. **Make changes**:
-   - Write tests first (TDD approach recommended)
-   - Implement functionality
-   - Update documentation if needed
-
-3. **Validate**:
-
-   ```bash
-   cargo test                    # All tests pass
-   cargo clippy --all-targets --all-features -- -D warnings  # No warnings
-   cargo fmt -- --check         # Proper formatting
-   ```
-
-4. **Commit and push**:
-
-   ```bash
-   git add .
-   git commit -m "feat: add your feature"
-   git push origin feature/your-feature-name
-   ```
-
-5. **Create pull request**:
-   - Clear description of changes
-   - Link any related issues
-   - Include test results
-
-## Types of Contributions
-
-### Bug Reports
-
-When reporting bugs, please include:
-
-- **Environment**: OS, Rust version, tomat version
-- **Steps to reproduce**: Clear sequence of commands
-- **Expected vs actual behavior**
-- **Logs/output**: Relevant error messages
-
-Template:
-
-````markdown
-**Environment:**
-
-- OS: Linux (Ubuntu 22.04)
-- Rust: 1.75.0
-- tomat: 0.1.0
-
-**Steps to reproduce:**
-
-1. Start daemon: `tomat daemon start`
-2. Run timer: `tomat start --work 25`
-3. Check status: `tomat status`
-
-**Expected:** Timer shows running state **Actual:** Timer shows paused state
-
-**Output:**
-
-```json
-{ "class": "work-paused", "text": "🍅 25:00 ⏸" }
-```
-````
-
-### Feature Requests
-
-For new features, please include:
-
-- **Problem statement**: What problem does this solve?
-- **Proposed solution**: How should it work?
-- **Alternative solutions**: Other approaches considered
-- **Additional context**: Use cases, examples
-
-### Documentation Improvements
-
-- Fix typos or unclear explanations
-- Add missing examples
-- Improve waybar integration guides
-- Update API documentation
-
-### Code Contributions
-
-#### Areas for Contribution
-
-- **New features**: Additional status bar integrations, advanced scheduling
-- **Performance**: Optimization opportunities
-- **Platform support**: Windows/macOS compatibility
-- **Error handling**: Better error messages and recovery
-- **Testing**: Additional test coverage
-
-#### Architecture Guidelines
-
-- **Single responsibility**: Each module has a clear purpose
-- **Minimal dependencies**: Only add dependencies if absolutely necessary
-- **Unix philosophy**: Small, focused, composable tools
-- **Backward compatibility**: Don't break existing waybar configurations
-
-## Testing Guidelines
-
-### Running Tests
-
-```bash
-# Run all tests
-cargo test
-
-# Run specific test categories
-cargo test --test cli test_auto_advance    # Auto-advance tests
-cargo test --test cli test_daemon         # Daemon management
-
-# Run with output for debugging
-cargo test --test cli -- --nocapture
-```
-
-### Writing Tests
-
-Integration tests are preferred over unit tests for this project:
+All tests use the `TestDaemon` helper struct for isolated testing:
 
 ```rust
-#[test]
-fn test_new_feature() -> Result<(), Box<dyn std::error::Error>> {
-    let daemon = TestDaemon::start()?;
+// Start isolated test daemon with temporary socket
+let daemon = TestDaemon::start()?;
 
-    // Test your feature
-    daemon.send_command(&["your-command", "--option", "value"])?;
+// Send commands
+daemon.send_command(&["start", "--work", "0.05", "--break", "0.05"])?;
 
-    let status = daemon.get_status()?;
-    assert_eq!(status["expected_field"], "expected_value");
+// Get status
+let status = daemon.get_status()?;
+assert_eq!(status["class"], "work");
 
-    Ok(())
-}
+// Wait for timer completion
+daemon.wait_for_completion(10)?;
 ```
 
-### Test Requirements
+**Key testing features:**
 
-- **Isolated**: Use `TestDaemon` helper for process isolation
-- **Fast**: Use fractional minutes for quick execution
-- **Comprehensive**: Test both success and error cases
-- **Deterministic**: No flaky tests due to timing
+- **Isolated environments**: Each test uses `tempfile::tempdir()` with custom
+  `XDG_RUNTIME_DIR`
+- **Fast execution**: Fractional minutes (0.05 = 3 seconds) for rapid testing
+- **Notification suppression**: `TOMAT_TESTING=1` env var disables desktop
+  notifications
+- **Automatic cleanup**: `TestDaemon` Drop impl kills daemon process
 
-## Documentation Guidelines
+#### Test Categories
 
-### User Documentation
+1. **Auto-advance behavior**: Verify `auto_advance=false` pauses after
+   transitions, `auto_advance=true` continues automatically
+2. **Timer control**: Toggle pause/resume, stop/start
+3. **Daemon lifecycle**: Start, stop, status, duplicate detection
+4. **Edge cases**: Manual skip, fractional minutes
+5. **Configuration**: Timer, sound, and notification configuration parsing
+6. **Icon management**: Embedded icon caching and different icon modes
 
-- **Clear examples**: Show real command usage
-- **Complete workflows**: End-to-end scenarios
-- **Troubleshooting**: Common issues and solutions
-- **Platform specific**: Linux-focused but note limitations
+### Adding New Features
 
-### Developer Documentation
+#### Adding a New Command
 
-- **API changes**: Update docs/API.md for protocol changes
-- **Architecture decisions**: Document significant design choices
-- **Testing approach**: Explain test strategies for complex features
+1. Add enum variant to `Commands` in `src/main.rs`
+2. Add command handling in `handle_client()` in `src/server.rs`
+3. Add match arm in `main()` in `src/main.rs`
+4. Write integration tests in `tests/cli.rs` using `TestDaemon`
 
-### Documentation Structure
+#### Modifying Timer Behavior
 
+1. Update `TimerState` struct in `src/timer.rs` if new fields needed
+2. Modify state machine logic in `next_phase()`, `start_work()`, etc.
+3. Update status output in `get_status_output()`
+4. Test both `auto_advance=true` and `auto_advance=false` modes
+
+#### Adding Configuration Options
+
+1. Update appropriate config struct in `src/config.rs`
+2. Add default value functions
+3. Update `Default` implementation
+4. Add comprehensive tests for new configuration options
+5. Update documentation and examples
+
+### Technical Implementation Details
+
+#### Process Management
+
+- **Daemon lifecycle**: SIGTERM with 5-second timeout, then SIGKILL
+- **PID file locking**: Uses `fs2::FileExt::try_lock_exclusive()` to prevent
+  race conditions
+- **Socket cleanup**: Automatic cleanup of socket and PID files on graceful
+  shutdown
+
+#### Notification System
+
+- **Desktop notifications**: Via `notify-rust` with embedded icon system
+- **Icon caching**: Embedded icon automatically cached to
+  `~/.cache/tomat/icon.png`
+- **Mako compatibility**: Default "auto" icon mode works with mako out of the
+  box
+
+#### Configuration System
+
+- **TOML-based**: Configuration loaded from `~/.config/tomat/config.toml`
+- **Hierarchical**: Built-in defaults → config file → CLI arguments
+- **Partial configuration**: Users can override only specific values
+
+### Debugging Tips
+
+```bash
+# Run daemon in foreground (see output directly)
+cargo build && ./target/debug/tomat daemon run
+
+# Test output (see println! statements)
+cargo test -- --nocapture
+
+# Check socket status
+ss -lx | grep tomat
+
+# Inspect PID file
+cat $XDG_RUNTIME_DIR/tomat.pid && ps -p <PID>
+
+# Check logs (if using systemd)
+journalctl --user -u tomat.service -f
 ```
-docs/
-├── USAGE.md          # Comprehensive usage examples
-├── WAYBAR.md         # Waybar integration guide
-├── API.md            # Internal API documentation
-└── CONTRIBUTING.md   # This file
-```
 
-## Release Process
+### Areas for Contribution
 
-Releases are automated using semantic-release:
+Priority areas where contributions are welcome:
 
-1. **Commit with conventional format**
-2. **Merge to main branch**
-3. **Automated release** creates:
-   - Version bump based on commit types
-   - Changelog generation
-   - GitHub release
-   - Git tags
+- **Performance**: Optimization opportunities
+- **Platform support**: Windows/macOS compatibility exploration
+- **Error handling**: Better error messages and recovery
+- **Testing**: Additional test coverage
+- **Integration**: Additional status bar support
+- **Documentation**: Examples, tutorials, troubleshooting guides
 
-### Version Scheme
+### Backward Compatibility
 
-- **Major** (1.0.0): Breaking changes
-- **Minor** (0.1.0): New features, backward compatible
-- **Patch** (0.0.1): Bug fixes, backward compatible
+When contributing, ensure:
 
-## Getting Help
+- **No breaking changes**: Existing waybar configurations must continue to work
+- **CLI stability**: Existing command-line interfaces are preserved
+- **Configuration compatibility**: Existing config files remain valid
+- **API consistency**: JSON output format remains stable for waybar integration
 
-### Communication Channels
+### Release Process
 
-- **GitHub Issues**: Bug reports, feature requests
-- **GitHub Discussions**: General questions, ideas
-- **Pull Request Comments**: Code-specific discussions
+The project uses automated semantic versioning:
 
-### Response Expectations
+1. **Conventional Commits**: Commit messages determine version bumps
+2. **Automated CI**: GitHub Actions handle testing and releases
+3. **Semantic Versioning**: `feat:` → minor, `fix:` → patch, `BREAKING CHANGE:`
+   → major
 
-- **Bug reports**: Response within 48 hours
-- **Feature requests**: Initial response within 1 week
-- **Pull requests**: Review within 1 week
+### Getting Help
 
-### Maintainer Guidelines
+- **Issues**: Open GitHub issues for bugs or feature requests
+- **Discussions**: Use GitHub Discussions for questions
+- **Code review**: All pull requests receive thorough review
+- **Testing**: Comprehensive CI pipeline ensures quality
 
-Maintainers should:
-
-- Be welcoming to newcomers
-- Provide constructive feedback
-- Respond promptly to contributions
-- Maintain high code quality standards
-- Keep documentation up to date
-
-## Recognition
-
-Contributors will be:
-
-- Listed in CHANGELOG.md for their contributions
-- Mentioned in release notes for significant features
-- Added to GitHub repository contributors
-
-Thank you for contributing to tomat! 🍅
+The project maintainer is responsive and welcoming to new contributors!
