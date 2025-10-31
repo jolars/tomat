@@ -17,23 +17,13 @@ if [ -f "target/man/tomat.1" ]; then
     echo "Man page installed to $MAN_DIR/tomat.1"
 fi
 
-# Ensure ~/.config/systemd/user directory exists
-mkdir -p ~/.config/systemd/user
+# Install systemd service using tomat's built-in command
+echo ""
+echo "Installing systemd service..."
+tomat daemon install
 
-# Install systemd service
-cp tomat.service ~/.config/systemd/user/
-
-# Reload systemd and enable the service
-systemctl --user daemon-reload
-systemctl --user enable tomat.service
-
+echo ""
 echo "Installation complete!"
-echo ""
-echo "To start the daemon:"
-echo "  systemctl --user start tomat.service"
-echo ""
-echo "To check status:"
-echo "  systemctl --user status tomat.service"
 echo ""
 echo "To view the manual:"
 echo "  man tomat"

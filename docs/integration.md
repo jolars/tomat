@@ -108,7 +108,7 @@ For automatic daemon startup with your desktop session.
 
 ```bash
 # Copy service file
-curl -o ~/.config/systemd/user/tomat.service https://raw.githubusercontent.com/jolars/tomat/main/tomat.service
+curl -o ~/.config/systemd/user/tomat.service https://raw.githubusercontent.com/jolars/tomat/main/examples/systemd.service
 
 # Enable auto-start
 systemctl --user enable tomat.service

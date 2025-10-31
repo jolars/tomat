@@ -8,6 +8,10 @@ pub enum DaemonAction {
     Stop,
     /// Check daemon status
     Status,
+    /// Install systemd user service
+    Install,
+    /// Uninstall systemd user service
+    Uninstall,
     /// Run the daemon in the foreground (internal use)
     #[command(hide = true)]
     Run,

@@ -123,7 +123,6 @@ clippy and rustfmt automatically if using the Nix devenv.
 ├── Cargo.lock               # Dependency lockfile
 ├── Taskfile.yml             # Task runner commands (dev, lint, build-release, test-*)
 ├── rust-toolchain.toml      # Rust version specification (stable)
-├── tomat.service            # Systemd user service file
 ├── install.sh               # Installation script with systemd setup
 ├── .github/
 │   ├── workflows/

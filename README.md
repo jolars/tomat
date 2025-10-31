@@ -70,10 +70,22 @@ cargo install tomat
 
 ### Quick Setup with Systemd
 
+After installing tomat, you can set up the systemd service with a single command:
+
 ```bash
-# Set up systemd service for auto-start
+# Install systemd user service (recommended)
+tomat daemon install
+
+# Start the daemon
+systemctl --user start tomat.service
+```
+
+**Alternative manual setup:**
+```bash
+# Manual systemd setup (if you prefer)
 mkdir -p ~/.config/systemd/user
-curl -o ~/.config/systemd/user/tomat.service https://raw.githubusercontent.com/jolars/tomat/main/tomat.service
+curl -o ~/.config/systemd/user/tomat.service https://raw.githubusercontent.com/jolars/tomat/main/examples/systemd.service
+systemctl --user daemon-reload
 systemctl --user enable tomat.service
 systemctl --user start tomat.service
 ```
@@ -105,9 +117,26 @@ tomat stop      # Stop timer and return to idle
 ### Daemon Management
 
 ```bash
-tomat daemon start    # Start background daemon
-tomat daemon stop     # Stop daemon
-tomat daemon status   # Check daemon status
+tomat daemon start     # Start background daemon
+tomat daemon stop      # Stop daemon
+tomat daemon status    # Check daemon status
+tomat daemon install   # Install systemd user service
+tomat daemon uninstall # Remove systemd user service
+```
+
+## Uninstall
+
+To completely remove tomat:
+
+```bash
+# Stop and remove systemd service
+tomat daemon uninstall
+
+# Remove the binary
+cargo uninstall tomat
+
+# Remove configuration (optional)
+rm -rf ~/.config/tomat
 ```
 
 ## Configuration
