@@ -8,6 +8,29 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use crate::audio::{AudioPlayer, SoundType};
 use crate::config::{NotificationConfig, SoundConfig};
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum Format {
+    #[default]
+    Waybar,
+    Plain,
+}
+
+impl std::str::FromStr for Format {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "waybar" => Ok(Format::Waybar),
+            "plain" => Ok(Format::Plain),
+            _ => Err(format!(
+                "Unknown format: '{}'. Supported formats: waybar, plain",
+                s
+            )),
+        }
+    }
+}
+
 // Embed the icon file at compile time
 static ICON_DATA: &[u8] = include_bytes!("../assets/icon.png");
 
@@ -106,6 +129,12 @@ pub struct StatusOutput {
     tooltip: String,
     class: String,
     percentage: f64,
+}
+
+impl StatusOutput {
+    pub fn get_text(&self) -> &str {
+        &self.text
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -389,7 +418,10 @@ impl TimerState {
         self.paused_elapsed_seconds = None;
     }
 
-    pub fn get_status_output(&self) -> StatusOutput {
+    pub fn get_status_output(&self, _format: &Format) -> StatusOutput {
+        // Currently only waybar format is supported
+        // Format parameter reserved for future use
+
         let (icon, class) = match self.phase {
             Phase::Work => (
                 "🍅",
@@ -682,7 +714,7 @@ mod tests {
     fn test_get_status_output_paused_work() {
         let timer = TimerState::new(25.0, 5.0, 15.0, 4);
 
-        let status = timer.get_status_output();
+        let status = timer.get_status_output(&Format::default());
 
         assert_eq!(status.text, "🍅 25:00 ⏸");
         assert_eq!(status.class, "work-paused");
@@ -696,7 +728,7 @@ mod tests {
         let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
         timer.start_work();
 
-        let status = timer.get_status_output();
+        let status = timer.get_status_output(&Format::default());
 
         assert!(status.text.starts_with("🍅"));
         assert!(status.text.ends_with("▶"));
@@ -713,7 +745,7 @@ mod tests {
         timer.duration_minutes = 5.0;
         timer.is_paused = true;
 
-        let status = timer.get_status_output();
+        let status = timer.get_status_output(&Format::default());
 
         assert_eq!(status.text, "☕ 05:00 ⏸");
         assert_eq!(status.class, "break-paused");
@@ -729,7 +761,7 @@ mod tests {
         timer.duration_minutes = 15.0;
         timer.is_paused = true;
 
-        let status = timer.get_status_output();
+        let status = timer.get_status_output(&Format::default());
 
         assert_eq!(status.text, "🏖️ 15:00 ⏸");
         assert_eq!(status.class, "long-break-paused");

@@ -117,7 +117,11 @@ pub enum Commands {
     /// Stop the current session
     Stop,
     /// Get current status as JSON
-    Status,
+    Status {
+        /// Output format (default: waybar)
+        #[arg(short, long, default_value = "waybar")]
+        output: String,
+    },
     /// Skip to next phase
     Skip,
     /// Pause the current timer

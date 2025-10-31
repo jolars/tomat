@@ -86,16 +86,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Err(e) => eprintln!("Failed to connect to daemon: {}", e),
         },
 
-        Commands::Status => match send_command("status", serde_json::Value::Null).await {
-            Ok(response) => {
-                if response.success {
-                    println!("{}", serde_json::to_string(&response.data)?);
-                } else {
-                    eprintln!("Error: {}", response.message);
+        Commands::Status { output } => {
+            let args = serde_json::json!({
+                "output": output
+            });
+
+            match send_command("status", args).await {
+                Ok(response) => {
+                    if response.success {
+                        println!("{}", serde_json::to_string(&response.data)?);
+                    } else {
+                        eprintln!("Error: {}", response.message);
+                    }
                 }
+                Err(e) => eprintln!("Failed to connect to daemon: {}", e),
             }
-            Err(e) => eprintln!("Failed to connect to daemon: {}", e),
-        },
+        }
 
         Commands::Skip => match send_command("skip", serde_json::Value::Null).await {
             Ok(response) => {

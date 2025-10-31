@@ -1,4 +1,4 @@
-# Copilot Instructions for tomat
+# LLM Agent Instructions for tomat
 
 ## Repository Overview
 
@@ -134,7 +134,7 @@ The project is organized into four main modules:
 - **`main.rs`**: CLI parsing with clap and command dispatching to server/client functions
 - **`config.rs`**: Configuration system with timer, sound, and notification settings loaded from TOML
 - **`server.rs`**: Unix socket server implementation, client communication handling, daemon process management (PID files, graceful shutdown), timer event loop, and configuration loading
-- **`timer.rs`**: Timer state management, phase transitions, status output formatting, desktop notifications with embedded icon system, and auto-advance logic
+- **`timer.rs`**: Timer state management, phase transitions, status output formatting (with Format enum for waybar JSON and plain text), desktop notifications with embedded icon system, and auto-advance logic
 - **`tests/cli.rs`**: Comprehensive integration tests covering all functionality
 
 **Communication flow:**
@@ -143,7 +143,7 @@ The project is organized into four main modules:
 - **Daemon mode:** Runs continuously, listens on Unix socket at `$XDG_RUNTIME_DIR/tomat.sock`
 - **Client mode:** All other commands send requests to daemon via socket
 - **Timer state:** Manages work/break/long-break phases with configurable auto-advance behavior
-- **JSON output:** Formatted for waybar consumption with CSS classes and visual indicators (play ▶/pause ⏸ symbols)
+- **Status output:** Supports waybar (JSON) and plain (text) formats via `--output` option. Includes CSS classes and visual indicators (play ▶/pause ⏸ symbols)
 
 ### Key Dependencies
 
@@ -197,6 +197,8 @@ Your changes will be validated against:
    # Test client commands with short durations
    ./target/debug/tomat start --work 0.1 --break-time 0.05  # 6s work, 3s break
    ./target/debug/tomat status
+   ./target/debug/tomat status --output waybar   # JSON output for waybar
+   ./target/debug/tomat status --output plain    # Plain text output
    ./target/debug/tomat toggle  # Toggle timer pause/resume
 
    # Stop daemon when done
@@ -257,7 +259,9 @@ Your changes will be validated against:
 - **Logging:** Uses `println!`/`eprintln!` for output
 - **State persistence:** None - state lost on daemon restart
 - **Notifications:** Desktop notifications sent automatically on phase transitions via `notify-rust`
+
 #### Icon System
+
 - **Embedded icon**: Automatically cached to `~/.cache/tomat/icon.png` for mako compatibility
 - **Image generation**: `build.rs` automatically generates PNG files from `images/logo.svg`
 - **Generated files**: `assets/icon.png` (48x48), `images/logo.png` (256x256), `images/og.png` (1280x640)
@@ -274,7 +278,22 @@ Your changes will be validated against:
 
 ### Status Output Format
 
-The timer provides JSON output optimized for waybar and other status bars:
+The timer supports multiple output formats via the `--output` option.
+
+**Supported formats:**
+
+- `waybar` (default) - JSON output optimized for waybar
+- `plain` - Plain text output
+
+**Usage:**
+
+```bash
+tomat status                  # Uses default (waybar) format
+tomat status --output waybar  # Explicitly specify waybar
+tomat status --output plain   # Plain text output
+```
+
+**Waybar JSON output:**
 
 ```json
 {
@@ -285,7 +304,13 @@ The timer provides JSON output optimized for waybar and other status bars:
 }
 ```
 
-**CSS Classes:**
+**Plain text output:**
+
+```
+"🍅 25:00 ⏸"
+```
+
+**CSS Classes (waybar only):**
 
 - `work` / `work-paused` - Work session running/paused
 - `break` / `break-paused` - Break session running/paused
@@ -297,21 +322,25 @@ The timer provides JSON output optimized for waybar and other status bars:
 - **State:** ▶ (playing/running), ⏸ (paused)
 - **Format:** `{icon} {time} {state_symbol}`
 
+**Note:** The Format enum infrastructure is in place to support additional formats (polybar, i3bar) in the future.
+
 ### Configuration System
 
 The application uses a TOML configuration file located at `~/.config/tomat/config.toml` with three main sections:
 
 **Timer Configuration:**
+
 ```toml
 [timer]
 work = 25.0           # Work duration in minutes
-break = 5.0          # Break duration in minutes  
+break = 5.0          # Break duration in minutes
 long_break = 15.0    # Long break duration in minutes
 sessions = 4         # Sessions until long break
 auto_advance = false # Auto-continue to next phase
 ```
 
 **Sound Configuration:**
+
 ```toml
 [sound]
 enabled = true        # Enable sound notifications
@@ -321,6 +350,7 @@ volume = 0.5         # Volume level (0.0-1.0)
 ```
 
 **Notification Configuration:**
+
 ```toml
 [notification]
 enabled = true        # Enable desktop notifications
@@ -329,6 +359,7 @@ timeout = 3000        # Timeout in milliseconds
 ```
 
 **Icon Modes:**
+
 - `"auto"`: Uses embedded icon, cached to `~/.cache/tomat/icon.png` (mako-compatible)
 - `"theme"`: Uses system theme icon (`"timer"`)
 - Custom path: e.g., `"/path/to/custom/icon.png"`

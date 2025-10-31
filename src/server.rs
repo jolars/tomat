@@ -249,11 +249,38 @@ async fn handle_client(
             }
         }
         "status" => {
-            let status = state.get_status_output();
-            ServerResponse {
-                success: true,
-                data: serde_json::to_value(status)?,
-                message: "Status retrieved".to_string(),
+            let format_str = message
+                .args
+                .get("output")
+                .and_then(|v| v.as_str())
+                .unwrap_or("waybar");
+
+            match format_str.parse::<crate::timer::Format>() {
+                Ok(format) => {
+                    let status = state.get_status_output(&format);
+
+                    let data = match format {
+                        crate::timer::Format::Plain => {
+                            // For plain format, return just the text field
+                            serde_json::Value::String(status.get_text().to_string())
+                        }
+                        crate::timer::Format::Waybar => {
+                            // For waybar format, return the full JSON object
+                            serde_json::to_value(status)?
+                        }
+                    };
+
+                    ServerResponse {
+                        success: true,
+                        data,
+                        message: "Status retrieved".to_string(),
+                    }
+                }
+                Err(e) => ServerResponse {
+                    success: false,
+                    data: serde_json::Value::Null,
+                    message: e,
+                },
             }
         }
         "skip" => {
