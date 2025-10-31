@@ -14,6 +14,7 @@ pub enum Format {
     #[default]
     Waybar,
     Plain,
+    I3statusRs,
 }
 
 impl std::str::FromStr for Format {
@@ -23,8 +24,9 @@ impl std::str::FromStr for Format {
         match s.to_lowercase().as_str() {
             "waybar" => Ok(Format::Waybar),
             "plain" => Ok(Format::Plain),
+            "i3status-rs" => Ok(Format::I3statusRs),
             _ => Err(format!(
-                "Unknown format: '{}'. Supported formats: waybar, plain",
+                "Unknown format: '{}'. Supported formats: waybar, plain, i3status-rs",
                 s
             )),
         }
@@ -124,16 +126,33 @@ pub struct TimerState {
 }
 
 #[derive(Serialize)]
-pub struct StatusOutput {
-    text: String,
-    tooltip: String,
-    class: String,
-    percentage: f64,
+#[serde(untagged)]
+pub enum StatusOutput {
+    Waybar {
+        text: String,
+        tooltip: String,
+        class: String,
+        percentage: f64,
+    },
+    I3statusRs {
+        text: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        short_text: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        icon: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        state: Option<String>,
+    },
+    Plain(String),
 }
 
 impl StatusOutput {
     pub fn get_text(&self) -> &str {
-        &self.text
+        match self {
+            StatusOutput::Waybar { text, .. } => text,
+            StatusOutput::I3statusRs { text, .. } => text,
+            StatusOutput::Plain(text) => text,
+        }
     }
 }
 
@@ -418,10 +437,7 @@ impl TimerState {
         self.paused_elapsed_seconds = None;
     }
 
-    pub fn get_status_output(&self, _format: &Format) -> StatusOutput {
-        // Currently only waybar format is supported
-        // Format parameter reserved for future use
-
+    pub fn get_status_output(&self, format: &Format) -> StatusOutput {
         let (icon, class) = match self.phase {
             Phase::Work => (
                 "🍅",
@@ -473,53 +489,84 @@ impl TimerState {
                 (self.duration_minutes * 60.0) as i64 % 60
             );
 
-            return StatusOutput {
-                text: format!("{} {} ⏸", icon, time_str),
-                tooltip: format!(
-                    "{}{} - {:.1}min (Paused)",
-                    phase_name, sessions_info, self.duration_minutes
-                ),
-                class: class.to_string(),
-                percentage: 0.0,
+            let display_text = format!("{} {} ⏸", icon, time_str);
+            let tooltip_text = format!(
+                "{}{} - {:.1}min (Paused)",
+                phase_name, sessions_info, self.duration_minutes
+            );
+
+            match format {
+                Format::Waybar => StatusOutput::Waybar {
+                    text: display_text,
+                    tooltip: tooltip_text,
+                    class: class.to_string(),
+                    percentage: 0.0,
+                },
+                Format::I3statusRs => StatusOutput::I3statusRs {
+                    text: display_text.clone(),
+                    short_text: Some(display_text),
+                    icon: None,                      // Icon is already in the text
+                    state: Some("Info".to_string()), // Paused state
+                },
+                Format::Plain => StatusOutput::Plain(display_text.clone()),
+            }
+        } else {
+            let remaining = self.get_remaining_seconds();
+            let total_duration = (self.duration_minutes * 60.0) as i64;
+            let elapsed = total_duration - remaining;
+            let percentage = if total_duration > 0 {
+                (elapsed as f64 / total_duration as f64) * 100.0
+            } else {
+                100.0
             };
-        }
 
-        let remaining = self.get_remaining_seconds();
-        let total_duration = (self.duration_minutes * 60.0) as i64;
-        let elapsed = total_duration - remaining;
-        let percentage = if total_duration > 0 {
-            (elapsed as f64 / total_duration as f64) * 100.0
-        } else {
-            100.0
-        };
+            // Always show remaining time with play symbol when running
+            let time_str = format!("{:02}:{:02}", remaining / 60, remaining % 60);
 
-        // Always show remaining time with play symbol when running
-        let time_str = format!("{:02}:{:02}", remaining / 60, remaining % 60);
+            let phase_name = match self.phase {
+                Phase::Work => "Work",
+                Phase::Break => "Break",
+                Phase::LongBreak => "Long Break",
+            };
 
-        let phase_name = match self.phase {
-            Phase::Work => "Work",
-            Phase::Break => "Break",
-            Phase::LongBreak => "Long Break",
-        };
+            let sessions_info = if matches!(self.phase, Phase::Work) {
+                format!(
+                    " ({}/{})",
+                    self.current_session_count + 1,
+                    self.sessions_until_long_break
+                )
+            } else {
+                String::new()
+            };
 
-        let sessions_info = if matches!(self.phase, Phase::Work) {
-            format!(
-                " ({}/{})",
-                self.current_session_count + 1,
-                self.sessions_until_long_break
-            )
-        } else {
-            String::new()
-        };
-
-        StatusOutput {
-            text: format!("{} {} ▶", icon, time_str),
-            tooltip: format!(
+            let display_text = format!("{} {} ▶", icon, time_str);
+            let tooltip_text = format!(
                 "{}{} - {:.1}min",
                 phase_name, sessions_info, self.duration_minutes
-            ),
-            class: class.to_string(),
-            percentage,
+            );
+
+            // Map timer states to i3status-rs states
+            let i3status_state = match self.phase {
+                Phase::Work => "Critical",  // Work time - focused state
+                Phase::Break => "Good",     // Break time - good/rest state
+                Phase::LongBreak => "Good", // Long break - good/rest state
+            };
+
+            match format {
+                Format::Waybar => StatusOutput::Waybar {
+                    text: display_text,
+                    tooltip: tooltip_text,
+                    class: class.to_string(),
+                    percentage,
+                },
+                Format::I3statusRs => StatusOutput::I3statusRs {
+                    text: display_text.clone(),
+                    short_text: Some(display_text),
+                    icon: None, // Icon is already in the text
+                    state: Some(i3status_state.to_string()),
+                },
+                Format::Plain => StatusOutput::Plain(display_text.clone()),
+            }
         }
     }
 }
@@ -716,11 +763,21 @@ mod tests {
 
         let status = timer.get_status_output(&Format::default());
 
-        assert_eq!(status.text, "🍅 25:00 ⏸");
-        assert_eq!(status.class, "work-paused");
-        assert!(status.tooltip.contains("Work (1/4)"));
-        assert!(status.tooltip.contains("Paused"));
-        assert_eq!(status.percentage, 0.0);
+        match status {
+            StatusOutput::Waybar {
+                text,
+                class,
+                tooltip,
+                percentage,
+            } => {
+                assert_eq!(text, "🍅 25:00 ⏸");
+                assert_eq!(class, "work-paused");
+                assert!(tooltip.contains("Work (1/4)"));
+                assert!(tooltip.contains("Paused"));
+                assert_eq!(percentage, 0.0);
+            }
+            _ => panic!("Expected Waybar format for default"),
+        }
     }
 
     #[test]
@@ -730,12 +787,22 @@ mod tests {
 
         let status = timer.get_status_output(&Format::default());
 
-        assert!(status.text.starts_with("🍅"));
-        assert!(status.text.ends_with("▶"));
-        assert_eq!(status.class, "work");
-        assert!(status.tooltip.contains("Work (1/4)"));
-        assert!(!status.tooltip.contains("Paused"));
-        assert!(status.percentage >= 0.0 && status.percentage <= 100.0);
+        match status {
+            StatusOutput::Waybar {
+                text,
+                class,
+                tooltip,
+                percentage,
+            } => {
+                assert!(text.starts_with("🍅"));
+                assert!(text.ends_with("▶"));
+                assert_eq!(class, "work");
+                assert!(tooltip.contains("Work (1/4)"));
+                assert!(!tooltip.contains("Paused"));
+                assert!(percentage >= 0.0 && percentage <= 100.0);
+            }
+            _ => panic!("Expected Waybar format for default"),
+        }
     }
 
     #[test]
@@ -747,11 +814,21 @@ mod tests {
 
         let status = timer.get_status_output(&Format::default());
 
-        assert_eq!(status.text, "☕ 05:00 ⏸");
-        assert_eq!(status.class, "break-paused");
-        assert!(status.tooltip.contains("Break"));
-        assert!(status.tooltip.contains("Paused"));
-        // Breaks don't show session count (no parentheses for session number)
+        match status {
+            StatusOutput::Waybar {
+                text,
+                class,
+                tooltip,
+                ..
+            } => {
+                assert_eq!(text, "☕ 05:00 ⏸");
+                assert_eq!(class, "break-paused");
+                assert!(tooltip.contains("Break"));
+                assert!(tooltip.contains("Paused"));
+                // Breaks don't show session count (no parentheses for session number)
+            }
+            _ => panic!("Expected Waybar format for default"),
+        }
     }
 
     #[test]
@@ -763,9 +840,19 @@ mod tests {
 
         let status = timer.get_status_output(&Format::default());
 
-        assert_eq!(status.text, "🏖️ 15:00 ⏸");
-        assert_eq!(status.class, "long-break-paused");
-        assert!(status.tooltip.contains("Long Break"));
+        match status {
+            StatusOutput::Waybar {
+                text,
+                class,
+                tooltip,
+                ..
+            } => {
+                assert_eq!(text, "🏖️ 15:00 ⏸");
+                assert_eq!(class, "long-break-paused");
+                assert!(tooltip.contains("Long Break"));
+            }
+            _ => panic!("Expected Waybar format for default"),
+        }
     }
 
     #[test]

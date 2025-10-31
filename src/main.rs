@@ -94,7 +94,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             match send_command("status", args).await {
                 Ok(response) => {
                     if response.success {
-                        println!("{}", serde_json::to_string(&response.data)?);
+                        // Handle plain format specially to avoid double JSON encoding
+                        if output == "plain" {
+                            // For plain format, extract the string content without quotes
+                            if let Some(text) = response.data.as_str() {
+                                println!("{}", text);
+                            } else {
+                                println!("{}", serde_json::to_string(&response.data)?);
+                            }
+                        } else {
+                            println!("{}", serde_json::to_string(&response.data)?);
+                        }
                     } else {
                         eprintln!("Error: {}", response.message);
                     }

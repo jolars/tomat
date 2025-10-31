@@ -259,15 +259,12 @@ async fn handle_client(
                 Ok(format) => {
                     let status = state.get_status_output(&format);
 
-                    let data = match format {
-                        crate::timer::Format::Plain => {
-                            // For plain format, return just the text field
-                            serde_json::Value::String(status.get_text().to_string())
+                    // Handle Plain format specially to avoid JSON string serialization
+                    let data = match &status {
+                        crate::timer::StatusOutput::Plain(text) => {
+                            serde_json::Value::String(text.clone())
                         }
-                        crate::timer::Format::Waybar => {
-                            // For waybar format, return the full JSON object
-                            serde_json::to_value(status)?
-                        }
+                        _ => serde_json::to_value(status)?,
                     };
 
                     ServerResponse {

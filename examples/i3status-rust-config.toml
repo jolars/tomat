@@ -1,0 +1,45 @@
+# Example i3status-rust configuration with tomat integration
+# Place this in ~/.config/i3status-rust/config.toml
+
+[theme]
+theme = "ctp-mocha"
+
+[icons]
+icons = "awesome6"
+
+[[block]]
+# Tomat Pomodoro Timer Block
+block = "custom"
+command = "tomat status --output i3status-rs"
+interval = 1
+json = true
+
+# Click handlers for tomat
+[[block.click]]
+button = "left"
+cmd = "tomat toggle"  # Left click to toggle (pause/resume)
+
+[[block.click]]
+button = "right"
+cmd = "tomat skip"   # Right click to skip to next phase
+
+[[block.click]]
+button = "middle"
+cmd = "tomat stop"   # Middle click to stop timer
+
+# The i3status-rs format provides:
+# - text: "🍅 24:30 ▶" (display text with timer and icons)
+# - short_text: same as text (for abbreviated display)
+# - state: "Critical" (work), "Good" (break), "Info" (paused)
+# These map to i3status-rs's styling system automatically
+
+[[block]]
+# Example of other blocks that work well with tomat
+block = "time"
+interval = 60
+format = " $timestamp.datetime(f:'%a %d/%m %R') "
+
+[[block]]
+block = "battery"
+interval = 60
+format = " $icon $percentage "

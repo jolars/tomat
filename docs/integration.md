@@ -200,6 +200,70 @@ icon = "/path/to/your/custom-icon.png"
 
 ## Other Status Bars
 
+### i3status-rust
+
+Tomat provides native support for i3status-rust with a dedicated output format:
+
+```toml
+[[block]]
+block = "custom"
+command = "tomat status --output i3status-rs"
+interval = 1
+json = true
+[[block.click]]
+button = "left"
+cmd = "tomat toggle"
+[[block.click]]
+button = "right" 
+cmd = "tomat skip"
+```
+
+The i3status-rs format provides:
+- `text`: Display text with timer and status icons
+- `short_text`: Same as text (for abbreviated display)
+- `state`: Timer state mapping (Critical=work, Good=break, Info=paused)
+
+For continuous updates, use the watch command:
+
+```toml
+[[block]]
+block = "custom"
+command = "tomat watch --output i3status-rs --interval 1"
+interval = "once"
+json = true
+```
+
+### i3bar/i3status
+
+For direct i3bar integration or i3status, you can use the plain text format:
+
+```bash
+# Direct in i3 config
+bar {
+    status_command exec tomat watch --output plain --interval 1
+}
+```
+
+Or with i3status using a helper script:
+
+```
+order += "read_file tomat"
+
+read_file tomat {
+    path = "/tmp/tomat-status"
+    format = "%content"
+}
+```
+
+Helper script:
+```bash
+#!/bin/bash
+while true; do
+    tomat status --output plain > /tmp/tomat-status
+    sleep 1
+done
+```
+
 ### Polybar
 
 ```ini
