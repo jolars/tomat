@@ -21,7 +21,7 @@
         "changelogTitle": "# Changelog"
       }
     ],
-    "@semantic-release-cargo/semantic-release-cargo",
+    "semantic-release-cargo",
     [
       "@semantic-release/git",
       {
