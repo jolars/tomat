@@ -152,7 +152,6 @@ Add to your waybar config (`~/.config/waybar/config`):
     "interval": 1,
     "return-type": "json",
     "format": "{}",
-    "tooltip": true,
     "on-click": "tomat toggle",
     "on-click-right": "tomat skip"
   }
