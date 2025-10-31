@@ -25,12 +25,14 @@ task dev
 cargo build                    # Development build
 cargo build --release          # Release build
 
-# Run tests (19 integration tests)
+# Run tests (27 integration tests across 6 modules)
 cargo test
 
-# Run specific test categories
-cargo test --test cli test_auto_advance    # Auto-advance functionality tests
-cargo test --test cli test_daemon         # Daemon management tests
+# Run specific test categories by module
+cargo test --test cli integration::timer      # Timer behavior tests
+cargo test --test cli integration::daemon     # Daemon management tests
+cargo test --test cli integration::formats    # Output format tests
+cargo test --test cli integration::commands   # Command validation tests
 
 # Run with output for debugging
 cargo test -- --nocapture
@@ -78,8 +80,13 @@ cargo build && ./target/debug/tomat daemon start
 - **`src/timer.rs`** (870 lines): Timer state machine, phase transitions, status
   output formatting with Format enum (waybar JSON and plain text), desktop
   notifications with icon management
-- **`tests/cli.rs`** (636 lines): 19 comprehensive integration tests with
-  `TestDaemon` helper
+- **`tests/`**: Modular integration test suite (27 tests across 6 modules)
+  - **`cli.rs`**: Integration test entry point
+  - **`integration/common.rs`** (171 lines): Shared TestDaemon helper and utilities
+  - **`integration/timer.rs`** (300 lines): Timer behavior and auto-advance tests
+  - **`integration/daemon.rs`** (88 lines): Daemon lifecycle tests
+  - **`integration/formats.rs`** (223 lines): Output format tests
+  - **`integration/commands.rs`** (86 lines): Command validation tests
 
 ### Communication Flow
 
@@ -208,6 +215,8 @@ daemon.wait_for_completion(10)?;
 
 **Key testing features:**
 
+- **Modular architecture:** Tests organized into logical modules by functionality
+- **TestDaemon helper:** Shared utility in `common.rs` for daemon lifecycle management
 - Isolated environments: Each test uses `tempfile::tempdir()` with custom
   `XDG_RUNTIME_DIR`
 - Fast execution: Fractional minutes (0.05 = 3 seconds) for rapid testing
@@ -215,18 +224,14 @@ daemon.wait_for_completion(10)?;
   notifications
 - Automatic cleanup: `TestDaemon` Drop impl kills daemon process
 
-### Test Categories
+### Test Categories (27 tests total)
 
-1. **Auto-advance behavior** (tests 150-347): Verify `auto_advance=false` pauses
-   after transitions, `auto_advance=true` continues automatically
-2. **Timer control** (tests 234-313): Toggle pause/resume, stop/start
-3. **Daemon lifecycle** (tests 419-537): Start, stop, status, duplicate
-   detection
-4. **Edge cases** (tests 350-416): Manual skip, fractional minutes
-5. **Configuration** (config tests): Timer, sound, and notification
-   configuration parsing
-6. **Icon management** (timer tests): Embedded icon caching and different icon
-   modes
+1. **Timer behavior** (`integration::timer`): Auto-advance logic, phase transitions, pause/resume
+2. **Daemon lifecycle** (`integration::daemon`): Start, stop, status, duplicate detection  
+3. **Output formats** (`integration::formats`): Waybar JSON, plain text, i3status-rs
+4. **Command validation** (`integration::commands`): Parameter validation, error handling
+5. **Configuration** (unit tests): Timer, sound, and notification configuration parsing
+6. **Icon management** (unit tests): Embedded icon caching and different icon modes
 
 ## Protocol Details
 
@@ -282,7 +287,7 @@ daemon.wait_for_completion(10)?;
 1. Add enum variant to `Commands` in `src/main.rs:37-86`
 2. Add command handling in `handle_client()` in `src/server.rs:53-172`
 3. Add match arm in `main()` in `src/main.rs:92-197`
-4. Write integration tests in `tests/cli.rs` using `TestDaemon`
+4. Write integration tests in appropriate module in `tests/integration/`
 
 ### Modifying Timer Behavior
 

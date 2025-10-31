@@ -15,8 +15,8 @@ communication.
 - **Purpose:** Lightweight Pomodoro timer for waybar integration
 - **Dependencies:** Standard Rust ecosystem (tokio, clap, serde, chrono,
   notify-rust, fs2, rodio)
-- **Testing:** Comprehensive integration tests (19 tests covering all
-  functionality)
+- **Testing:** Comprehensive integration tests (27 tests across 6 modules
+  covering all functionality)
 
 ## Build & Development Environment
 
@@ -49,9 +49,11 @@ communication.
    # Run tests (comprehensive integration test suite)
    cargo test
 
-   # Run specific test categories
-   cargo test --test cli test_auto_advance    # Auto-advance functionality
-   cargo test --test cli test_daemon         # Daemon management
+   # Run specific test categories by module
+   cargo test --test cli integration::timer      # Timer behavior tests
+   cargo test --test cli integration::daemon     # Daemon management tests
+   cargo test --test cli integration::formats    # Output format tests
+   cargo test --test cli integration::commands   # Command validation tests
 
    # Lint with clippy - MUST pass with zero warnings
    cargo clippy --all-targets --all-features -- -D warnings
@@ -94,7 +96,7 @@ communication.
 2. **Linting:** `cargo clippy --all-targets --all-features -- -D warnings` (MUST
    exit with code 0, no warnings allowed)
 3. **Compilation:** `cargo check` (MUST pass)
-4. **Tests:** `cargo test` (19 integration tests must pass)
+4. **Tests:** `cargo test` (27 integration tests must pass)
 
 **Pre-commit hooks are configured** in `.pre-commit-config.yaml` and will run
 clippy and rustfmt automatically if using the Nix devenv.
@@ -111,7 +113,14 @@ clippy and rustfmt automatically if using the Nix devenv.
 │   ├── server.rs             # Unix socket server, daemon logic, and process management
 │   └── timer.rs              # Timer state management, phase transitions, and notification system
 ├── tests/
-│   └── cli.rs                # Integration tests (19 tests)
+│   ├── cli.rs                # Integration test entry point
+│   └── integration/          # Modular integration test modules
+│       ├── mod.rs           # Module declarations
+│       ├── common.rs        # Shared test utilities (TestDaemon helper)
+│       ├── daemon.rs        # Daemon lifecycle tests
+│       ├── timer.rs         # Timer behavior and auto-advance tests
+│       ├── commands.rs      # Command validation tests
+│       └── formats.rs       # Output format tests
 ├── assets/
 │   ├── icon.png              # Embedded notification icon
 │   └── sounds/               # Embedded audio files
@@ -148,7 +157,15 @@ The project is organized into four main modules:
 - **`timer.rs`**: Timer state management, phase transitions, status output
   formatting (with Format enum for waybar JSON and plain text), desktop
   notifications with embedded icon system, and auto-advance logic
-- **`tests/cli.rs`**: Comprehensive integration tests covering all functionality
+- **`tests/`**: Modular integration test suite with 27 tests across 6 modules
+  - **`cli.rs`**: Integration test entry point
+  - **`integration/common.rs`**: Shared TestDaemon helper and utilities (171
+    lines)
+  - **`integration/timer.rs`**: Timer behavior and auto-advance tests (300
+    lines)
+  - **`integration/daemon.rs`**: Daemon lifecycle tests (88 lines)
+  - **`integration/formats.rs`**: Output format tests (223 lines)
+  - **`integration/commands.rs`**: Command validation tests (86 lines)
 
 **Communication flow:**
 
@@ -404,7 +421,12 @@ timeout = 3000        # Timeout in milliseconds
 
 ### Testing Infrastructure
 
-- **Integration tests:** 19 comprehensive tests covering all functionality
+- **Integration tests:** 27 comprehensive tests across 6 modules covering all
+  functionality
+- **Modular architecture:** Tests organized by functionality (timer, daemon,
+  formats, commands)
+- **TestDaemon helper:** Shared utility for daemon lifecycle management in
+  isolated environments
 - **Configuration tests:** Validate TOML parsing and defaults for all config
   sections
 - **Icon system tests:** Test embedded icon caching and different icon modes
