@@ -83,20 +83,17 @@ Tomat provides waybar-optimized JSON output:
 ```
 
 **Fields:**
-
 - **text**: Display text with icon and status symbols
 - **tooltip**: Detailed information for hover
 - **class**: CSS class for styling
 - **percentage**: Progress percentage (0-100)
 
 **CSS Classes:**
-
 - `work` / `work-paused` - Work session running/paused
 - `break` / `break-paused` - Break session running/paused
 - `long-break` / `long-break-paused` - Long break running/paused
 
 **Visual Indicators:**
-
 - **Icons**: 🍅 (work), ☕ (break), 🏖️ (long break)
 - **State**: ▶ (running), ⏸ (paused)
 
@@ -169,7 +166,7 @@ For custom mako styling, add to `~/.config/mako/config`:
 background-color=#2d3748
 text-color=#ffffff
 border-color=#4a5568
-default-timeout=10000
+default-timeout=3000
 ```
 
 ### Dunst (X11)
@@ -188,7 +185,7 @@ Custom dunst rules (`~/.config/dunst/dunstrc`):
 appname = "Tomat"
 background = "#2d3748"
 foreground = "#ffffff"
-timeout = 10000
+timeout = 3000
 ```
 
 ### Custom Notification Icons
