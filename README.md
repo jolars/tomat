@@ -4,8 +4,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Crates.io](https://img.shields.io/crates/v/tomat.svg)](https://crates.io/crates/tomat)
 
-Tomat ("tomato" in Swedish 🇸🇪) is a Pomodoro timer with daemon support designed
-for waybar and other status bars.
+Tomat ("tomato" in Swedish 🇸🇪) is a Pomodoro timer for Linux, designed for
+seamless integration with waybar and other status bars.
 
 ## Features
 
