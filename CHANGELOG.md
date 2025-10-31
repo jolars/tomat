@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.3.0](https://github.com/jolars/tomat/compare/v2.2.0...v2.3.0) (2025-10-31)
+
+### Features
+
+* add `tomat daemon install/uninstall` ([f414020](https://github.com/jolars/tomat/commit/f4140205b2d21bc55474b81975fad1417a3f8fe8))
+
+### Bug Fixes
+
+* bump version in Cargo.toml ([6c90065](https://github.com/jolars/tomat/commit/6c900657cd52472a22103d38af49527c4d6218cb))
+* fix linting error ([61568b3](https://github.com/jolars/tomat/commit/61568b30b270cc5e837edf7b151cb4a24d2ef9f3))
+
 ## [2.2.0](https://github.com/jolars/tomat/compare/v2.1.0...v2.2.0) (2025-10-31)
 
 ### Features
