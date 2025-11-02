@@ -274,7 +274,7 @@ mod tests {
     fn test_config_can_parse_break_field() {
         let toml_str = r#"
             [timer]
-            work = 30.0
+            work = 30
             break = 7.0
             long_break = 20.0
         "#;
