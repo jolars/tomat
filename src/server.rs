@@ -19,21 +19,21 @@ struct ClientMessage {
 }
 
 fn get_socket_path() -> PathBuf {
-    let runtime_dir = std::env::var("XDG_RUNTIME_DIR")
-        .unwrap_or_else(|_| format!("/run/user/{}", unsafe { libc::getuid() }));
-    PathBuf::from(runtime_dir).join("tomat.sock")
+    dirs::runtime_dir()
+        .unwrap_or_else(|| PathBuf::from(format!("/run/user/{}", unsafe { libc::getuid() })))
+        .join("tomat.sock")
 }
 
 fn get_pid_file_path() -> PathBuf {
-    let runtime_dir = std::env::var("XDG_RUNTIME_DIR")
-        .unwrap_or_else(|_| format!("/run/user/{}", unsafe { libc::getuid() }));
-    PathBuf::from(runtime_dir).join("tomat.pid")
+    dirs::runtime_dir()
+        .unwrap_or_else(|| PathBuf::from(format!("/run/user/{}", unsafe { libc::getuid() })))
+        .join("tomat.pid")
 }
 
 fn get_state_file_path() -> PathBuf {
-    let runtime_dir = std::env::var("XDG_RUNTIME_DIR")
-        .unwrap_or_else(|_| format!("/run/user/{}", unsafe { libc::getuid() }));
-    PathBuf::from(runtime_dir).join("tomat.state")
+    dirs::runtime_dir()
+        .unwrap_or_else(|| PathBuf::from(format!("/run/user/{}", unsafe { libc::getuid() })))
+        .join("tomat.state")
 }
 
 /// Save timer state to disk
