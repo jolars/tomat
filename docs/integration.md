@@ -3,12 +3,14 @@
 This guide covers integrating tomat with various status bars and notification
 systems.
 
-## Waybar Integration
+## Status Bars
+
+### Waybar Integration
 
 Tomat is designed specifically for waybar integration with rich JSON output and
 CSS styling support.
 
-### Basic Waybar Configuration
+#### Basic Configuration
 
 Add this to your waybar config (`~/.config/waybar/config`):
 
@@ -27,7 +29,7 @@ Add this to your waybar config (`~/.config/waybar/config`):
 }
 ```
 
-### Waybar Styling
+#### Styling
 
 Add CSS styling (`~/.config/waybar/style.css`):
 
@@ -69,7 +71,7 @@ Add CSS styling (`~/.config/waybar/style.css`):
 }
 ```
 
-### JSON Output Format
+#### JSON Output Format
 
 Tomat provides waybar-optimized JSON output:
 
@@ -99,6 +101,104 @@ Tomat provides waybar-optimized JSON output:
 
 - **Icons**: 🍅 (work), ☕ (break), 🏖️ (long break)
 - **State**: ▶ (running), ⏸ (paused)
+
+### i3status-rust
+
+Tomat provides native support for i3status-rust with a dedicated output format:
+
+```toml
+[[block]]
+block = "custom"
+command = "tomat status --output i3status-rs"
+interval = 1
+json = true
+
+[[block.click]]
+button = "left"
+cmd = "tomat toggle"
+
+[[block.click]]
+button = "right"
+cmd = "tomat skip"
+```
+
+The i3status-rs format provides:
+
+- `text`: Display text with timer and status icons
+- `short_text`: Same as text (for abbreviated display)
+- `state`: Timer state mapping (Critical=work, Good=break, Info=paused)
+
+### i3blocks
+
+i3blocks works perfectly with tomat's existing formats:
+
+#### Simple Integration
+
+```ini
+[tomat]
+command=tomat status --output plain
+interval=1
+```
+
+#### With Click Support
+
+```ini
+[tomat]
+command=tomat status --output plain
+interval=1
+signal=10
+```
+
+Add click handling with environment variables:
+
+```bash
+#!/bin/bash
+# ~/.config/i3blocks/scripts/tomat-click
+case $BLOCK_BUTTON in
+    1) tomat toggle ;;     # Left click: toggle
+    3) tomat skip ;;       # Right click: skip
+esac
+pkill -RTMIN+10 i3blocks   # Refresh the block
+```
+
+Then set as the command: `command=~/.config/i3blocks/scripts/tomat-click`
+
+### i3bar/i3status
+
+For i3bar integration or i3status, you can use a helper script. First, add this
+to your i3status config:
+
+```
+order += "read_file tomat"
+
+read_file tomat {
+    path = "/tmp/tomat-status"
+    format = "%content"
+}
+```
+
+Helper script:
+
+```bash
+#!/bin/bash
+while true; do
+    tomat status --output plain > /tmp/tomat-status
+    sleep 1
+done
+```
+
+### Polybar
+
+```ini
+[module/tomat]
+type = custom/script
+exec = tomat status --output plain
+interval = 1
+click-left = tomat toggle
+click-right = tomat skip
+format-prefix = " "
+format-foreground = #ffffff
+```
 
 ## Systemd Integration
 
@@ -199,136 +299,4 @@ To use a custom notification icon:
 # ~/.config/tomat/config.toml
 [notification]
 icon = "/path/to/your/custom-icon.png"
-```
-
-## Other Status Bars
-
-### i3status-rust
-
-Tomat provides native support for i3status-rust with a dedicated output format:
-
-```toml
-[[block]]
-block = "custom"
-command = "tomat status --output i3status-rs"
-interval = 1
-json = true
-
-[[block.click]]
-button = "left"
-cmd = "tomat toggle"
-
-[[block.click]]
-button = "right"
-cmd = "tomat skip"
-```
-
-The i3status-rs format provides:
-
-- `text`: Display text with timer and status icons
-- `short_text`: Same as text (for abbreviated display)
-- `state`: Timer state mapping (Critical=work, Good=break, Info=paused)
-
-### i3blocks
-
-i3blocks works perfectly with tomat's existing formats:
-
-#### Simple Integration
-
-```ini
-[tomat]
-command=tomat status --output plain
-interval=1
-```
-
-#### With Click Support
-
-```ini
-[tomat]
-command=tomat status --output plain
-interval=1
-signal=10
-```
-
-Add click handling with environment variables:
-
-```bash
-#!/bin/bash
-# ~/.config/i3blocks/scripts/tomat-click
-case $BLOCK_BUTTON in
-    1) tomat toggle ;;     # Left click: toggle
-    3) tomat skip ;;       # Right click: skip
-esac
-pkill -RTMIN+10 i3blocks   # Refresh the block
-```
-
-Then set as the command: `command=~/.config/i3blocks/scripts/tomat-click`
-
-### i3bar/i3status
-
-For i3bar integration or i3status, you can use a helper script. First, add this
-to your i3status config:
-
-```
-order += "read_file tomat"
-
-read_file tomat {
-    path = "/tmp/tomat-status"
-    format = "%content"
-}
-```
-
-Helper script:
-
-```bash
-#!/bin/bash
-while true; do
-    tomat status --output plain > /tmp/tomat-status
-    sleep 1
-done
-```
-
-### Polybar
-
-```ini
-[module/tomat]
-type = custom/script
-exec = tomat status 2>/dev/null | jq -r '.text // "🍅 Not running"'
-interval = 1
-click-left = tomat toggle
-click-right = tomat skip
-format-prefix = " "
-format-foreground = #ffffff
-```
-
-### i3status-rust
-
-```toml
-[[block]]
-block = "custom"
-command = "tomat status 2>/dev/null | jq -r '.text // \"🍅 Not running\"'"
-interval = 1
-click = [
-  { button = "left"; cmd = "tomat toggle"; },
-  { button = "right"; cmd = "tomat skip"; }
-]
-```
-
-### i3status
-
-```
-order += "read_file tomat"
-
-read_file tomat {
-    path = "/tmp/tomat-status"
-    format = "%content"
-}
-```
-
-With a helper script that runs periodically:
-
-```bash
-#!/bin/bash
-# Update tomat status for i3status
-tomat status 2>/dev/null | jq -r '.text // "🍅 Not running"' > /tmp/tomat-status
 ```
