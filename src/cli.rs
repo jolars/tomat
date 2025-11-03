@@ -125,6 +125,10 @@ pub enum Commands {
         /// Output format (default: waybar)
         #[arg(short, long, default_value = "waybar")]
         output: String,
+        /// Text format template (e.g. "{icon} {time}")
+        /// Available: {icon}, {time}, {state}, {phase}, {session}
+        #[arg(short = 'f', long)]
+        format: Option<String>,
     },
     /// Skip to next phase
     Skip,

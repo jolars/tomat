@@ -10,6 +10,8 @@ pub struct Config {
     pub sound: SoundConfig,
     #[serde(default)]
     pub notification: NotificationConfig,
+    #[serde(default)]
+    pub display: DisplayConfig,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -71,6 +73,18 @@ fn default_icon() -> String {
 
 fn default_timeout() -> u32 {
     5000
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DisplayConfig {
+    /// Text format template (default: "{icon} {time} {state}")
+    /// Available placeholders: {icon}, {time}, {state}, {phase}, {session}
+    #[serde(default = "default_text_format")]
+    pub text_format: String,
+}
+
+fn default_text_format() -> String {
+    "{icon} {time} {state}".to_string()
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -139,6 +153,14 @@ impl Default for NotificationConfig {
     }
 }
 
+impl Default for DisplayConfig {
+    fn default() -> Self {
+        Self {
+            text_format: default_text_format(),
+        }
+    }
+}
+
 impl Config {
     /// Get the config file path
     pub fn config_path() -> Option<PathBuf> {
@@ -193,6 +215,9 @@ mod tests {
         assert!(config.notification.enabled);
         assert_eq!(config.notification.icon, "auto");
         assert_eq!(config.notification.timeout, 5000);
+
+        // Test display defaults
+        assert_eq!(config.display.text_format, "{icon} {time} {state}");
     }
 
     #[test]

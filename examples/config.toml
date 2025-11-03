@@ -35,6 +35,22 @@ timeout = 5000 # Notification timeout in milliseconds (default: 3000)
 # "theme"              - Use system theme icon ("timer")
 # "/path/to/icon.png"  - Use custom icon file
 
+[display]
+text_format = "{icon} {time} {state}" # Text display format (default: "{icon} {time} {state}")
+
+# Available placeholders:
+# {icon}    - Phase icon (🍅 for work, ☕ for break, 🏖️ for long break)
+# {time}    - Remaining time (MM:SS format)
+# {state}   - Play/pause symbol (▶ when running, ⏸ when paused)
+# {phase}   - Phase name ("Work", "Break", or "Long Break")
+# {session} - Current session (e.g., "1/4", empty for break phases)
+#
+# Example formats:
+# text_format = "{time}"                    # "25:00"
+# text_format = "{phase}: {time}"           # "Work: 25:00"
+# text_format = "[{session}] {icon} {time}" # "[1/4] 🍅 25:00"
+# text_format = "{time} {state}"            # "25:00 ▶"
+
 # Common customizations:
 #
 # Longer work sessions:

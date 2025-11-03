@@ -256,16 +256,10 @@ async fn handle_client(
                 .unwrap_or("waybar");
 
             match format_str.parse::<crate::timer::Format>() {
-                Ok(format) => {
-                    let status = state.get_status_output(&format);
-
-                    // Handle Plain format specially to avoid JSON string serialization
-                    let data = match &status {
-                        crate::timer::StatusOutput::Plain(text) => {
-                            serde_json::Value::String(text.clone())
-                        }
-                        _ => serde_json::to_value(status)?,
-                    };
+                Ok(_format) => {
+                    // Return raw timer status for client-side formatting
+                    let timer_status = state.get_timer_status();
+                    let data = serde_json::to_value(timer_status)?;
 
                     ServerResponse {
                         success: true,

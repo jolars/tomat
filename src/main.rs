@@ -92,24 +92,39 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Err(e) => eprintln!("Failed to connect to daemon: {}", e),
         },
 
-        Commands::Status { output } => {
+        Commands::Status { output, format } => {
+            let text_template = format.unwrap_or(config.display.text_format);
             let args = serde_json::json!({
-                "output": output
+                "output": output,
             });
 
             match send_command("status", args).await {
                 Ok(response) => {
                     if response.success {
-                        // Handle plain format specially to avoid double JSON encoding
-                        if output == "plain" {
-                            // For plain format, extract the string content without quotes
-                            if let Some(text) = response.data.as_str() {
+                        // Parse TimerStatus from response
+                        let timer_status: timer::TimerStatus =
+                            serde_json::from_value(response.data)?;
+
+                        // Parse output format
+                        let format_enum = output
+                            .parse::<timer::Format>()
+                            .unwrap_or(timer::Format::Waybar);
+
+                        // Format with client-side template
+                        let status_output = timer::TimerState::format_status(
+                            &timer_status,
+                            &format_enum,
+                            &text_template,
+                        );
+
+                        // Output based on format type
+                        match status_output {
+                            timer::StatusOutput::Plain(text) => {
                                 println!("{}", text);
-                            } else {
-                                println!("{}", serde_json::to_string(&response.data)?);
                             }
-                        } else {
-                            println!("{}", serde_json::to_string(&response.data)?);
+                            _ => {
+                                println!("{}", serde_json::to_string(&status_output)?);
+                            }
                         }
                     } else {
                         eprintln!("Error: {}", response.message);

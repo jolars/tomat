@@ -159,6 +159,14 @@ volume = 0.5         # Volume level (0.0-1.0)
 enabled = true        # Enable desktop notifications
 icon = "auto"         # Icon mode: "auto", "theme", or custom path
 timeout = 4000        # Notification timeout in milliseconds
+
+[display]
+text_format = "{icon} {time} {state}"  # Text display format
+# Available placeholders: {icon}, {time}, {state}, {phase}, {session}
+# Examples:
+#   "{time}"                    -> "25:00"
+#   "{phase}: {time} {state}"   -> "Work: 25:00 ▶"
+#   "[{session}] {icon} {time}" -> "[1/4] 🍅 25:00"
 ```
 
 **💡 Tip**: Copy the complete example config:
