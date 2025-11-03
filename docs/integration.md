@@ -227,16 +227,6 @@ The i3status-rs format provides:
 - `short_text`: Same as text (for abbreviated display)
 - `state`: Timer state mapping (Critical=work, Good=break, Info=paused)
 
-For continuous updates, use the watch command:
-
-```toml
-[[block]]
-block = "custom"
-command = "tomat watch --output i3status-rs --interval 1"
-interval = "once"
-json = true
-```
-
 ### i3blocks
 
 i3blocks works perfectly with tomat's existing formats:
@@ -311,16 +301,8 @@ fi
 
 ### i3bar/i3status
 
-For direct i3bar integration or i3status, you can use the plain text format:
-
-```bash
-# Direct in i3 config
-bar {
-    status_command exec tomat watch --output plain --interval 1
-}
-```
-
-Or with i3status using a helper script:
+For i3bar integration or i3status, you can use a helper script. First, add this
+to your i3status config:
 
 ```
 order += "read_file tomat"
