@@ -221,3 +221,130 @@ fn test_status_i3status_rs_format() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+#[test]
+fn test_watch_command_outputs_continuously() -> Result<(), Box<dyn std::error::Error>> {
+    let daemon = TestDaemon::start()?;
+
+    // Start a timer with very short durations for quick testing
+    daemon.send_command(&["start", "--work", "0.1"])?;
+
+    // Spawn watch command with short interval
+    let mut watch_process = Command::new(TestDaemon::get_binary_path())
+        .args(["watch", "--output", "plain", "--interval", "1"])
+        .env("XDG_RUNTIME_DIR", daemon._temp_dir.path())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .spawn()?;
+
+    // Collect output for a few seconds
+    thread::sleep(Duration::from_secs(3));
+
+    // Kill the watch process
+    watch_process.kill()?;
+    let output = watch_process.wait_with_output()?;
+
+    // Convert stdout to string
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let lines: Vec<&str> = stdout.lines().collect();
+
+    // Should have multiple status updates (at least 2 in 3 seconds with 1-second interval)
+    assert!(
+        lines.len() >= 2,
+        "Watch command should output multiple status updates, got {} lines",
+        lines.len()
+    );
+
+    // Each line should contain expected status symbols
+    for line in &lines {
+        assert!(
+            line.contains("🍅") || line.contains("☕") || line.contains("🏖️"),
+            "Watch output should contain phase icon: {}",
+            line
+        );
+    }
+
+    Ok(())
+}
+
+#[test]
+fn test_watch_command_respects_interval() -> Result<(), Box<dyn std::error::Error>> {
+    let daemon = TestDaemon::start()?;
+
+    // Start a timer
+    daemon.send_command(&["start", "--work", "0.2"])?;
+
+    // Spawn watch command with 2-second interval
+    let mut watch_process = Command::new(TestDaemon::get_binary_path())
+        .args(["watch", "--output", "plain", "--interval", "2"])
+        .env("XDG_RUNTIME_DIR", daemon._temp_dir.path())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .spawn()?;
+
+    // Wait for 5 seconds
+    thread::sleep(Duration::from_secs(5));
+
+    // Kill the watch process
+    watch_process.kill()?;
+    let output = watch_process.wait_with_output()?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let lines: Vec<&str> = stdout.lines().collect();
+
+    // With 2-second interval and 5 seconds of running, should get ~3 updates (at 0s, 2s, 4s)
+    // Allow some tolerance (2-4 lines)
+    assert!(
+        lines.len() >= 2 && lines.len() <= 4,
+        "Watch with 2s interval should output 2-4 updates in 5 seconds, got {}",
+        lines.len()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_watch_command_exits_when_daemon_stops() -> Result<(), Box<dyn std::error::Error>> {
+    let mut daemon = TestDaemon::start()?;
+
+    // Start a timer
+    daemon.send_command(&["start", "--work", "0.2"])?;
+
+    // Spawn watch command
+    let mut watch_process = Command::new(TestDaemon::get_binary_path())
+        .args(["watch", "--output", "plain"])
+        .env("XDG_RUNTIME_DIR", daemon._temp_dir.path())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()?;
+
+    // Wait a bit for watch to start
+    thread::sleep(Duration::from_millis(500));
+
+    // Stop the daemon
+    daemon.daemon_process.kill()?;
+    daemon.daemon_process.wait()?;
+
+    // Wait for watch to detect the daemon is gone
+    thread::sleep(Duration::from_secs(2));
+
+    // Check if watch process has exited
+    let result = watch_process.try_wait()?;
+    assert!(
+        result.is_some(),
+        "Watch process should exit when daemon stops"
+    );
+
+    // Get the error message
+    let output = watch_process.wait_with_output()?;
+    let stderr = String::from_utf8_lossy(&output.stderr);
+
+    // Should contain error message about connection failure
+    assert!(
+        stderr.contains("Failed to connect"),
+        "Watch should report connection error when daemon stops: {}",
+        stderr
+    );
+
+    Ok(())
+}

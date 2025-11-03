@@ -18,6 +18,42 @@ struct ServerResponse {
     message: String,
 }
 
+/// Fetch and format timer status from daemon
+async fn fetch_and_format_status(
+    output_format: &str,
+    text_template: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
+    let args = serde_json::json!({
+        "output": output_format,
+    });
+
+    let response = send_command("status", args).await?;
+
+    if !response.success {
+        return Err(response.message.into());
+    }
+
+    // Parse TimerStatus from response
+    let timer_status: timer::TimerStatus = serde_json::from_value(response.data)?;
+
+    // Parse output format
+    let format_enum = output_format
+        .parse::<timer::Format>()
+        .unwrap_or(timer::Format::Waybar);
+
+    // Format with client-side template
+    let status_output =
+        timer::TimerState::format_status(&timer_status, &format_enum, text_template);
+
+    // Convert to string based on format type
+    let output = match status_output {
+        timer::StatusOutput::Plain(text) => text,
+        _ => serde_json::to_string(&status_output)?,
+    };
+
+    Ok(output)
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
@@ -94,43 +130,32 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         Commands::Status { output, format } => {
             let text_template = format.unwrap_or(config.display.text_format);
-            let args = serde_json::json!({
-                "output": output,
-            });
 
-            match send_command("status", args).await {
-                Ok(response) => {
-                    if response.success {
-                        // Parse TimerStatus from response
-                        let timer_status: timer::TimerStatus =
-                            serde_json::from_value(response.data)?;
+            match fetch_and_format_status(&output, &text_template).await {
+                Ok(output) => println!("{}", output),
+                Err(e) => eprintln!("Failed to connect to daemon: {}", e),
+            }
+        }
 
-                        // Parse output format
-                        let format_enum = output
-                            .parse::<timer::Format>()
-                            .unwrap_or(timer::Format::Waybar);
+        Commands::Watch {
+            output,
+            format,
+            interval,
+        } => {
+            let text_template = format.unwrap_or(config.display.text_format);
+            let interval_duration = std::time::Duration::from_secs(interval);
 
-                        // Format with client-side template
-                        let status_output = timer::TimerState::format_status(
-                            &timer_status,
-                            &format_enum,
-                            &text_template,
-                        );
-
-                        // Output based on format type
-                        match status_output {
-                            timer::StatusOutput::Plain(text) => {
-                                println!("{}", text);
-                            }
-                            _ => {
-                                println!("{}", serde_json::to_string(&status_output)?);
-                            }
-                        }
-                    } else {
-                        eprintln!("Error: {}", response.message);
+            loop {
+                match fetch_and_format_status(&output, &text_template).await {
+                    Ok(output) => println!("{}", output),
+                    Err(e) => {
+                        eprintln!("Failed to connect to daemon: {}", e);
+                        // Exit on error (daemon might be stopped)
+                        break;
                     }
                 }
-                Err(e) => eprintln!("Failed to connect to daemon: {}", e),
+
+                tokio::time::sleep(interval_duration).await;
             }
         }
 

@@ -62,6 +62,7 @@ cargo build && ./target/debug/tomat daemon start
 ./target/debug/tomat status
 ./target/debug/tomat status --output waybar   # JSON output for waybar
 ./target/debug/tomat status --output plain    # Plain text output
+./target/debug/tomat watch --output plain --interval 1  # Continuous updates
 ./target/debug/tomat toggle
 
 # Stop daemon
@@ -80,12 +81,12 @@ cargo build && ./target/debug/tomat daemon start
 - **`src/timer.rs`** (870 lines): Timer state machine, phase transitions, status
   output formatting with Format enum (waybar JSON and plain text), desktop
   notifications with icon management
-- **`tests/`**: Modular integration test suite (27 tests across 6 modules)
+- **`tests/`**: Modular integration test suite (30 tests across 6 modules)
   - **`cli.rs`**: Integration test entry point
   - **`integration/common.rs`** (171 lines): Shared TestDaemon helper and utilities
   - **`integration/timer.rs`** (300 lines): Timer behavior and auto-advance tests
   - **`integration/daemon.rs`** (88 lines): Daemon lifecycle tests
-  - **`integration/formats.rs`** (223 lines): Output format tests
+  - **`integration/formats.rs`** (350 lines): Output format and watch command tests
   - **`integration/commands.rs`** (86 lines): Command validation tests
 
 ### Communication Flow
@@ -107,7 +108,7 @@ Status Output
 **Client-Server Architecture:**
 
 - Single binary with subcommands: `daemon start|stop|status|run`, `start`,
-  `stop`, `status`, `skip`, `toggle`
+  `stop`, `status`, `watch`, `skip`, `toggle`
 - Daemon listens on Unix socket at `$XDG_RUNTIME_DIR/tomat.sock`
 - PID file tracking at `$XDG_RUNTIME_DIR/tomat.pid` with exclusive file locking
 - Line-delimited JSON protocol for communication
@@ -135,7 +136,7 @@ Status Output
 **Status Output Formats:**
 
 - Supports `waybar` (JSON) and `plain` (text) formats
-- Specified via `--output` option on `status` command (e.g.,
+- Specified via `--output` option on `status` and `watch` commands (e.g.,
   `tomat status --output plain`)
 - **Waybar format:** JSON with `text`, `tooltip`, `class`, `percentage` fields
 - **Plain format:** Simple text string (e.g., "🍅 24:30 ▶")
@@ -145,6 +146,15 @@ Status Output
   `long-break`, `long-break-paused`
 - **Note:** Format infrastructure in place to support additional formats
   (polybar, i3bar) in the future
+
+**Watch Command:**
+
+- `watch` command provides continuous status updates in a loop
+- Uses same formatting logic as `status` command (shared code)
+- Configurable update interval via `--interval` flag (default: 1 second)
+- Automatically exits when daemon stops or connection fails
+- More efficient for status bars than polling `status` command repeatedly
+- Implementation: Client-side loop that queries daemon at specified interval
 
 **Notification System:**
 
@@ -224,11 +234,11 @@ daemon.wait_for_completion(10)?;
   notifications
 - Automatic cleanup: `TestDaemon` Drop impl kills daemon process
 
-### Test Categories (27 tests total)
+### Test Categories (30 tests total)
 
 1. **Timer behavior** (`integration::timer`): Auto-advance logic, phase transitions, pause/resume
-2. **Daemon lifecycle** (`integration::daemon`): Start, stop, status, duplicate detection  
-3. **Output formats** (`integration::formats`): Waybar JSON, plain text, i3status-rs
+2. **Daemon lifecycle** (`integration::daemon`): Start, stop, status, duplicate detection
+3. **Output formats** (`integration::formats`): Waybar JSON, plain text, i3status-rs, watch command
 4. **Command validation** (`integration::commands`): Parameter validation, error handling
 5. **Configuration** (unit tests): Timer, sound, and notification configuration parsing
 6. **Icon management** (unit tests): Embedded icon caching and different icon modes
@@ -284,10 +294,19 @@ daemon.wait_for_completion(10)?;
 
 ### Adding a New Command
 
-1. Add enum variant to `Commands` in `src/main.rs:37-86`
+**Server-side commands** (require daemon handling):
+
+1. Add enum variant to `Commands` in `src/cli.rs`
 2. Add command handling in `handle_client()` in `src/server.rs:53-172`
-3. Add match arm in `main()` in `src/main.rs:92-197`
+3. Add match arm in `main()` in `src/main.rs`
 4. Write integration tests in appropriate module in `tests/integration/`
+
+**Client-side commands** (no daemon changes needed):
+
+1. Add enum variant to `Commands` in `src/cli.rs`
+2. Add match arm in `main()` in `src/main.rs`
+3. Write integration tests in appropriate module in `tests/integration/`
+4. Example: `watch` command is client-side, repeatedly calling `status` protocol
 
 ### Modifying Timer Behavior
 

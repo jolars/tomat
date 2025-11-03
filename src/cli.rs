@@ -130,6 +130,19 @@ pub enum Commands {
         #[arg(short = 'f', long)]
         format: Option<String>,
     },
+    /// Continuously watch and output status updates
+    Watch {
+        /// Output format (default: waybar)
+        #[arg(short, long, default_value = "waybar")]
+        output: String,
+        /// Text format template (e.g. "{icon} {time}")
+        /// Available: {icon}, {time}, {state}, {phase}, {session}
+        #[arg(short = 'f', long)]
+        format: Option<String>,
+        /// Update interval in seconds (default: 1)
+        #[arg(short, long, default_value = "1")]
+        interval: u64,
+    },
     /// Skip to next phase
     Skip,
     /// Pause the current timer

@@ -109,6 +109,7 @@ tomat start --auto-advance
 
 ```bash
 tomat status    # Get current status (JSON for waybar)
+tomat watch     # Continuously output status updates
 tomat toggle    # Pause/resume timer
 tomat skip      # Skip to next phase
 tomat stop      # Stop timer and return to idle
@@ -181,6 +182,8 @@ cp examples/config.toml ~/.config/tomat/config.toml
 
 Add to your waybar config (`~/.config/waybar/config`):
 
+### Option 1: Polling with `status` (recommended for most users)
+
 ```json
 {
   "modules-right": ["custom/tomat"],
@@ -194,6 +197,25 @@ Add to your waybar config (`~/.config/waybar/config`):
   }
 }
 ```
+
+### Option 2: Continuous updates with `watch`
+
+For reduced CPU usage, use the `watch` command instead:
+
+```json
+{
+  "modules-right": ["custom/tomat"],
+  "custom/tomat": {
+    "exec": "tomat watch --interval 1",
+    "return-type": "json",
+    "format": "{}",
+    "on-click": "tomat toggle",
+    "on-click-right": "tomat skip"
+  }
+}
+```
+
+**Note**: The `watch` command maintains a single connection to the daemon and updates at the specified interval (default: 1 second). It automatically exits when the daemon stops.
 
 Add CSS styling (`~/.config/waybar/style.css`):
 
