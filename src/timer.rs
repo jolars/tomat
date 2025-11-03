@@ -125,18 +125,15 @@ pub struct TimerState {
     pub paused_elapsed_seconds: Option<u64>,
 }
 
-/// Raw timer status data for client-side formatting
+/// Raw timer status data - pure state, no presentation
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TimerStatus {
-    pub phase: String,   // "Work", "Break", "Long Break"
-    pub icon: String,    // "🍅", "☕", "🏖️"
-    pub time: String,    // "25:00" format
-    pub state: String,   // "▶" or "⏸"
-    pub session: String, // "1/4" or empty for breaks
-    pub is_paused: bool,
-    pub class: String,   // CSS class for styling
-    pub percentage: f64, // Progress percentage
-    pub tooltip: String, // Detailed tooltip
+    pub phase: Phase,                   // Work, Break, or LongBreak
+    pub is_paused: bool,                // Whether timer is paused
+    pub remaining_seconds: i64,         // Time remaining in current phase
+    pub duration_minutes: f32,          // Total duration of current phase
+    pub current_session: u32,           // Current session number (1-based)
+    pub sessions_until_long_break: u32, // Total sessions before long break
 }
 
 #[derive(Serialize)]
@@ -454,10 +451,35 @@ impl TimerState {
 
     /// Get raw timer status data for client-side formatting
     pub fn get_timer_status(&self) -> TimerStatus {
-        let (icon, class) = match self.phase {
+        let remaining_seconds = if self.is_paused {
+            (self.duration_minutes * 60.0) as i64
+        } else {
+            self.get_remaining_seconds()
+        };
+
+        TimerStatus {
+            phase: self.phase.clone(),
+            is_paused: self.is_paused,
+            remaining_seconds,
+            duration_minutes: self.duration_minutes,
+            current_session: self.current_session_count + 1,
+            sessions_until_long_break: self.sessions_until_long_break,
+        }
+    }
+
+    /// Convert TimerStatus to StatusOutput with given format and text template
+    /// This handles all presentation logic: icons, state symbols, tooltips, CSS classes
+    pub fn format_status(
+        status: &TimerStatus,
+        format: &Format,
+        text_template: &str,
+    ) -> StatusOutput {
+        // Derive presentation data from raw state
+        let (icon, phase_name, class) = match status.phase {
             Phase::Work => (
                 "🍅",
-                if self.is_paused {
+                "Work",
+                if status.is_paused {
                     "work-paused"
                 } else {
                     "work"
@@ -465,7 +487,8 @@ impl TimerState {
             ),
             Phase::Break => (
                 "☕",
-                if self.is_paused {
+                "Break",
+                if status.is_paused {
                     "break-paused"
                 } else {
                     "break"
@@ -473,7 +496,8 @@ impl TimerState {
             ),
             Phase::LongBreak => (
                 "🏖️",
-                if self.is_paused {
+                "Long Break",
+                if status.is_paused {
                     "long-break-paused"
                 } else {
                     "long-break"
@@ -481,113 +505,78 @@ impl TimerState {
             ),
         };
 
-        let phase_name = match self.phase {
-            Phase::Work => "Work",
-            Phase::Break => "Break",
-            Phase::LongBreak => "Long Break",
-        };
+        let state_symbol = if status.is_paused { "⏸" } else { "▶" };
 
-        let session_str = if matches!(self.phase, Phase::Work) {
+        let time_str = format!(
+            "{:02}:{:02}",
+            status.remaining_seconds / 60,
+            status.remaining_seconds % 60
+        );
+
+        let session_str = if matches!(status.phase, Phase::Work) {
             format!(
                 "{}/{}",
-                self.current_session_count + 1,
-                self.sessions_until_long_break
+                status.current_session, status.sessions_until_long_break
             )
         } else {
             String::new()
         };
 
-        let sessions_info = if matches!(self.phase, Phase::Work) {
+        let sessions_info = if matches!(status.phase, Phase::Work) {
             format!(
                 " ({}/{})",
-                self.current_session_count + 1,
-                self.sessions_until_long_break
+                status.current_session, status.sessions_until_long_break
             )
         } else {
             String::new()
         };
 
-        if self.is_paused {
-            let time_str = format!(
-                "{:02}:{:02}",
-                (self.duration_minutes * 60.0) as i64 / 60,
-                (self.duration_minutes * 60.0) as i64 % 60
-            );
-
-            let tooltip_text = format!(
-                "{}{} - {:.1}min (Paused)",
-                phase_name, sessions_info, self.duration_minutes
-            );
-
-            TimerStatus {
-                phase: phase_name.to_string(),
-                icon: icon.to_string(),
-                time: time_str,
-                state: "⏸".to_string(),
-                session: session_str,
-                is_paused: true,
-                class: class.to_string(),
-                percentage: 0.0,
-                tooltip: tooltip_text,
-            }
+        // Calculate percentage for progress bars
+        let total_duration = (status.duration_minutes * 60.0) as i64;
+        let elapsed = total_duration - status.remaining_seconds;
+        let percentage = if status.is_paused {
+            0.0
+        } else if total_duration > 0 {
+            (elapsed as f64 / total_duration as f64) * 100.0
         } else {
-            let remaining = self.get_remaining_seconds();
-            let total_duration = (self.duration_minutes * 60.0) as i64;
-            let elapsed = total_duration - remaining;
-            let percentage = if total_duration > 0 {
-                (elapsed as f64 / total_duration as f64) * 100.0
-            } else {
-                100.0
-            };
+            100.0
+        };
 
-            let time_str = format!("{:02}:{:02}", remaining / 60, remaining % 60);
-
-            let tooltip_text = format!(
+        // Build tooltip
+        let tooltip = if status.is_paused {
+            format!(
+                "{}{} - {:.1}min (Paused)",
+                phase_name, sessions_info, status.duration_minutes
+            )
+        } else {
+            format!(
                 "{}{} - {:.1}min",
-                phase_name, sessions_info, self.duration_minutes
-            );
+                phase_name, sessions_info, status.duration_minutes
+            )
+        };
 
-            TimerStatus {
-                phase: phase_name.to_string(),
-                icon: icon.to_string(),
-                time: time_str,
-                state: "▶".to_string(),
-                session: session_str,
-                is_paused: false,
-                class: class.to_string(),
-                percentage,
-                tooltip: tooltip_text,
-            }
-        }
-    }
-
-    /// Convert TimerStatus to StatusOutput with given format and text template
-    pub fn format_status(
-        status: &TimerStatus,
-        format: &Format,
-        text_template: &str,
-    ) -> StatusOutput {
+        // Apply text template
         let display_text = text_template
-            .replace("{icon}", &status.icon)
-            .replace("{time}", &status.time)
-            .replace("{state}", &status.state)
-            .replace("{phase}", &status.phase)
-            .replace("{session}", &status.session);
+            .replace("{icon}", icon)
+            .replace("{time}", &time_str)
+            .replace("{state}", state_symbol)
+            .replace("{phase}", phase_name)
+            .replace("{session}", &session_str);
 
         match format {
             Format::Waybar => StatusOutput::Waybar {
                 text: display_text,
-                tooltip: status.tooltip.clone(),
-                class: status.class.clone(),
-                percentage: status.percentage,
+                tooltip,
+                class: class.to_string(),
+                percentage,
             },
             Format::I3statusRs => {
                 // Map timer states to i3status-rs states
                 let i3status_state = if status.is_paused {
                     "Info"
                 } else {
-                    match status.phase.as_str() {
-                        "Work" => "Critical",
+                    match status.phase {
+                        Phase::Work => "Critical",
                         _ => "Good",
                     }
                 };

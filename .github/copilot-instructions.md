@@ -147,25 +147,23 @@ clippy and rustfmt automatically if using the Nix devenv.
 
 The project is organized into four main modules:
 
-- **`main.rs`**: CLI parsing with clap and command dispatching to server/client
-  functions
-- **`config.rs`**: Configuration system with timer, sound, and notification
+- **`main.rs`**: CLI parsing with clap, command dispatching to server/client
+  functions, and client-side formatting logic (applies text templates to timer status)
+- **`config.rs`**: Configuration system with timer, sound, notification, and display
   settings loaded from TOML
 - **`server.rs`**: Unix socket server implementation, client communication
   handling, daemon process management (PID files, graceful shutdown), timer
-  event loop, and configuration loading
-- **`timer.rs`**: Timer state management, phase transitions, status output
-  formatting (with Format enum for waybar JSON and plain text), desktop
-  notifications with embedded icon system, and auto-advance logic
+  event loop, and configuration loading. Returns raw `TimerStatus` data.
+- **`timer.rs`**: Timer state management (`TimerState`), phase transitions, 
+  notification system, and client-side formatting. Contains `TimerStatus` struct
+  (pure state) and `format_status()` method (presentation logic).
 - **`tests/`**: Modular integration test suite with 27 tests across 6 modules
   - **`cli.rs`**: Integration test entry point
-  - **`integration/common.rs`**: Shared TestDaemon helper and utilities (171
-    lines)
-  - **`integration/timer.rs`**: Timer behavior and auto-advance tests (300
-    lines)
-  - **`integration/daemon.rs`**: Daemon lifecycle tests (88 lines)
-  - **`integration/formats.rs`**: Output format tests (223 lines)
-  - **`integration/commands.rs`**: Command validation tests (86 lines)
+  - **`integration/common.rs`**: Shared TestDaemon helper and utilities
+  - **`integration/timer.rs`**: Timer behavior and auto-advance tests
+  - **`integration/daemon.rs`**: Daemon lifecycle tests
+  - **`integration/formats.rs`**: Output format tests
+  - **`integration/commands.rs`**: Command validation tests
 
 **Communication flow:**
 
@@ -176,9 +174,11 @@ The project is organized into four main modules:
 - **Client mode:** All other commands send requests to daemon via socket
 - **Timer state:** Manages work/break/long-break phases with configurable
   auto-advance behavior
-- **Status output:** Supports waybar (JSON) and plain (text) formats via
-  `--output` option. Includes CSS classes and visual indicators (play ▶/pause
-  ⏸ symbols)
+- **Data flow:** Server returns `TimerStatus` (pure state: phase, remaining_seconds, 
+  is_paused, etc.) → Client applies formatting (icons, state symbols, tooltips) → 
+  Output in requested format (waybar JSON, plain text, i3status-rs JSON)
+- **Separation of concerns:** Server has no knowledge of presentation; all icons,
+  symbols, CSS classes, and tooltips are generated client-side
 
 ### Key Dependencies
 
@@ -328,38 +328,52 @@ Your changes will be validated against:
   prevent race conditions
 - **Background operation:** Detached process with stdio redirection
 
-### Status Output Format
+### Status Output Format and Text Formatting
 
-The timer supports multiple output formats via the `--output` option.
+The timer supports multiple output formats via `--output` and customizable text templates via `--format`.
 
-**Supported formats:**
+**Architecture:**
+- **Server returns pure state:** `TimerStatus` contains only timer data (phase, remaining_seconds, is_paused, etc.)
+- **Client handles presentation:** Icons, state symbols, tooltips, and CSS classes are generated client-side
+- **Separation of concerns:** Server manages timer logic, client handles formatting/display
 
-- `waybar` (default) - JSON output optimized for waybar
+**Output Formats (--output flag):**
+
+- `waybar` (default) - JSON output for waybar with text, tooltip, class, percentage
 - `plain` - Plain text output
+- `i3status-rs` - JSON output for i3status-rs
+
+**Text Templates (--format flag or display.text_format config):**
+
+Available placeholders:
+- `{icon}` - Phase icon (🍅 work, ☕ break, 🏖️ long break)
+- `{time}` - Remaining time in MM:SS format
+- `{state}` - Play/pause symbol (▶ or ⏸)
+- `{phase}` - Phase name ("Work", "Break", "Long Break")
+- `{session}` - Session progress ("1/4", empty for breaks)
 
 **Usage:**
 
 ```bash
-tomat status                  # Uses default (waybar) format
-tomat status --output waybar  # Explicitly specify waybar
-tomat status --output plain   # Plain text output
+tomat status                                    # Default: waybar with "{icon} {time} {state}"
+tomat status --output plain                     # Plain text with default template
+tomat status --format "{time}"                  # Custom template, waybar JSON
+tomat status --format "{phase}: {time}" --output plain  # Custom template, plain text
 ```
 
-**Waybar JSON output:**
+**Example outputs:**
 
-```json
-{
-  "class": "work-paused", // CSS class for styling
-  "percentage": 0.0, // Progress percentage (0-100)
-  "text": "🍅 25:00 ⏸", // Display text with icon and play/pause symbol
-  "tooltip": "Work (1/4) - 25.0min (Paused)" // Detailed tooltip information
-}
-```
+```bash
+# Default waybar
+{"text":"🍅 25:00 ▶","tooltip":"Work (1/4) - 25.0min","class":"work","percentage":0.0}
 
-**Plain text output:**
+# Plain with custom format
+tomat status --format "{time}" --output plain
+# Output: 25:00
 
-```
-"🍅 25:00 ⏸"
+# Waybar with custom format
+tomat status --format "[{session}] {icon} {time}"
+# Output: {"text":"[1/4] 🍅 25:00","tooltip":"Work (1/4) - 25.0min","class":"work","percentage":0.0}
 ```
 
 **CSS Classes (waybar only):**
@@ -367,15 +381,6 @@ tomat status --output plain   # Plain text output
 - `work` / `work-paused` - Work session running/paused
 - `break` / `break-paused` - Break session running/paused
 - `long-break` / `long-break-paused` - Long break running/paused
-
-**Visual Symbols:**
-
-- **Icons:** 🍅 (work), ☕ (break), 🏖️ (long break)
-- **State:** ▶ (playing/running), ⏸ (paused)
-- **Format:** `{icon} {time} {state_symbol}`
-
-**Note:** The Format enum infrastructure is in place to support additional
-formats (polybar, i3bar) in the future.
 
 ### Configuration System
 
@@ -410,6 +415,14 @@ volume = 0.5         # Volume level (0.0-1.0)
 enabled = true        # Enable desktop notifications
 icon = "auto"         # Icon mode: "auto", "theme", or path
 timeout = 3000        # Timeout in milliseconds
+```
+
+**Display Configuration:**
+
+```toml
+[display]
+text_format = "{icon} {time} {state}"  # Text display template (default)
+# Available placeholders: {icon}, {time}, {state}, {phase}, {session}
 ```
 
 **Icon Modes:**
