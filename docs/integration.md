@@ -213,9 +213,11 @@ block = "custom"
 command = "tomat status --output i3status-rs"
 interval = 1
 json = true
+
 [[block.click]]
 button = "left"
 cmd = "tomat toggle"
+
 [[block.click]]
 button = "right"
 cmd = "tomat skip"
@@ -261,43 +263,6 @@ pkill -RTMIN+10 i3blocks   # Refresh the block
 ```
 
 Then set as the command: `command=~/.config/i3blocks/scripts/tomat-click`
-
-#### Rich Integration with Colors
-
-```ini
-[tomat]
-command=~/.config/i3blocks/scripts/tomat-rich
-interval=1
-```
-
-Parser script using waybar JSON:
-
-```bash
-#!/bin/bash
-# ~/.config/i3blocks/scripts/tomat-rich
-OUTPUT=$(tomat status --output waybar 2>/dev/null)
-if [ $? -eq 0 ]; then
-    TEXT=$(echo "$OUTPUT" | jq -r '.text')
-    CLASS=$(echo "$OUTPUT" | jq -r '.class')
-
-    echo "$TEXT"           # Full text
-    echo "$TEXT"           # Short text
-
-    # Set color based on timer state
-    case "$CLASS" in
-        "work") echo "#ff6b6b" ;;
-        "work-paused") echo "#ff9999" ;;
-        "break") echo "#4ecdc4" ;;
-        "break-paused") echo "#7dd3db" ;;
-        "long-break") echo "#45b7d1" ;;
-        "long-break-paused") echo "#74c0db" ;;
-    esac
-else
-    echo "🍅 Not running"
-    echo ""
-    echo "#888888"
-fi
-```
 
 ### i3bar/i3status
 
