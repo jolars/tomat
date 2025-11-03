@@ -215,6 +215,13 @@ impl TimerState {
 
     fn get_remaining_seconds(&self) -> i64 {
         if self.is_paused {
+            // If we have stored elapsed time, calculate remaining from that
+            if let Some(elapsed) = self.paused_elapsed_seconds {
+                let total_duration = (self.duration_minutes * 60.0) as i64;
+                let remaining = total_duration - elapsed as i64;
+                return remaining.max(0);
+            }
+            // Otherwise return full duration (initial paused state)
             return (self.duration_minutes * 60.0) as i64;
         }
 
@@ -451,16 +458,10 @@ impl TimerState {
 
     /// Get raw timer status data for client-side formatting
     pub fn get_timer_status(&self) -> TimerStatus {
-        let remaining_seconds = if self.is_paused {
-            (self.duration_minutes * 60.0) as i64
-        } else {
-            self.get_remaining_seconds()
-        };
-
         TimerStatus {
             phase: self.phase.clone(),
             is_paused: self.is_paused,
-            remaining_seconds,
+            remaining_seconds: self.get_remaining_seconds(),
             duration_minutes: self.duration_minutes,
             current_session: self.current_session_count + 1,
             sessions_until_long_break: self.sessions_until_long_break,
