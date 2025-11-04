@@ -4,11 +4,11 @@ Tomat supports comprehensive configuration via a TOML file located at
 `~/.config/tomat/config.toml`. This allows you to set default values for timer
 durations and behaviors without specifying them on every command.
 
-**💡 Quick Start**: Copy the [complete example config](../config-example.toml):
+**💡 Quick Start**: Copy the [complete example config](../examples/config.toml):
 
 ```bash
 mkdir -p ~/.config/tomat
-cp config-example.toml ~/.config/tomat/config.toml
+cp examples/config.toml ~/.config/tomat/config.toml
 # Then edit ~/.config/tomat/config.toml as needed
 ```
 

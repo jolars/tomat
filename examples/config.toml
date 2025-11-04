@@ -5,7 +5,7 @@
 #
 # Quick setup:
 #   mkdir -p ~/.config/tomat
-#   cp config-example.toml ~/.config/tomat/config.toml
+#   cp examples/config.toml ~/.config/tomat/config.toml
 
 [timer]
 work = 25.0          # Work session duration in minutes (default: 25.0)
