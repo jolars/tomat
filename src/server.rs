@@ -548,17 +548,25 @@ pub async fn start_daemon() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Started daemon in background (PID: {})", child.id());
 
-    // Wait a moment to ensure daemon starts
-    tokio::time::sleep(Duration::from_millis(500)).await;
+    // Poll for daemon startup with timeout (max 2 seconds, check every 10ms)
+    let start = std::time::Instant::now();
+    let timeout = Duration::from_secs(2);
+    let poll_interval = Duration::from_millis(10);
 
-    // Verify daemon is running by checking both socket and PID file
-    if socket_path.exists() && pid_file_path.exists() {
-        println!("Daemon started successfully");
-    } else {
-        return Err("Failed to start daemon - socket or PID file not created".into());
+    loop {
+        if socket_path.exists() && pid_file_path.exists() {
+            println!("Daemon started successfully");
+            return Ok(());
+        }
+
+        if start.elapsed() > timeout {
+            return Err(
+                "Failed to start daemon - socket or PID file not created within timeout".into(),
+            );
+        }
+
+        tokio::time::sleep(poll_interval).await;
     }
-
-    Ok(())
 }
 
 /// Stop the running daemon
