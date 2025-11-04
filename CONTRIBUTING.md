@@ -1,22 +1,28 @@
 ## Contributing
 
-We welcome contributions to tomat! This project follows standard open-source
-practices with a focus on code quality and thorough testing.
+We welcome contributions to tomat! Here's a guide to help you get started.
 
 ### Quick Contribution Checklist
 
 Before submitting any changes:
 
-- [ ] **Formatting**: `cargo fmt -- --check` (MUST exit with code 0)
-- [ ] **Linting**: `cargo clippy --all-targets --all-features -- -D warnings`
+- [x] **Formatting**: `cargo fmt -- --check` (MUST exit with code 0)
+- [x] **Linting**: `cargo clippy --all-targets --all-features -- -D warnings`
       (MUST exit with code 0, no warnings allowed)
-- [ ] **Compilation**: `cargo check` (MUST pass)
-- [ ] **Tests**: `cargo test` (all integration tests must pass)
+- [x] **Compilation**: `cargo check` (MUST pass)
+- [x] **Tests**: `cargo test` (all integration tests must pass)
 
 ### Getting Started
 
-1. **Fork and clone** the repository
-2. **Install prerequisites**:
+1. [Fork](https://github.com/jolars/tomat/fork) the repository.
+
+2. Clone your fork:
+
+   ```bash
+   git clone <your-fork-url>
+   ```
+
+3. Install prerequisites:
 
    ```bash
    # Rust toolchain (specified in rust-toolchain.toml)
@@ -28,16 +34,15 @@ Before submitting any changes:
    sudo pacman -S alsa-lib              # Arch Linux
    ```
 
-3. **Quick development check**:
-   ```bash
-   task dev  # Runs: cargo check → cargo test → cargo clippy
-   ```
+4. You might also want to install [task](https://taskfile.dev/docs/installation)
+   for easier task management. The following `task` commands assume you have it
+   installed.
 
 ### Development Workflow
 
 #### Essential Build Commands
 
-**Always run commands from the repository root.**
+Always run commands from the repository root.
 
 ```bash
 # Quick development check (recommended)
@@ -59,7 +64,8 @@ cargo build --release          # Release build
 
 ```bash
 # Build and start daemon for testing
-cargo build && ./target/debug/tomat daemon start
+cargo build
+./target/debug/tomat daemon start
 
 # Test with short durations for fast feedback
 ./target/debug/tomat start --work 0.1 --break 0.05  # 6s work, 3s break
@@ -95,19 +101,21 @@ All code changes MUST pass these checks before commit:
 
 ### Architecture Overview
 
-Tomat is designed as a small, focused Rust project (~800 lines) with a
-client-server architecture.
+Tomat is designed as a small, focused Rust project with a client-server
+architecture.
 
 #### Module Structure
 
-- **`src/main.rs`** (133 lines): CLI parsing with clap, command dispatching
-- **`src/config.rs`** (289 lines): Configuration system with timer, sound, and
-  notification settings
-- **`src/server.rs`** (950 lines): Unix socket server, daemon lifecycle, client
-  request handling, PID file management
-- **`src/timer.rs`** (870 lines): Timer state machine, phase transitions, status
-  output formatting, desktop notifications
-- **`tests/cli.rs`** (636 lines): 19 comprehensive integration tests
+- **`src/main.rs`** Main entry point, command parsing, high-level flow
+- **`src/cli.rs`** CLI argument parsing with `clap`
+- **`src/config.rs`** Configuration system with timer, sound, and notification
+  settings
+- **`src/server.rs`** Unix socket server, daemon lifecycle, client request
+  handling, PID file management
+- **`src/timer.rs`** Timer state machine, phase transitions, status output
+  formatting, desktop notifications
+- **`src/audio.rs`** Audio playback utilities
+- **`tests/`** integration tests
 
 #### Communication Flow
 
@@ -127,8 +135,7 @@ JSON Status Output (optimized for waybar)
 
 **Client-Server Architecture:**
 
-- Single binary with subcommands: `daemon start|stop|status|run`, `start`,
-  `stop`, `status`, `skip`, `toggle`
+- Single binary with subcommands
 - Daemon listens on Unix socket at `$XDG_RUNTIME_DIR/tomat.sock`
 - PID file tracking at `$XDG_RUNTIME_DIR/tomat.pid` with exclusive file locking
 - Line-delimited JSON protocol for communication
@@ -140,7 +147,7 @@ JSON Status Output (optimized for waybar)
   - `false` (default): Timer transitions to next phase but **pauses**, requiring
     manual resume
   - `true`: Timer automatically continues through all phases
-- Timer starts in paused work state, never returns to "idle"
+- Timer starts in paused work state
 
 ### Testing Infrastructure
 
@@ -189,7 +196,7 @@ daemon.wait_for_completion(10)?;
 1. Add enum variant to `Commands` in `src/main.rs`
 2. Add command handling in `handle_client()` in `src/server.rs`
 3. Add match arm in `main()` in `src/main.rs`
-4. Write integration tests in `tests/cli.rs` using `TestDaemon`
+4. Write integration tests in `tests/` using `TestDaemon`
 
 #### Modifying Timer Behavior
 
@@ -228,7 +235,6 @@ daemon.wait_for_completion(10)?;
 
 - **TOML-based**: Configuration loaded from `~/.config/tomat/config.toml`
 - **Hierarchical**: Built-in defaults → config file → CLI arguments
-- **Partial configuration**: Users can override only specific values
 
 ### Debugging Tips
 
@@ -249,17 +255,6 @@ cat $XDG_RUNTIME_DIR/tomat.pid && ps -p <PID>
 journalctl --user -u tomat.service -f
 ```
 
-### Areas for Contribution
-
-Priority areas where contributions are welcome:
-
-- **Performance**: Optimization opportunities
-- **Platform support**: Windows/macOS compatibility exploration
-- **Error handling**: Better error messages and recovery
-- **Testing**: Additional test coverage
-- **Integration**: Additional status bar support
-- **Documentation**: Examples, tutorials, troubleshooting guides
-
 ### Backward Compatibility
 
 When contributing, ensure:
@@ -277,12 +272,3 @@ The project uses automated semantic versioning:
 2. **Automated CI**: GitHub Actions handle testing and releases
 3. **Semantic Versioning**: `feat:` → minor, `fix:` → patch, `BREAKING CHANGE:`
    → major
-
-### Getting Help
-
-- **Issues**: Open GitHub issues for bugs or feature requests
-- **Discussions**: Use GitHub Discussions for questions
-- **Code review**: All pull requests receive thorough review
-- **Testing**: Comprehensive CI pipeline ensures quality
-
-The project maintainer is responsive and welcoming to new contributors!
