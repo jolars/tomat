@@ -521,16 +521,11 @@ pub async fn start_daemon() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Try to lock the PID file to prevent race conditions with concurrent start attempts
-    if let Ok(test_file) = File::create(&pid_file_path) {
-        if test_file.try_lock_exclusive().is_err() {
-            return Err(
-                "Another daemon is starting up right now. Please wait and try again.".into(),
-            );
-        }
-        // Release the test lock - the actual daemon will create its own lock
-        drop(test_file);
-        let _ = std::fs::remove_file(&pid_file_path);
-    }
+    // We keep this lock until the spawned daemon creates its own lock
+    let lock_file = File::create(&pid_file_path)?;
+    lock_file
+        .try_lock_exclusive()
+        .map_err(|_| "Another daemon is starting up right now. Please wait and try again.")?;
 
     // Get the current executable path
     let exe_path = std::env::current_exe()?;
@@ -544,7 +539,12 @@ pub async fn start_daemon() -> Result<(), Box<dyn std::error::Error>> {
         .stderr(Stdio::null())
         .spawn()?;
 
-    println!("Started daemon in background (PID: {})", child.id());
+    let child_pid = child.id();
+    println!("Started daemon in background (PID: {})", child_pid);
+
+    // Release the lock so the daemon can acquire it
+    // The small time window here is acceptable because the daemon is already running
+    drop(lock_file);
 
     // Poll for daemon startup with timeout (max 2 seconds, check every 10ms)
     let start = std::time::Instant::now();
@@ -552,9 +552,37 @@ pub async fn start_daemon() -> Result<(), Box<dyn std::error::Error>> {
     let poll_interval = Duration::from_millis(10);
 
     loop {
+        // Check if socket and PID file exist
         if socket_path.exists() && pid_file_path.exists() {
-            println!("Daemon started successfully");
-            return Ok(());
+            // Verify this is OUR daemon by checking the PID
+            if let Ok(pid_str) = std::fs::read_to_string(&pid_file_path)
+                && let Ok(pid) = pid_str.trim().parse::<u32>()
+            {
+                if pid == child_pid {
+                    // Our daemon successfully wrote its PID - now verify it responds
+                    match send_command("status", serde_json::Value::Null).await {
+                        Ok(_) => {
+                            println!("Daemon started successfully");
+                            return Ok(());
+                        }
+                        Err(_) if start.elapsed() < timeout => {
+                            // Daemon not ready yet, keep waiting
+                        }
+                        Err(_) => {
+                            return Err(
+                                "Failed to start daemon - socket exists but daemon not responding"
+                                    .into(),
+                            );
+                        }
+                    }
+                } else if start.elapsed() >= timeout {
+                    // Different PID in file and timeout reached - another daemon won
+                    return Err(
+                        format!("Another daemon instance (PID: {}) started first", pid).into(),
+                    );
+                }
+                // else: wrong PID but still time left, keep waiting
+            }
         }
 
         if start.elapsed() > timeout {
