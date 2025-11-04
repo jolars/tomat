@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.4.0](https://github.com/jolars/tomat/compare/v2.3.0...v2.4.0) (2025-11-04)
+
+### Features
+
+* add `tomato watch` command ([fd45b67](https://github.com/jolars/tomat/commit/fd45b67d1b4d8d715017e887411d6f27a5af909e))
+* add format option ([2422eae](https://github.com/jolars/tomat/commit/2422eaeba066c7d5d192a066e45f325ed8fdb7be))
+
+### Bug Fixes
+
+* correctly get status output when paused ([6006947](https://github.com/jolars/tomat/commit/60069475e61fa7a6a8ece6b67148092cb5dcb699))
+
 ## [2.3.0](https://github.com/jolars/tomat/compare/v2.2.0...v2.3.0) (2025-10-31)
 
 ### Features

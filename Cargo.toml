@@ -1,6 +1,6 @@
 [package]
 name = "tomat"
-version = "2.3.0"
+version = "2.4.0"
 edition = "2024"
 description = "A Pomodoro timer with daemon support for waybar and other status bars"
 license = "MIT"
