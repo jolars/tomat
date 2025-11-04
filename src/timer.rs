@@ -238,7 +238,7 @@ impl TimerState {
         }
     }
 
-    pub fn next_phase_with_configs(
+    pub fn next_phase(
         &mut self,
         sound_config: &SoundConfig,
         notification_config: &NotificationConfig,
@@ -691,7 +691,7 @@ mod tests {
         timer.current_session_count = 0;
 
         timer
-            .next_phase_with_configs(
+            .next_phase(
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
                 None,
@@ -713,7 +713,7 @@ mod tests {
         timer.current_session_count = 0;
 
         timer
-            .next_phase_with_configs(
+            .next_phase(
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
                 None,
@@ -736,7 +736,7 @@ mod tests {
         timer.current_session_count = 3; // Fourth work session
 
         timer
-            .next_phase_with_configs(
+            .next_phase(
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
                 None,
@@ -757,7 +757,7 @@ mod tests {
         timer.phase = Phase::Break;
 
         timer
-            .next_phase_with_configs(
+            .next_phase(
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
                 None,
@@ -777,7 +777,7 @@ mod tests {
         timer.phase = Phase::LongBreak;
 
         timer
-            .next_phase_with_configs(
+            .next_phase(
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
                 None,
@@ -906,7 +906,7 @@ mod tests {
         for i in 0..3 {
             assert_eq!(timer.current_session_count, i);
             timer
-                .next_phase_with_configs(
+                .next_phase(
                     &SoundConfig::default(),
                     &NotificationConfig::default(),
                     None,
@@ -914,7 +914,7 @@ mod tests {
                 .unwrap(); // Work -> Break
             assert!(matches!(timer.phase, Phase::Break));
             timer
-                .next_phase_with_configs(
+                .next_phase(
                     &SoundConfig::default(),
                     &NotificationConfig::default(),
                     None,
@@ -927,7 +927,7 @@ mod tests {
 
         // Fourth session should trigger long break
         timer
-            .next_phase_with_configs(
+            .next_phase(
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
                 None,
@@ -993,7 +993,7 @@ mod tests {
 
         // Transition to break
         timer
-            .next_phase_with_configs(
+            .next_phase(
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
                 None,
@@ -1003,7 +1003,7 @@ mod tests {
 
         // Transition back to work
         timer
-            .next_phase_with_configs(
+            .next_phase(
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
                 None,

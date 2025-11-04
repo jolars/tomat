@@ -275,9 +275,7 @@ async fn handle_client(
             }
         }
         "skip" => {
-            if let Err(e) =
-                state.next_phase_with_configs(&config.sound, &config.notification, audio_player)
-            {
+            if let Err(e) = state.next_phase(&config.sound, &config.notification, audio_player) {
                 eprintln!("Error during phase transition: {}", e);
             }
 
@@ -485,7 +483,7 @@ async fn daemon_loop(
                 }
             } => {
                 if state.is_finished() {
-                    if let Err(e) = state.next_phase_with_configs(&config.sound, &config.notification, audio_player) {
+                    if let Err(e) = state.next_phase(&config.sound, &config.notification, audio_player) {
                         eprintln!("Error during phase transition: {}", e);
                     }
                     // Save state after automatic phase transition
