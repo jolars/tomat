@@ -1,5 +1,5 @@
 #[cfg(feature = "audio")]
-use rodio::{Decoder, OutputStream, Sink, Source};
+use rodio::{Decoder, OutputStream, OutputStreamBuilder, Sink, Source};
 #[cfg(feature = "audio")]
 use std::io::Cursor;
 
@@ -30,8 +30,8 @@ pub enum SoundType {
 #[cfg(feature = "audio")]
 impl AudioPlayer {
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        let (stream, stream_handle) = OutputStream::try_default()?;
-        let sink = Sink::try_new(&stream_handle)?;
+        let stream = OutputStreamBuilder::open_default_stream()?;
+        let sink = Sink::connect_new(stream.mixer());
 
         Ok(AudioPlayer {
             _stream: stream,
