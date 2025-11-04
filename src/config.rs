@@ -181,21 +181,6 @@ impl Config {
             })
             .unwrap_or_default()
     }
-
-    /// Save config to file
-    #[allow(dead_code)]
-    pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let path = Self::config_path().ok_or("Could not determine config directory")?;
-
-        // Create config directory if it doesn't exist
-        if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent)?;
-        }
-
-        let contents = toml::to_string_pretty(self)?;
-        fs::write(&path, contents)?;
-        Ok(())
-    }
 }
 
 #[cfg(test)]

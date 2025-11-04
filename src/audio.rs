@@ -92,11 +92,6 @@ impl AudioPlayer {
         self.sink.append(source);
         Ok(())
     }
-
-    #[allow(dead_code)]
-    pub fn set_volume(&self, volume: f32) {
-        self.sink.set_volume(volume);
-    }
 }
 
 #[cfg(not(feature = "audio"))]
@@ -125,11 +120,6 @@ impl AudioPlayer {
     ) -> Result<(), Box<dyn std::error::Error>> {
         // Audio feature not enabled, do nothing
         Ok(())
-    }
-
-    #[allow(dead_code)]
-    pub fn set_volume(&self, _volume: f32) {
-        // Audio feature not enabled, do nothing
     }
 }
 

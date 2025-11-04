@@ -157,17 +157,6 @@ pub enum StatusOutput {
     Plain(String),
 }
 
-impl StatusOutput {
-    #[allow(dead_code)]
-    pub fn get_text(&self) -> &str {
-        match self {
-            StatusOutput::Waybar { text, .. } => text,
-            StatusOutput::I3statusRs { text, .. } => text,
-            StatusOutput::Plain(text) => text,
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum Phase {
     Work,
@@ -247,15 +236,6 @@ impl TimerState {
             let total_duration = (self.duration_minutes * 60.0) as u64;
             Some(self.start_time + total_duration)
         }
-    }
-
-    #[allow(dead_code)]
-    pub fn next_phase(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        self.next_phase_with_configs(
-            &SoundConfig::default(),
-            &NotificationConfig::default(),
-            None,
-        )
     }
 
     pub fn next_phase_with_configs(
@@ -390,7 +370,6 @@ impl TimerState {
         message: &str,
         config: &NotificationConfig,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        // Send desktop notification (synchronous to avoid cross-platform issues)
         // Skip notifications during testing
         if is_testing() {
             return Ok(());
@@ -592,12 +571,6 @@ impl TimerState {
             Format::Plain => StatusOutput::Plain(display_text),
         }
     }
-
-    #[allow(dead_code)]
-    pub fn get_status_output(&self, format: &Format) -> StatusOutput {
-        let status = self.get_timer_status();
-        Self::format_status(&status, format, "{icon} {time} {state}")
-    }
 }
 
 fn is_testing() -> bool {
@@ -717,7 +690,13 @@ mod tests {
         timer.phase = Phase::Work;
         timer.current_session_count = 0;
 
-        timer.next_phase().unwrap();
+        timer
+            .next_phase_with_configs(
+                &SoundConfig::default(),
+                &NotificationConfig::default(),
+                None,
+            )
+            .unwrap();
 
         assert!(matches!(timer.phase, Phase::Break));
         assert!(timer.is_paused);
@@ -733,7 +712,13 @@ mod tests {
         timer.phase = Phase::Work;
         timer.current_session_count = 0;
 
-        timer.next_phase().unwrap();
+        timer
+            .next_phase_with_configs(
+                &SoundConfig::default(),
+                &NotificationConfig::default(),
+                None,
+            )
+            .unwrap();
 
         assert!(matches!(timer.phase, Phase::Break));
         assert!(!timer.is_paused);
@@ -750,7 +735,13 @@ mod tests {
         timer.phase = Phase::Work;
         timer.current_session_count = 3; // Fourth work session
 
-        timer.next_phase().unwrap();
+        timer
+            .next_phase_with_configs(
+                &SoundConfig::default(),
+                &NotificationConfig::default(),
+                None,
+            )
+            .unwrap();
 
         assert!(matches!(timer.phase, Phase::LongBreak));
         assert!(timer.is_paused);
@@ -765,7 +756,13 @@ mod tests {
         timer.auto_advance = false;
         timer.phase = Phase::Break;
 
-        timer.next_phase().unwrap();
+        timer
+            .next_phase_with_configs(
+                &SoundConfig::default(),
+                &NotificationConfig::default(),
+                None,
+            )
+            .unwrap();
 
         assert!(matches!(timer.phase, Phase::Work));
         assert!(timer.is_paused);
@@ -779,7 +776,13 @@ mod tests {
         timer.auto_advance = false;
         timer.phase = Phase::LongBreak;
 
-        timer.next_phase().unwrap();
+        timer
+            .next_phase_with_configs(
+                &SoundConfig::default(),
+                &NotificationConfig::default(),
+                None,
+            )
+            .unwrap();
 
         assert!(matches!(timer.phase, Phase::Work));
         assert!(timer.is_paused);
@@ -790,7 +793,9 @@ mod tests {
     fn test_get_status_output_paused_work() {
         let timer = TimerState::new(25.0, 5.0, 15.0, 4);
 
-        let status = timer.get_status_output(&Format::default());
+        let timer_status = timer.get_timer_status();
+        let status =
+            TimerState::format_status(&timer_status, &Format::default(), "{icon} {time} {state}");
 
         match status {
             StatusOutput::Waybar {
@@ -814,7 +819,9 @@ mod tests {
         let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
         timer.start_work();
 
-        let status = timer.get_status_output(&Format::default());
+        let timer_status = timer.get_timer_status();
+        let status =
+            TimerState::format_status(&timer_status, &Format::default(), "{icon} {time} {state}");
 
         match status {
             StatusOutput::Waybar {
@@ -841,7 +848,9 @@ mod tests {
         timer.duration_minutes = 5.0;
         timer.is_paused = true;
 
-        let status = timer.get_status_output(&Format::default());
+        let timer_status = timer.get_timer_status();
+        let status =
+            TimerState::format_status(&timer_status, &Format::default(), "{icon} {time} {state}");
 
         match status {
             StatusOutput::Waybar {
@@ -867,7 +876,9 @@ mod tests {
         timer.duration_minutes = 15.0;
         timer.is_paused = true;
 
-        let status = timer.get_status_output(&Format::default());
+        let timer_status = timer.get_timer_status();
+        let status =
+            TimerState::format_status(&timer_status, &Format::default(), "{icon} {time} {state}");
 
         match status {
             StatusOutput::Waybar {
@@ -894,16 +905,34 @@ mod tests {
         // Complete 3 work sessions
         for i in 0..3 {
             assert_eq!(timer.current_session_count, i);
-            timer.next_phase().unwrap(); // Work -> Break
+            timer
+                .next_phase_with_configs(
+                    &SoundConfig::default(),
+                    &NotificationConfig::default(),
+                    None,
+                )
+                .unwrap(); // Work -> Break
             assert!(matches!(timer.phase, Phase::Break));
-            timer.next_phase().unwrap(); // Break -> Work
+            timer
+                .next_phase_with_configs(
+                    &SoundConfig::default(),
+                    &NotificationConfig::default(),
+                    None,
+                )
+                .unwrap(); // Break -> Work
             assert!(matches!(timer.phase, Phase::Work));
         }
 
         assert_eq!(timer.current_session_count, 3);
 
         // Fourth session should trigger long break
-        timer.next_phase().unwrap();
+        timer
+            .next_phase_with_configs(
+                &SoundConfig::default(),
+                &NotificationConfig::default(),
+                None,
+            )
+            .unwrap();
         assert!(matches!(timer.phase, Phase::LongBreak));
         assert_eq!(timer.current_session_count, 0); // Reset
     }
@@ -963,11 +992,23 @@ mod tests {
         timer.phase = Phase::Work;
 
         // Transition to break
-        timer.next_phase().unwrap();
+        timer
+            .next_phase_with_configs(
+                &SoundConfig::default(),
+                &NotificationConfig::default(),
+                None,
+            )
+            .unwrap();
         assert!(!timer.is_paused); // Should still be running
 
         // Transition back to work
-        timer.next_phase().unwrap();
+        timer
+            .next_phase_with_configs(
+                &SoundConfig::default(),
+                &NotificationConfig::default(),
+                None,
+            )
+            .unwrap();
         assert!(!timer.is_paused); // Should still be running
     }
 
