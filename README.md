@@ -10,8 +10,7 @@ seamless integration with waybar and other status bars.
 ## Features
 
 - **⚙️ Easily Configurable**: Persistent defaults via TOML configuration
-- **⚡ Architecture**: Client--server architecture that survives service
-  restarts
+- **⚡ Architecture**: Client-server architecture that survives service restarts
 - **📊 Flexible Ouput**: Multiple output formats to support waybar, polybar, and
   others
 - **📱 Notifications**: Built-in desktop and sound notifications
