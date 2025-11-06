@@ -8,6 +8,7 @@
     pkgs.go-task
     pkgs.llvmPackages.bintools
     pkgs.alsa-lib
+    pkgs.cargo-llvm-cov
   ];
 
   languages.rust = {
