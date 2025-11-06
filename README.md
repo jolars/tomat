@@ -9,24 +9,12 @@ seamless integration with waybar and other status bars.
 
 ## Features
 
-- **🍅 Pomodoro Technique**: Work/break cycles with configurable durations
-- **⚙️ TOML Configuration**: Persistent defaults via XDG config directory
-- **⚡ Daemon Architecture**: Robust background service that survives restarts
-- **📊 Waybar Integration**: JSON output with CSS classes for seamless
-  integration
-- **🎮 Visual Indicators**: Play ▶ and pause ⏸ symbols for clear state
-  indication
-- **🔧 Auto-advance Control**: Choose between manual or automatic phase
-  transitions
-- **🔄 Process Management**: Built-in daemon start/stop/status commands
-- **🖥️ Unix Sockets**: Fast, secure local communication
-- **🌙 Systemd Integration**: Auto-start with user session
-- **📱 Desktop Notifications**: Phase transition alerts with configurable icons
-- **🖼️ Icon System**: Embedded icon with mako compatibility and custom icon
-  support
-- **🔊 Sound Notifications**: Audio alerts with embedded sounds and
-  customization
-- **💾 Minimal Resources**: Lightweight and efficient
+- **⚙️ Easily Configurable**: Persistent defaults via TOML configuration
+- **⚡ Architecture**: Client--server architecture that survives service
+  restarts
+- **📊 Flexible Ouput**: Multiple output formats to support waybar, polybar, and
+  others
+- **📱 Notifications**: Built-in desktop and sound notifications
 
 ## Quick Start
 
@@ -70,7 +58,8 @@ cargo install tomat
 
 ### Quick Setup with Systemd
 
-After installing tomat, you can set up the systemd service with a single command:
+After installing tomat, you can set up the systemd service with a single
+command:
 
 ```bash
 # Install systemd user service (recommended)
@@ -81,6 +70,7 @@ systemctl --user start tomat.service
 ```
 
 **Alternative manual setup:**
+
 ```bash
 # Manual systemd setup (if you prefer)
 mkdir -p ~/.config/systemd/user
@@ -215,7 +205,9 @@ For reduced CPU usage, use the `watch` command instead:
 }
 ```
 
-**Note**: The `watch` command maintains a single connection to the daemon and updates at the specified interval (default: 1 second). It automatically exits when the daemon stops.
+**Note**: The `watch` command maintains a single connection to the daemon and
+updates at the specified interval (default: 1 second). It automatically exits
+when the daemon stops.
 
 Add CSS styling (`~/.config/waybar/style.css`):
 
