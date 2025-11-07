@@ -19,11 +19,7 @@ coverage:
         informational: true
 
 comment:
-  layout: "reach,diff,flags,tree,footer"
-  behavior: default
   require_changes: false
 
 ignore:
   - "tests/**/*"
-  - "benches/**/*"
-  - "examples/**/*"
