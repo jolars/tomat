@@ -102,6 +102,30 @@ impl TestDaemon {
         }
     }
 
+    /// Send shutdown command directly via socket for fast graceful shutdown
+    fn shutdown_gracefully(&self) -> bool {
+        use std::io::{BufRead, Write};
+        use std::os::unix::net::UnixStream;
+
+        let socket_path = self._temp_dir.path().join("tomat.sock");
+
+        if let Ok(mut stream) = UnixStream::connect(socket_path) {
+            let message = r#"{"command":"shutdown","args":null}"#;
+            if stream
+                .write_all(format!("{}\n", message).as_bytes())
+                .is_ok()
+                && stream.flush().is_ok()
+            {
+                // Read response to ensure command was processed
+                let reader = std::io::BufReader::new(stream);
+                if let Some(Ok(_response)) = reader.lines().next() {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
     /// Get current timer status as JSON
     pub fn get_status(&self) -> Result<Value, Box<dyn std::error::Error>> {
         self.send_command(&["status"])
@@ -164,7 +188,18 @@ impl TestDaemon {
 
 impl Drop for TestDaemon {
     fn drop(&mut self) {
-        // Try to gracefully shut down the daemon
+        // Try graceful shutdown via direct socket communication (fast path)
+        if self.shutdown_gracefully() {
+            // Wait very briefly for graceful exit (daemon should exit immediately)
+            for _ in 0..5 {
+                if self.daemon_process.try_wait().ok().flatten().is_some() {
+                    return; // Daemon exited gracefully
+                }
+                thread::sleep(Duration::from_millis(5));
+            }
+        }
+
+        // Fallback to force kill if still running
         let _ = self.daemon_process.kill();
         let _ = self.daemon_process.wait();
     }

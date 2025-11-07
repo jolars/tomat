@@ -152,12 +152,12 @@ async fn handle_client(
     state: &mut TimerState,
     config: &crate::config::Config,
     audio_player: Option<&AudioPlayer>,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<bool, Box<dyn std::error::Error>> {
     let mut reader = BufReader::new(stream);
     let mut line = String::new();
 
     if reader.read_line(&mut line).await? == 0 {
-        return Ok(());
+        return Ok(false);
     }
 
     let message: ClientMessage = serde_json::from_str(&line)?;
@@ -355,6 +355,14 @@ async fn handle_client(
                 }
             }
         }
+        "shutdown" => {
+            save_state(state);
+            ServerResponse {
+                success: true,
+                data: serde_json::Value::Null,
+                message: "Daemon shutting down".to_string(),
+            }
+        }
         _ => ServerResponse {
             success: false,
             data: serde_json::Value::Null,
@@ -362,13 +370,15 @@ async fn handle_client(
         },
     };
 
+    let should_shutdown = message.command == "shutdown";
+
     let response_json = serde_json::to_string(&response)?;
     let mut writer = reader.into_inner();
     writer.write_all(response_json.as_bytes()).await?;
     writer.write_all(b"\n").await?;
     writer.flush().await?;
 
-    Ok(())
+    Ok(should_shutdown)
 }
 
 pub async fn run_daemon() -> Result<(), Box<dyn std::error::Error>> {
@@ -457,8 +467,15 @@ async fn daemon_loop(
         tokio::select! {
             // Handle incoming connections
             Ok((stream, _)) = listener.accept() => {
-                if let Err(e) = handle_client(stream, state, config, audio_player).await {
-                    eprintln!("Error handling client: {}", e);
+                match handle_client(stream, state, config, audio_player).await {
+                    Ok(should_shutdown) if should_shutdown => {
+                        println!("Shutdown requested, exiting gracefully");
+                        return Ok(());
+                    }
+                    Err(e) => {
+                        eprintln!("Error handling client: {}", e);
+                    }
+                    _ => {}
                 }
             }
 
@@ -627,7 +644,32 @@ pub async fn stop_daemon() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
-    // Try to kill the process
+    // Try graceful shutdown via socket command first
+    match send_command("shutdown", serde_json::Value::Null).await {
+        Ok(_) => {
+            println!("Sent shutdown command to daemon");
+
+            // Wait up to 5 seconds for graceful shutdown
+            for _ in 0..50 {
+                if !is_process_running(pid) {
+                    println!("Daemon stopped gracefully");
+                    let _ = std::fs::remove_file(&pid_file_path);
+                    let _ = std::fs::remove_file(&socket_path);
+                    return Ok(());
+                }
+                tokio::time::sleep(Duration::from_millis(100)).await;
+            }
+
+            println!("Daemon did not respond to shutdown command, trying signal-based shutdown");
+        }
+        Err(_) => {
+            println!(
+                "Could not send shutdown command (daemon may be unresponsive), trying signal-based shutdown"
+            );
+        }
+    }
+
+    // Fallback to signal-based shutdown
     unsafe {
         if libc::kill(pid as i32, libc::SIGTERM) == 0 {
             println!("Sent SIGTERM to daemon (PID: {})", pid);
