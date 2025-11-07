@@ -628,38 +628,30 @@ pub async fn stop_daemon() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Try to kill the process
-    #[cfg(unix)]
-    {
-        unsafe {
-            if libc::kill(pid as i32, libc::SIGTERM) == 0 {
-                println!("Sent SIGTERM to daemon (PID: {})", pid);
+    unsafe {
+        if libc::kill(pid as i32, libc::SIGTERM) == 0 {
+            println!("Sent SIGTERM to daemon (PID: {})", pid);
 
-                // Wait up to 5 seconds for graceful shutdown
-                for _ in 0..50 {
-                    if !is_process_running(pid) {
-                        println!("Daemon stopped gracefully");
-                        break;
-                    }
-                    tokio::time::sleep(Duration::from_millis(100)).await;
+            // Wait up to 5 seconds for graceful shutdown
+            for _ in 0..50 {
+                if !is_process_running(pid) {
+                    println!("Daemon stopped gracefully");
+                    break;
                 }
-
-                // If still running, force kill
-                if is_process_running(pid) {
-                    if libc::kill(pid as i32, libc::SIGKILL) == 0 {
-                        println!("Force killed daemon (PID: {})", pid);
-                    } else {
-                        return Err(format!("Failed to kill daemon process {}", pid).into());
-                    }
-                }
-            } else {
-                return Err(format!("Failed to send signal to daemon process {}", pid).into());
+                tokio::time::sleep(Duration::from_millis(100)).await;
             }
-        }
-    }
 
-    #[cfg(not(unix))]
-    {
-        return Err("Daemon killing not supported on this platform".into());
+            // If still running, force kill
+            if is_process_running(pid) {
+                if libc::kill(pid as i32, libc::SIGKILL) == 0 {
+                    println!("Force killed daemon (PID: {})", pid);
+                } else {
+                    return Err(format!("Failed to kill daemon process {}", pid).into());
+                }
+            }
+        } else {
+            return Err(format!("Failed to send signal to daemon process {}", pid).into());
+        }
     }
 
     // Clean up files
@@ -714,17 +706,7 @@ pub async fn daemon_status() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn is_process_running(pid: u32) -> bool {
-    #[cfg(unix)]
-    {
-        unsafe { libc::kill(pid as i32, 0) == 0 }
-    }
-
-    #[cfg(not(unix))]
-    {
-        // On non-Unix systems, we can't easily check if a PID is running
-        // This is a fallback that assumes the process might be running
-        true
-    }
+    unsafe { libc::kill(pid as i32, 0) == 0 }
 }
 
 #[cfg(test)]
@@ -800,7 +782,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(unix)]
     fn test_is_process_running_for_self() {
         let current_pid = std::process::id();
 
@@ -811,7 +792,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(unix)]
     fn test_is_process_running_for_nonexistent_pid() {
         // Use a very high PID that is very unlikely to exist
         // We try multiple PIDs to avoid flakiness
