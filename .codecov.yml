@@ -15,3 +15,5 @@ coverage:
 
 ignore:
   - "tests/**/*"
+  - "src/main.src"
+  - "src/cli.src"
