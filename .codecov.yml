@@ -14,6 +14,6 @@ coverage:
         informational: true
 
 ignore:
-  - "tests/**/*"
-  - "src/main.src"
-  - "src/cli.src"
+  - "tests"
+  - "src/main.rs"
+  - "src/cli.rs"
