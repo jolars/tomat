@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.5.0](https://github.com/jolars/tomat/compare/v2.4.0...v2.5.0) (2025-11-29)
+
+### Features
+
+* add shell completion ([#6](https://github.com/jolars/tomat/issues/6)) ([2c7b8e9](https://github.com/jolars/tomat/commit/2c7b8e9ee8b5042554b50db3c11d3d286b03ba09))
+
+### Bug Fixes
+
+* work around race conditions for spawning servers ([c5b9113](https://github.com/jolars/tomat/commit/c5b9113e9afc5bfcd836b27cb474b4e4372348ef))
+
+### Performance Improvements
+
+* reduce startup delay in server verification ([0e02b9d](https://github.com/jolars/tomat/commit/0e02b9de950064cb35fe32b6bb0b868ec7e4b876))
+
 ## [2.4.0](https://github.com/jolars/tomat/compare/v2.3.0...v2.4.0) (2025-11-04)
 
 ### Features
