@@ -268,11 +268,10 @@ fn embed_icon_file() -> Result<()> {
 }
 
 fn generate_completions() -> Result<()> {
-    // Create man directory if it doesn't exist
+    // Create completions directory if it doesn't exist
     let out_dir = PathBuf::from("target/completions");
     fs::create_dir_all(&out_dir)?;
 
-    // Generate main man page and all subcommand pages (like git/cargo do)
     let mut cmd = cli::Cli::command();
 
     for &shell in clap_complete::Shell::value_variants() {
