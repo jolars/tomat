@@ -1,4 +1,5 @@
 use clap::CommandFactory;
+use clap::ValueEnum;
 use clap_mangen::Man;
 use std::fs;
 use std::io::Result;
@@ -13,6 +14,7 @@ fn main() -> Result<()> {
     generate_man_page()?;
     generate_images()?;
     embed_icon_file()?;
+    generate_completions()?;
     Ok(())
 }
 
@@ -262,5 +264,22 @@ fn generate_og_image(tree: &resvg::usvg::Tree, output_path: &str) -> Result<()> 
 fn embed_icon_file() -> Result<()> {
     // Tell Cargo to embed the icon file and rebuild if it changes
     println!("cargo:rerun-if-changed=assets/icon.png");
+    Ok(())
+}
+
+fn generate_completions() -> Result<()> {
+    // Create completions directory if it doesn't exist
+    let out_dir = PathBuf::from("target/completions");
+    fs::create_dir_all(&out_dir)?;
+
+    let mut cmd = cli::Cli::command();
+
+    for &shell in clap_complete::Shell::value_variants() {
+        clap_complete::generate_to(shell, &mut cmd, "tomat", &out_dir)?;
+    }
+
+    println!("cargo:rerun-if-changed=src/cli.rs");
+    println!("cargo:rerun-if-changed=build.rs");
+
     Ok(())
 }
