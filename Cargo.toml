@@ -28,7 +28,7 @@ default = ["audio"]
 audio = ["dep:rodio"]
 
 [dev-dependencies]
-tempfile = "3.23"
+tempfile = "3.24"
 
 [build-dependencies]
 clap = { version = "4.5", features = ["derive"] }
