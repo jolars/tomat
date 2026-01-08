@@ -5,6 +5,7 @@
 
 {
   packages = [
+    pkgs.bashInteractive
     pkgs.go-task
     pkgs.llvmPackages.bintools
     pkgs.alsa-lib
