@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.6.0](https://github.com/jolars/tomat/compare/v2.5.0...v2.6.0) (2026-01-09)
+
+### Features
+
+* add a system for calling hooks upon state changes ([0573d57](https://github.com/jolars/tomat/commit/0573d57eacad41d12a8891cff595711fea49704c))
+* reduce default `tomat watch` interval to 0.25s ([5735a89](https://github.com/jolars/tomat/commit/5735a8926aabebdd2f9a1e729da8fc34a3ee41ff))
+
+### Bug Fixes
+
+* execute hook on work start ([bf0b375](https://github.com/jolars/tomat/commit/bf0b3753e229361689ffc4ab66815eaccc386a52))
+
 ## [2.5.0](https://github.com/jolars/tomat/compare/v2.4.0...v2.5.0) (2025-11-29)
 
 ### Features
