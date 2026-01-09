@@ -368,7 +368,7 @@ Tomat uses a client-daemon architecture with Unix socket communication to allow
 fast and reliable interactions, with persistent timer state managed by the
 daemon.
 
-![](images/architecture.png)
+![](images/architecture.png){ width="400" }
 
 - **Daemon**: Runs continuously, manages timer state and notifications
 - **Client**: Sends commands via Unix socket
