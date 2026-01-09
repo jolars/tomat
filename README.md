@@ -299,7 +299,12 @@ tomat start --work 15 --break 5 --auto-advance
 
 # Deep work (no interruptions)
 tomat start --work 90 --break 30 --sessions 2
+
+# Return to configured defaults - just run start without flags
+tomat start
 ```
+
+**Note**: Custom durations only apply to the current session. Running `tomat start` without flags will always use your configured defaults from `~/.config/tomat/config.toml` (or built-in defaults if no config exists).
 
 ## Architecture
 
