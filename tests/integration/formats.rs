@@ -151,10 +151,12 @@ fn test_status_invalid_format_returns_error() -> Result<(), Box<dyn std::error::
     let stdout = String::from_utf8_lossy(&output.stdout);
 
     assert!(
-        stderr.contains("Error")
-            || stderr.contains("Unknown format")
-            || stdout.contains("Error")
-            || stdout.contains("Unknown format"),
+        !output.status.success()
+            && (stderr.contains("error")
+                || stderr.contains("invalid value")
+                || stderr.contains("Unknown format")
+                || stdout.contains("Error")
+                || stdout.contains("Unknown format")),
         "Invalid format should return error. stderr: {}, stdout: {}",
         stderr,
         stdout
