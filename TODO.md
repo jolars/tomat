@@ -21,31 +21,31 @@ visible to user.
 
 ### Additional Status Bar Integration
 
-**Issue:** Support for more status bar applications to broaden compatibility.
+**Status:** Most status bars already supported via plain text format with
+template customization.
 
 **Status Bar Applications to Support:**
 
 **Status Bars:**
 
-- [ ] **polybar** - Popular modular status bar (already supported via plain
-      format)
-- [ ] **py3status** - Python-based extensible i3status replacement
-- [ ] **bumblebee-status** - Modular status bar toolkit
-- [ ] **goblocks** - Fast statusbar written in Go
-- [ ] **dwmblocks** - Modular status bar for dwm
+- [x] **polybar** - Supported via `--output plain` with custom templates
+- [x] **dwmblocks** - Supported via `--output plain`
+- [x] **goblocks** - Supported via `--output plain`
+- [ ] **py3status** - May benefit from dedicated JSON format
+- [ ] **bumblebee-status** - May benefit from dedicated JSON format
 
-**Implementation Ideas:**
+**Already Implemented:**
 
-- Dedicated output formats: `--output polybar` etc
-- Plugin architecture for extensible output formats
-- Template-based output formatting
-- Consider standardized status protocol (if any emerge)
+- ✅ Template-based output formatting (`display.text_format` config, `--format`
+  flag)
+- ✅ Three output formats: waybar, i3status-rs, plain
+- ✅ Custom text templates with placeholders: `{icon}`, `{time}`, `{state}`,
+  `{phase}`, `{session}`
 
 **Research Needed:**
 
-- Survey most popular status bar setups in Linux community
-- Investigate specific JSON/config formats each application expects
-- Check for any emerging status bar protocol standards
+- Investigate if py3status/bumblebee-status need specific JSON formats
+- Consider if additional formats are worth the maintenance burden
 
 ### History and Statistics Tracking
 
@@ -68,19 +68,25 @@ visible to user.
 
 ### Custom Notification Messages
 
-**Issue:** Notification messages are hardcoded in `src/timer.rs:105-136`.
+**Issue:** Notification messages are hardcoded in `src/timer.rs`.
+
+**Already Implemented:**
+
+- ✅ Option to disable notifications (`notification.enabled` config)
+- ✅ Icon customization (`notification.icon` config: "auto", "theme", or custom
+  path)
+- ✅ Timeout customization (`notification.timeout` config)
 
 **Proposed Features:**
 
-- Allow customization via config file:
+- Allow customization of notification message text via config file:
   ```toml
-  [notifications]
-  work = "Break time! Step away from the screen."
-  break = "Back to work! Let's get things done."
-  long_break = "Long break! You've earned it."
+  [notification]
+  work_message = "Break time! Step away from the screen."
+  break_message = "Back to work! Let's get things done."
+  long_break_message = "Long break! You've earned it."
   ```
-- Support notification urgency levels
-- Option to disable notifications entirely
+- Support notification urgency levels (low/normal/critical)
 
 ## Testing
 
