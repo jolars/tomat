@@ -368,13 +368,7 @@ Tomat uses a client-daemon architecture with Unix socket communication to allow
 fast and reliable interactions, with persistent timer state managed by the
 daemon.
 
-```
-Client Commands  →  Unix Socket  →    Daemon   →  Timer State    →    Output
-     ↓                  ↓               ↓              ↓                 ↓
-tomat start      $XDG_RUNTIME_DIR/  Background     Work/Break/   {"text": "🍅 25:00 ▶",
-tomat status     tomat.sock         Service        LongBreak      "class": "work"}
-tomat toggle                                       Phases
-```
+![](images/architecture.png)
 
 - **Daemon**: Runs continuously, manages timer state and notifications
 - **Client**: Sends commands via Unix socket
