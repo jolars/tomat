@@ -239,6 +239,9 @@ async fn handle_client(
                 // Always start a fresh work session
                 state.start_work();
 
+                // Execute work_start hook
+                execute_hook(&config.hooks, "work_start", state);
+
                 // Save state after starting
                 save_state(state);
 
