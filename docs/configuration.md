@@ -157,6 +157,139 @@ icon = "auto"                           # Icon to use: "auto" (embedded), "theme
 timeout = 5000                          # Notification timeout in milliseconds
 ```
 
+## Hooks
+
+Hooks allow you to execute custom commands when timer events occur. This enables
+integration with external tools, automation workflows, and custom notifications.
+
+### Basic Syntax
+
+```toml
+[hooks.on_work_start]
+cmd = "notify-send"
+args = ["🍅 Work Time", "Focus for 25 minutes"]
+
+[hooks.on_break_start]
+cmd = "playerctl"
+args = ["pause"]
+```
+
+### Available Hooks
+
+- `on_work_start` - Triggered when a work session starts
+- `on_break_start` - Triggered when a break starts
+- `on_long_break_start` - Triggered when a long break starts
+- `on_pause` - Triggered when timer is paused
+- `on_resume` - Triggered when timer is resumed
+- `on_stop` - Triggered when timer is stopped manually
+- `on_complete` - Triggered when a phase completes naturally (auto or manual
+  transition)
+- `on_skip` - Triggered when user skips to next phase
+
+### Hook Configuration Fields
+
+Each hook supports these optional fields:
+
+```toml
+[hooks.on_work_start]
+cmd = "/usr/bin/notify-send"        # Command to execute (required)
+args = ["Title", "Message"]         # Command arguments (optional, default: [])
+timeout = 5                         # Timeout in seconds (optional, default: 5)
+cwd = "/home/user"                  # Working directory (optional, default: $HOME)
+capture_output = false              # Capture stdout/stderr (optional, default: false)
+```
+
+### Environment Variables
+
+All hooks receive these environment variables:
+
+- `TOMAT_EVENT` - Event name (e.g., `"work_start"`, `"pause"`)
+- `TOMAT_PHASE` - Current phase (`"work"`, `"break"`, `"long_break"`)
+- `TOMAT_REMAINING_SECONDS` - Seconds remaining in current phase
+- `TOMAT_SESSION_COUNT` - Current session number (e.g., `1`, `2`, `3`)
+- `TOMAT_AUTO_ADVANCE` - Whether auto-advance is enabled (`"true"` or `"false"`)
+
+### Example Use Cases
+
+**Pause music during work sessions:**
+
+```toml
+[hooks.on_work_start]
+cmd = "playerctl"
+args = ["pause"]
+timeout = 2
+
+[hooks.on_break_start]
+cmd = "playerctl"
+args = ["play"]
+```
+
+**Adjust screen brightness:**
+
+```toml
+[hooks.on_pause]
+cmd = "brightnessctl"
+args = ["set", "30%"]
+
+[hooks.on_resume]
+cmd = "brightnessctl"
+args = ["set", "100%"]
+```
+
+**Log completed sessions:**
+
+```toml
+[hooks.on_complete]
+cmd = "sh"
+args = ["-c", "echo \"$(date): $TOMAT_PHASE completed\" >> ~/tomat.log"]
+capture_output = true
+```
+
+**Custom notifications:**
+
+```toml
+[hooks.on_work_start]
+cmd = "notify-send"
+args = ["🍅 Focus Time", "Let's get things done!", "-u", "critical"]
+timeout = 3
+
+[hooks.on_long_break_start]
+cmd = "notify-send"
+args = ["🏖️ Long Break", "You've earned it! Take 15 minutes."]
+```
+
+**Execute custom scripts:**
+
+```toml
+[hooks.on_work_start]
+cmd = "/home/user/scripts/start-focus-mode.sh"
+cwd = "/home/user/scripts"
+timeout = 10
+
+[hooks.on_stop]
+cmd = "/home/user/scripts/end-focus-mode.sh"
+cwd = "/home/user/scripts"
+```
+
+### Security Considerations
+
+**Hooks execute with daemon's user privileges.** Follow these security
+guidelines:
+
+- ✅ **Only configure trusted commands** - hooks can execute any command
+- ✅ **Use absolute paths** - e.g., `/usr/bin/notify-send` instead of
+  `notify-send`
+- ✅ **Never run daemon as root** - always use `--user` systemd service
+- ✅ **Verify config file ownership** - ensure `~/.config/tomat/config.toml` is
+  owned by your user
+- ✅ **No shell injection** - commands are executed directly (not via shell),
+  preventing injection attacks
+- ✅ **Timeout protection** - hooks are killed after timeout to prevent hanging
+
+**Threat model**: If an attacker controls your `~/.config` directory, they
+already have code execution via shell rc files. Hooks don't introduce new attack
+vectors beyond standard Unix permissions.
+
 ## Troubleshooting Configuration
 
 ### Config File Not Loading
@@ -178,3 +311,27 @@ timeout = 5000                          # Notification timeout in milliseconds
 2. **Icon not showing**: Try different icon modes (`"auto"`, `"theme"`, custom
    path)
 3. **Mako compatibility**: Use `icon = "auto"` for best mako support
+
+### Hook Issues
+
+1. **Hook not executing**:
+   - Check command path with `which <command>` or use absolute path
+   - Verify command is executable: `ls -l /path/to/command`
+   - Enable `capture_output = true` to see error messages
+2. **Hook timing out**:
+   - Increase timeout: `timeout = 10`
+   - Check if command hangs when run manually
+   - Ensure command doesn't require interactive input
+3. **Working directory errors**:
+   - Verify `cwd` path exists: `ls -ld /path/to/cwd`
+   - Use absolute paths for commands and files
+   - Check permissions on working directory
+4. **Environment variable issues**:
+   - Test hook manually:
+     `TOMAT_EVENT=work_start TOMAT_PHASE=work /path/to/command`
+   - Check if command expects different variable names
+5. **Hook not triggered**:
+   - Verify hook name is spelled correctly
+   - Check config file syntax with TOML validator
+   - Restart daemon after config changes:
+     `tomat daemon stop && tomat daemon start`

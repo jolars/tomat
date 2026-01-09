@@ -27,6 +27,7 @@ your Pomodoro timer.
 
 - Complete TOML configuration reference
 - Timer, sound, and notification settings
+- Hooks system - Execute custom commands on timer events
 - Icon configuration for different notification systems
 - Priority order and partial configuration
 - Troubleshooting configuration issues

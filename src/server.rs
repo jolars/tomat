@@ -147,6 +147,22 @@ pub async fn send_command(
     Ok(serde_json::from_str(&response)?)
 }
 
+/// Execute a hook asynchronously (fire-and-forget)
+fn execute_hook(hooks: &crate::config::HooksConfig, event: &str, state: &TimerState) {
+    let hooks = hooks.clone();
+    let phase_str = state.phase.to_string();
+    let remaining = state.get_remaining_seconds();
+    let session_count = state.current_session_count;
+    let auto_advance = state.auto_advance;
+    let event = event.to_string();
+
+    tokio::spawn(async move {
+        hooks
+            .execute_hook(&event, &phase_str, remaining, session_count, auto_advance)
+            .await;
+    });
+}
+
 async fn handle_client(
     stream: UnixStream,
     state: &mut TimerState,
@@ -239,6 +255,9 @@ async fn handle_client(
         "stop" => {
             state.stop();
 
+            // Execute hook
+            execute_hook(&config.hooks, "stop", state);
+
             // Save state after stopping
             save_state(state);
 
@@ -275,9 +294,17 @@ async fn handle_client(
             }
         }
         "skip" => {
-            if let Err(e) = state.next_phase(&config.sound, &config.notification, audio_player) {
+            if let Err(e) = state.next_phase(
+                &config.sound,
+                &config.notification,
+                audio_player,
+                &config.hooks,
+            ) {
                 eprintln!("Error during phase transition: {}", e);
             }
+
+            // Execute skip hook
+            execute_hook(&config.hooks, "skip", state);
 
             // Save state after phase transition
             save_state(state);
@@ -293,6 +320,9 @@ async fn handle_client(
                 // Resume if paused
                 state.resume();
 
+                // Execute hook
+                execute_hook(&config.hooks, "resume", state);
+
                 // Save state after resuming
                 save_state(state);
 
@@ -304,6 +334,9 @@ async fn handle_client(
             } else {
                 // Pause timer if running (preserves progress)
                 state.pause();
+
+                // Execute hook
+                execute_hook(&config.hooks, "pause", state);
 
                 // Save state after pausing
                 save_state(state);
@@ -325,6 +358,9 @@ async fn handle_client(
             } else {
                 state.pause();
 
+                // Execute hook
+                execute_hook(&config.hooks, "pause", state);
+
                 // Save state after pausing
                 save_state(state);
 
@@ -344,6 +380,9 @@ async fn handle_client(
                 }
             } else {
                 state.resume();
+
+                // Execute hook
+                execute_hook(&config.hooks, "resume", state);
 
                 // Save state after resuming
                 save_state(state);
@@ -500,7 +539,7 @@ async fn daemon_loop(
                 }
             } => {
                 if state.is_finished() {
-                    if let Err(e) = state.next_phase(&config.sound, &config.notification, audio_player) {
+                    if let Err(e) = state.next_phase(&config.sound, &config.notification, audio_player, &config.hooks) {
                         eprintln!("Error during phase transition: {}", e);
                     }
                     // Save state after automatic phase transition

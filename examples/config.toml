@@ -51,6 +51,66 @@ text_format = "{icon} {time} {state}" # Text display format (default: "{icon} {t
 # text_format = "[{session}] {icon} {time}" # "[1/4] 🍅 25:00"
 # text_format = "{time} {state}"            # "25:00 ▶"
 
+[hooks]
+# Execute custom commands on timer events (all optional)
+#
+# Each hook can have these fields:
+#   cmd (required): Command to execute (absolute path recommended)
+#   args (optional): Array of arguments, default []
+#   timeout (optional): Timeout in seconds, default 5
+#   cwd (optional): Working directory, default $HOME
+#   capture_output (optional): Capture stdout/stderr for debugging, default false
+#
+# Available hooks:
+#   on_work_start, on_break_start, on_long_break_start
+#   on_pause, on_resume, on_stop, on_complete, on_skip
+#
+# SECURITY NOTES:
+#   - Hooks execute with daemon's user privileges
+#   - Only configure trusted commands
+#   - Commands are executed directly (no shell), preventing injection attacks
+#   - Never run the daemon as root
+#
+# Environment variables available to hooks:
+#   TOMAT_EVENT - Event name (e.g., "work_start", "pause")
+#   TOMAT_PHASE - Current phase ("work", "break", "long_break")
+#   TOMAT_REMAINING_SECONDS - Seconds remaining in current phase
+#   TOMAT_SESSION_COUNT - Current session number
+#   TOMAT_AUTO_ADVANCE - Whether auto-advance is enabled ("true"/"false")
+
+# Example: Send custom notification when work starts
+# [hooks.on_work_start]
+# cmd = "notify-send"
+# args = ["🍅 Work Time", "Focus for 25 minutes"]
+
+# Example: Pause music during work sessions
+# [hooks.on_work_start]
+# cmd = "playerctl"
+# args = ["pause"]
+# timeout = 2
+
+# Example: Resume music during breaks
+# [hooks.on_break_start]
+# cmd = "playerctl"
+# args = ["play"]
+
+# Example: Dim screen when timer is paused
+# [hooks.on_pause]
+# cmd = "/home/user/scripts/dim-screen.sh"
+# cwd = "/home/user"
+# timeout = 3
+
+# Example: Restore brightness when timer resumes
+# [hooks.on_resume]
+# cmd = "/home/user/scripts/restore-brightness.sh"
+# cwd = "/home/user"
+
+# Example: Log completed sessions to file
+# [hooks.on_complete]
+# cmd = "sh"
+# args = ["-c", "echo \"$(date): $TOMAT_PHASE completed\" >> ~/tomat.log"]
+# capture_output = true
+
 # Common customizations:
 #
 # Longer work sessions:

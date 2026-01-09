@@ -158,6 +158,43 @@ text_format = "{icon} {time} {state}"  # Text display format
 #   "{time}"                    -> "25:00"
 #   "{phase}: {time} {state}"   -> "Work: 25:00 ▶"
 #   "[{session}] {icon} {time}" -> "[1/4] 🍅 25:00"
+
+[hooks]
+# Execute custom commands on timer events (optional)
+# All hooks support these fields:
+#   cmd (required): Command to execute (absolute path recommended)
+#   args (optional): Array of arguments, default []
+#   timeout (optional): Timeout in seconds, default 5
+#   cwd (optional): Working directory, default $HOME
+#   capture_output (optional): Capture stdout/stderr for debugging, default false
+#
+# Available hooks: on_work_start, on_break_start, on_long_break_start,
+#                  on_pause, on_resume, on_stop, on_complete, on_skip
+#
+# SECURITY: Hooks execute with daemon's user privileges. Only configure
+# trusted commands. Commands are executed directly (no shell), preventing
+# injection attacks.
+#
+# Environment variables passed to hooks:
+#   TOMAT_EVENT - Event name (e.g., "work_start", "pause")
+#   TOMAT_PHASE - Current phase ("work", "break", "long_break")
+#   TOMAT_REMAINING_SECONDS - Seconds remaining in current phase
+#   TOMAT_SESSION_COUNT - Current session number
+#   TOMAT_AUTO_ADVANCE - Whether auto-advance is enabled ("true"/"false")
+
+# Example hooks:
+# [hooks.on_work_start]
+# cmd = "notify-send"
+# args = ["🍅 Work Time", "Focus for 25 minutes"]
+#
+# [hooks.on_break_start]
+# cmd = "playerctl"
+# args = ["pause"]
+# timeout = 2
+#
+# [hooks.on_pause]
+# cmd = "/home/user/scripts/dim-screen.sh"
+# cwd = "/home/user"
 ```
 
 **💡 Tip**: Copy the complete example config:
@@ -167,6 +204,23 @@ mkdir -p ~/.config/tomat
 cp examples/config.toml ~/.config/tomat/config.toml
 # Edit as needed
 ```
+
+### Security Notes
+
+**Hooks execute with daemon's user privileges.** Follow these guidelines:
+
+- ✅ **Config file ownership**: Ensure `~/.config/tomat/config.toml` is owned by
+  your user
+- ✅ **Never run as root**: Always use `--user` systemd service or run daemon as
+  regular user
+- ✅ **No shell injection**: Hook commands are executed directly (not via
+  shell), preventing injection attacks
+- ⚠️ **Validate commands**: Only configure hooks with trusted executables
+- ⚠️ **Path safety**: If using `cwd`, ensure the directory exists and is safe
+
+**Threat model**: If an attacker controls your `~/.config` directory, they
+already have code execution (via shell rc files, etc.). Hooks don't introduce
+new attack vectors beyond standard Unix permissions.
 
 ## Waybar Integration
 
@@ -304,7 +358,9 @@ tomat start --work 90 --break 30 --sessions 2
 tomat start
 ```
 
-**Note**: Custom durations only apply to the current session. Running `tomat start` without flags will always use your configured defaults from `~/.config/tomat/config.toml` (or built-in defaults if no config exists).
+**Note**: Custom durations only apply to the current session. Running
+`tomat start` without flags will always use your configured defaults from
+`~/.config/tomat/config.toml` (or built-in defaults if no config exists).
 
 ## Architecture
 

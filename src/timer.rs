@@ -130,7 +130,7 @@ pub struct TimerState {
 pub struct TimerStatus {
     pub phase: Phase,                   // Work, Break, or LongBreak
     pub is_paused: bool,                // Whether timer is paused
-    pub remaining_seconds: i64,         // Time remaining in current phase
+    pub remaining_seconds: u64,         // Time remaining in current phase
     pub duration_minutes: f32,          // Total duration of current phase
     pub current_session: u32,           // Current session number (1-based)
     pub sessions_until_long_break: u32, // Total sessions before long break
@@ -162,6 +162,16 @@ pub enum Phase {
     Work,
     Break,
     LongBreak,
+}
+
+impl std::fmt::Display for Phase {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Phase::Work => write!(f, "work"),
+            Phase::Break => write!(f, "break"),
+            Phase::LongBreak => write!(f, "long_break"),
+        }
+    }
 }
 
 impl TimerState {
@@ -202,30 +212,26 @@ impl TimerState {
         self.is_paused = false;
     }
 
-    fn get_remaining_seconds(&self) -> i64 {
+    pub fn get_remaining_seconds(&self) -> u64 {
         if self.is_paused {
             // If we have stored elapsed time, calculate remaining from that
             if let Some(elapsed) = self.paused_elapsed_seconds {
                 let total_duration = (self.duration_minutes * 60.0) as i64;
                 let remaining = total_duration - elapsed as i64;
-                return remaining.max(0);
+                return remaining.max(0) as u64;
             }
             // Otherwise return full duration (initial paused state)
-            return (self.duration_minutes * 60.0) as i64;
+            return (self.duration_minutes * 60.0) as u64;
         }
 
         let elapsed = current_timestamp() - self.start_time;
         let total_duration = (self.duration_minutes * 60.0) as u64;
 
-        if elapsed >= total_duration {
-            0
-        } else {
-            (total_duration - elapsed) as i64
-        }
+        total_duration.saturating_sub(elapsed)
     }
 
     pub fn is_finished(&self) -> bool {
-        !self.is_paused && self.get_remaining_seconds() <= 0
+        !self.is_paused && self.get_remaining_seconds() == 0
     }
 
     /// Get the exact timestamp when the timer will finish, or None if paused
@@ -243,31 +249,33 @@ impl TimerState {
         sound_config: &SoundConfig,
         notification_config: &NotificationConfig,
         audio_player: Option<&AudioPlayer>,
+        hooks_config: &crate::config::HooksConfig,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let (message, sound_type) = match self.phase {
+        let (message, sound_type, hook_event) = match self.phase {
             Phase::Work => {
                 self.current_session_count += 1;
 
-                let sound_type = if self.current_session_count >= self.sessions_until_long_break {
-                    self.current_session_count = 0;
-                    if self.auto_advance {
-                        self.start_long_break();
+                let (sound_type, hook_event) =
+                    if self.current_session_count >= self.sessions_until_long_break {
+                        self.current_session_count = 0;
+                        if self.auto_advance {
+                            self.start_long_break();
+                        } else {
+                            self.phase = Phase::LongBreak;
+                            self.duration_minutes = self.long_break_duration;
+                            self.is_paused = true;
+                        }
+                        (SoundType::WorkToLongBreak, "long_break_start")
                     } else {
-                        self.phase = Phase::LongBreak;
-                        self.duration_minutes = self.long_break_duration;
-                        self.is_paused = true;
-                    }
-                    SoundType::WorkToLongBreak
-                } else {
-                    if self.auto_advance {
-                        self.start_break();
-                    } else {
-                        self.phase = Phase::Break;
-                        self.duration_minutes = self.break_duration;
-                        self.is_paused = true;
-                    }
-                    SoundType::WorkToBreak
-                };
+                        if self.auto_advance {
+                            self.start_break();
+                        } else {
+                            self.phase = Phase::Break;
+                            self.duration_minutes = self.break_duration;
+                            self.is_paused = true;
+                        }
+                        (SoundType::WorkToBreak, "break_start")
+                    };
 
                 let message = if self.current_session_count == 0 {
                     "Long break time! Take a well-deserved rest 🏖️"
@@ -275,7 +283,7 @@ impl TimerState {
                     "Break time! Take a short rest ☕"
                 };
 
-                (message, sound_type)
+                (message, sound_type, hook_event)
             }
             Phase::Break => {
                 if self.auto_advance {
@@ -285,7 +293,11 @@ impl TimerState {
                     self.duration_minutes = self.work_duration;
                     self.is_paused = true;
                 }
-                ("Back to work! Let's focus 🍅", SoundType::BreakToWork)
+                (
+                    "Back to work! Let's focus 🍅",
+                    SoundType::BreakToWork,
+                    "work_start",
+                )
             }
             Phase::LongBreak => {
                 if self.auto_advance {
@@ -295,7 +307,11 @@ impl TimerState {
                     self.duration_minutes = self.work_duration;
                     self.is_paused = true;
                 }
-                ("Ready for another session! 🚀", SoundType::BreakToWork)
+                (
+                    "Ready for another session! 🚀",
+                    SoundType::BreakToWork,
+                    "work_start",
+                )
             }
         };
 
@@ -310,6 +326,22 @@ impl TimerState {
         // Send notification (existing code)
         if !is_testing() && notification_config.enabled {
             self.send_notification(message, notification_config)?;
+        }
+
+        // Execute hook asynchronously (fire-and-forget)
+        if !is_testing() {
+            let hooks = hooks_config.clone();
+            let phase_str = self.phase.to_string();
+            let remaining = self.get_remaining_seconds();
+            let session_count = self.current_session_count;
+            let auto_advance = self.auto_advance;
+            let event = hook_event.to_string();
+
+            tokio::spawn(async move {
+                hooks
+                    .execute_hook(&event, &phase_str, remaining, session_count, auto_advance)
+                    .await;
+            });
         }
 
         Ok(())
@@ -512,8 +544,8 @@ impl TimerState {
         };
 
         // Calculate percentage for progress bars
-        let total_duration = (status.duration_minutes * 60.0) as i64;
-        let elapsed = total_duration - status.remaining_seconds;
+        let total_duration = (status.duration_minutes * 60.0) as u64;
+        let elapsed = total_duration.saturating_sub(status.remaining_seconds);
         let percentage = if status.is_paused {
             0.0
         } else if total_duration > 0 {
@@ -695,6 +727,7 @@ mod tests {
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
                 None,
+                &crate::config::HooksConfig::default(),
             )
             .unwrap();
 
@@ -717,6 +750,7 @@ mod tests {
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
                 None,
+                &crate::config::HooksConfig::default(),
             )
             .unwrap();
 
@@ -740,6 +774,7 @@ mod tests {
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
                 None,
+                &crate::config::HooksConfig::default(),
             )
             .unwrap();
 
@@ -761,6 +796,7 @@ mod tests {
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
                 None,
+                &crate::config::HooksConfig::default(),
             )
             .unwrap();
 
@@ -781,6 +817,7 @@ mod tests {
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
                 None,
+                &crate::config::HooksConfig::default(),
             )
             .unwrap();
 
@@ -910,6 +947,7 @@ mod tests {
                     &SoundConfig::default(),
                     &NotificationConfig::default(),
                     None,
+                    &crate::config::HooksConfig::default(),
                 )
                 .unwrap(); // Work -> Break
             assert!(matches!(timer.phase, Phase::Break));
@@ -918,6 +956,7 @@ mod tests {
                     &SoundConfig::default(),
                     &NotificationConfig::default(),
                     None,
+                    &crate::config::HooksConfig::default(),
                 )
                 .unwrap(); // Break -> Work
             assert!(matches!(timer.phase, Phase::Work));
@@ -931,6 +970,7 @@ mod tests {
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
                 None,
+                &crate::config::HooksConfig::default(),
             )
             .unwrap();
         assert!(matches!(timer.phase, Phase::LongBreak));
@@ -997,6 +1037,7 @@ mod tests {
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
                 None,
+                &crate::config::HooksConfig::default(),
             )
             .unwrap();
         assert!(!timer.is_paused); // Should still be running
@@ -1007,6 +1048,7 @@ mod tests {
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
                 None,
+                &crate::config::HooksConfig::default(),
             )
             .unwrap();
         assert!(!timer.is_paused); // Should still be running
@@ -1035,7 +1077,7 @@ mod tests {
 
         // The fix should make this assertion pass
         assert!(
-            (remaining_after - remaining_before).abs() <= 1,
+            remaining_after.abs_diff(remaining_before) <= 1,
             "Expected remaining time to be preserved after pause/resume. Before: {}, After: {}",
             remaining_before,
             remaining_after

@@ -300,3 +300,191 @@ To use a custom notification icon:
 [notification]
 icon = "/path/to/your/custom-icon.png"
 ```
+
+## Hooks Integration
+
+Hooks allow tomat to integrate with external tools and workflows by executing
+custom commands on timer events. This enables powerful automation scenarios.
+
+### Common Integration Patterns
+
+#### Media Player Control
+
+Automatically pause/resume music during work sessions:
+
+```toml
+# ~/.config/tomat/config.toml
+[hooks.on_work_start]
+cmd = "playerctl"
+args = ["pause"]
+
+[hooks.on_break_start]
+cmd = "playerctl"
+args = ["play"]
+```
+
+Works with any MPRIS-compatible media player (Spotify, VLC, Firefox, etc.).
+
+#### Screen Brightness Control
+
+Adjust brightness based on timer state:
+
+```toml
+[hooks.on_pause]
+cmd = "brightnessctl"
+args = ["set", "30%"]
+
+[hooks.on_resume]
+cmd = "brightnessctl"
+args = ["set", "100%"]
+```
+
+#### Focus Mode with i3/Sway
+
+Enter fullscreen or hide distractions during work:
+
+```toml
+[hooks.on_work_start]
+cmd = "swaymsg"
+args = ["fullscreen", "enable"]
+
+[hooks.on_break_start]
+cmd = "swaymsg"
+args = ["fullscreen", "disable"]
+```
+
+#### Discord/Slack Status
+
+Update your online status automatically:
+
+```toml
+[hooks.on_work_start]
+cmd = "/home/user/scripts/set-discord-status.sh"
+args = ["🍅 Focusing", "dnd"]
+cwd = "/home/user/scripts"
+
+[hooks.on_break_start]
+cmd = "/home/user/scripts/set-discord-status.sh"
+args = ["☕ On break", "idle"]
+```
+
+#### Productivity Logging
+
+Track your pomodoros in external systems:
+
+```toml
+[hooks.on_complete]
+cmd = "sh"
+args = ["-c", "echo \"$(date +%Y-%m-%d\\ %H:%M:%S),$TOMAT_PHASE,$TOMAT_SESSION_COUNT\" >> ~/productivity.csv"]
+capture_output = true
+```
+
+Creates a CSV log file: `2026-01-09 14:05:00,work,1`
+
+#### Notification Enhancement
+
+Send notifications to multiple systems:
+
+```toml
+[hooks.on_work_start]
+cmd = "/home/user/scripts/multi-notify.sh"
+args = ["Work started!", "Focus for 25 minutes"]
+
+[hooks.on_long_break_start]
+cmd = "notify-send"
+args = ["🏖️ Long Break", "Take 15 minutes. You earned it!", "-u", "critical", "-t", "0"]
+```
+
+#### Time Tracking Integration
+
+Integrate with external time tracking tools:
+
+```toml
+[hooks.on_work_start]
+cmd = "watson"
+args = ["start", "pomodoro"]
+
+[hooks.on_break_start]
+cmd = "watson"
+args = ["stop"]
+```
+
+Or with Toggl CLI:
+
+```toml
+[hooks.on_work_start]
+cmd = "toggl"
+args = ["start", "Pomodoro session"]
+
+[hooks.on_stop]
+cmd = "toggl"
+args = ["stop"]
+```
+
+### Tips for Hook Integration
+
+1. **Test commands manually first** - Verify commands work before adding to config
+2. **Use absolute paths** - More reliable than relying on PATH
+3. **Enable capture_output for debugging** - See what went wrong
+4. **Set appropriate timeouts** - Longer for network calls, shorter for local commands
+5. **Use shell scripts for complex logic** - Keep config simple, put complexity in scripts
+6. **Check environment variables** - Scripts can use `$TOMAT_*` variables for context
+
+### Example Integration Script
+
+Create a comprehensive focus mode script:
+
+```bash
+#!/bin/bash
+# ~/.local/bin/tomat-focus-mode.sh
+
+EVENT="$TOMAT_EVENT"
+PHASE="$TOMAT_PHASE"
+
+case "$EVENT" in
+    work_start)
+        # Enter focus mode
+        dunstctl set-paused true           # Pause notifications
+        playerctl pause                     # Pause music
+        brightnessctl set 100%             # Full brightness
+        swaymsg "workspace 1"              # Switch to work workspace
+        echo "Focus mode activated"
+        ;;
+    break_start|long_break_start)
+        # Exit focus mode
+        dunstctl set-paused false
+        brightnessctl set 80%
+        echo "Break time!"
+        ;;
+    pause)
+        # Gentle mode
+        brightnessctl set 50%
+        ;;
+    resume)
+        brightnessctl set 100%
+        ;;
+esac
+```
+
+Configure it:
+
+```toml
+[hooks.on_work_start]
+cmd = "/home/user/.local/bin/tomat-focus-mode.sh"
+cwd = "/home/user"
+timeout = 10
+
+[hooks.on_break_start]
+cmd = "/home/user/.local/bin/tomat-focus-mode.sh"
+
+[hooks.on_long_break_start]
+cmd = "/home/user/.local/bin/tomat-focus-mode.sh"
+
+[hooks.on_pause]
+cmd = "/home/user/.local/bin/tomat-focus-mode.sh"
+
+[hooks.on_resume]
+cmd = "/home/user/.local/bin/tomat-focus-mode.sh"
+```
+
+See the [Configuration Guide](configuration.md#hooks) for complete hooks documentation.
