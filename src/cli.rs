@@ -276,7 +276,7 @@ pub enum Commands {
         exits when the daemon stops. More efficient than polling with 'status' command."
     )]
     #[command(after_help = "EXAMPLES:\n    \
-        # Watch with default interval (1 second)\n    \
+        # Watch with default interval (0.25 seconds)\n    \
         tomat watch\n\n    \
         # Watch with 5-second updates\n    \
         tomat watch --interval 5\n\n    \
@@ -292,8 +292,8 @@ pub enum Commands {
         #[arg(help = "Custom text format (e.g. \"{icon} {time}\")")]
         format: Option<String>,
         /// Update interval in seconds
-        #[arg(short, long, default_value = "1")]
-        interval: u64,
+        #[arg(short, long, default_value = "0.25")]
+        interval: f64,
     },
     /// Skip to the next phase
     #[command(

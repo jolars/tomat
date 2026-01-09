@@ -143,7 +143,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             interval,
         } => {
             let text_template = format.unwrap_or(config.display.text_format);
-            let interval_duration = std::time::Duration::from_secs(interval);
+            let interval_duration = std::time::Duration::from_secs_f64(interval);
 
             loop {
                 match fetch_and_format_status(&output, &text_template).await {
