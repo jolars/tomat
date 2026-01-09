@@ -240,6 +240,8 @@ Type=simple
 ExecStart={} daemon run
 Restart=always
 RestartSec=5
+# Inherit user's PATH for hooks to find system commands (e.g., notify-send)
+Environment="PATH=/run/current-system/sw/bin:/etc/profiles/per-user/%u/bin:%h/.nix-profile/bin:%h/.cargo/bin:/usr/local/bin:/usr/bin:/bin"
 
 [Install]
 WantedBy=default.target
