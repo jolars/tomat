@@ -10,6 +10,7 @@
     pkgs.llvmPackages.bintools
     pkgs.alsa-lib
     pkgs.cargo-llvm-cov
+    pkgs.ffmpeg
   ];
 
   languages.rust = {
