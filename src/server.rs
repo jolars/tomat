@@ -153,12 +153,12 @@ fn execute_hook(hooks: &crate::config::HooksConfig, event: &str, state: &TimerSt
     let phase_str = state.phase.to_string();
     let remaining = state.get_remaining_seconds();
     let session_count = state.current_session_count;
-    let auto_advance = state.auto_advance;
+    let auto_advance = format!("{:?}", state.auto_advance).to_lowercase();
     let event = event.to_string();
 
     tokio::spawn(async move {
         hooks
-            .execute_hook(&event, &phase_str, remaining, session_count, auto_advance)
+            .execute_hook(&event, &phase_str, remaining, session_count, &auto_advance)
             .await;
     });
 }
@@ -203,8 +203,21 @@ async fn handle_client(
             let auto_advance = message
                 .args
                 .get("auto_advance")
-                .and_then(|v| v.as_bool())
-                .unwrap_or(false);
+                .and_then(|v| {
+                    // Try as string first (new format)
+                    if let Some(s) = v.as_str() {
+                        s.parse::<crate::config::AutoAdvanceMode>().ok()
+                    } else {
+                        v.as_bool().map(|b| {
+                            if b {
+                                crate::config::AutoAdvanceMode::All
+                            } else {
+                                crate::config::AutoAdvanceMode::None
+                            }
+                        })
+                    }
+                })
+                .unwrap_or(crate::config::AutoAdvanceMode::None);
             let _sound_enabled = message
                 .args
                 .get("sound_enabled")
@@ -1035,7 +1048,7 @@ mod tests {
         let mut state = TimerState::new(30.0, 10.0, 20.0, 3);
         state.start_work();
         state.current_session_count = 2;
-        state.auto_advance = true;
+        state.auto_advance = crate::config::AutoAdvanceMode::All;
 
         // Save the state
         save_state(&state);
@@ -1049,7 +1062,10 @@ mod tests {
         assert_eq!(loaded_state.long_break_duration, 20.0);
         assert_eq!(loaded_state.sessions_until_long_break, 3);
         assert_eq!(loaded_state.current_session_count, 2);
-        assert!(loaded_state.auto_advance);
+        assert_eq!(
+            loaded_state.auto_advance,
+            crate::config::AutoAdvanceMode::All
+        );
         assert!(!loaded_state.is_paused);
     }
 

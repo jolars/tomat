@@ -91,8 +91,14 @@ tomat start
 # Custom durations
 tomat start --work 30 --break 10 --long-break 20 --sessions 3
 
-# Auto-advance between phases
-tomat start --auto-advance
+# Auto-advance through all phases
+tomat start --auto-advance all
+
+# Auto-advance only from work to break (forced breaks)
+tomat start --auto-advance to-break
+
+# Auto-advance only from break to work (self-paced work)
+tomat start --auto-advance to-work
 ```
 
 ### Control Timer
@@ -136,15 +142,16 @@ Create `~/.config/tomat/config.toml` to customize defaults:
 
 ```toml
 [timer]
-work = 25.0          # Work duration in minutes
-break = 5.0          # Break duration in minutes
-long_break = 15.0    # Long break duration in minutes
-sessions = 4         # Sessions until long break
-auto_advance = false # Auto-continue to next phase
+work = 25.0           # Work duration in minutes
+break = 5.0           # Break duration in minutes
+long_break = 15.0     # Long break duration in minutes
+sessions = 4          # Sessions until long break
+auto_advance = "none" # Auto-advance mode: "none", "all", "to-break", "to-work"
+                      # (boolean true/false also supported for backwards compatibility)
 
 [sound]
-enabled = true       # Enable sound notifications
-volume = 0.5         # Volume level (0.0-1.0)
+enabled = true        # Enable sound notifications
+volume = 0.5          # Volume level (0.0-1.0)
 
 [notification]
 enabled = true        # Enable desktop notifications
@@ -180,7 +187,7 @@ text_format = "{icon} {time} {state}"  # Text display format
 #   TOMAT_PHASE - Current phase ("work", "break", "long_break")
 #   TOMAT_REMAINING_SECONDS - Seconds remaining in current phase
 #   TOMAT_SESSION_COUNT - Current session number
-#   TOMAT_AUTO_ADVANCE - Whether auto-advance is enabled ("true"/"false")
+#   TOMAT_AUTO_ADVANCE - Auto-advance mode ("none", "all", "to-break", "to-work")
 
 # Example hooks:
 # [hooks.on_work_start]
@@ -348,8 +355,14 @@ tomat skip           # Move to break early
 # Long focus session
 tomat start --work 45 --break 15
 
-# Sprint session
-tomat start --work 15 --break 5 --auto-advance
+# Sprint session with automatic progression
+tomat start --work 15 --break 5 --auto-advance all
+
+# Enforced breaks (auto-advance only to break)
+tomat start --work 25 --break 5 --auto-advance to-break
+
+# Self-paced work (auto-advance only to work)
+tomat start --work 25 --break 5 --auto-advance to-work
 
 # Deep work (no interruptions)
 tomat start --work 90 --break 30 --sessions 2

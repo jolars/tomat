@@ -18,12 +18,25 @@ cp examples/config.toml ~/.config/tomat/config.toml
 
 ```toml
 [timer]
-work = 25.0          # Work session duration in minutes (default: 25)
-break = 5.0          # Break duration in minutes (default: 5)
-long_break = 15.0    # Long break duration in minutes (default: 15)
-sessions = 4         # Sessions until long break (default: 4)
-auto_advance = false # Auto-advance between phases (default: false)
+work = 25.0            # Work session duration in minutes (default: 25)
+break = 5.0            # Break duration in minutes (default: 5)
+long_break = 15.0      # Long break duration in minutes (default: 15)
+sessions = 4           # Sessions until long break (default: 4)
+auto_advance = "none"  # Auto-advance mode (default: "none")
+                       # Options: "none", "all", "to-break", "to-work"
+                       # (boolean true/false also supported for backwards compatibility)
 ```
+
+#### Auto-Advance Modes
+
+The `auto_advance` setting controls how the timer transitions between phases:
+
+- **`"none"`** (default): Pause after every phase transition, requiring manual resume. Gives you full control over your schedule.
+- **`"all"`**: Automatically continue through all phases without pausing. Perfect for uninterrupted Pomodoro sessions.
+- **`"to-break"`**: Auto-advance only from work to break/long-break. Enforces regular breaks while letting you choose when to resume work.
+- **`"to-work"`**: Auto-advance only from break/long-break to work. Allows self-paced breaks while ensuring work sessions start promptly.
+
+**Backwards compatibility**: Boolean values `true` and `false` are still supported and will be automatically converted to `"all"` and `"none"` respectively.
 
 ### Sound Notifications
 
@@ -119,7 +132,7 @@ You can specify only the values you want to override:
 ```toml
 [timer]
 work = 30.0
-auto_advance = true
+auto_advance = "all"  # Auto-advance through all phases
 # Other values will use built-in defaults
 
 [sound]
@@ -135,11 +148,12 @@ Here's a complete configuration file with all options:
 # ~/.config/tomat/config.toml
 
 [timer]
-work = 25.0          # Work session duration in minutes
-break = 5.0          # Break duration in minutes
-long_break = 15.0    # Long break duration in minutes
-sessions = 4         # Number of work sessions before long break
-auto_advance = false # Whether to automatically continue to next phase
+work = 25.0           # Work session duration in minutes
+break = 5.0           # Break duration in minutes
+long_break = 15.0     # Long break duration in minutes
+sessions = 4          # Number of work sessions before long break
+auto_advance = "none" # Auto-advance mode: "none", "all", "to-break", "to-work"
+                      # (boolean true/false also supported for backwards compatibility)
 
 [sound]
 enabled = true       # Enable sound notifications
@@ -207,7 +221,7 @@ All hooks receive these environment variables:
 - `TOMAT_PHASE` - Current phase (`"work"`, `"break"`, `"long_break"`)
 - `TOMAT_REMAINING_SECONDS` - Seconds remaining in current phase
 - `TOMAT_SESSION_COUNT` - Current session number (e.g., `1`, `2`, `3`)
-- `TOMAT_AUTO_ADVANCE` - Whether auto-advance is enabled (`"true"` or `"false"`)
+- `TOMAT_AUTO_ADVANCE` - Auto-advance mode (`"none"`, `"all"`, `"to-break"`, `"to-work"`)
 
 ### Example Use Cases
 

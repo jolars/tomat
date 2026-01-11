@@ -86,7 +86,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let break_time = timer.get_break_time(config.timer.break_time);
             let long_break = timer.get_long_break(config.timer.long_break);
             let sessions = timer.get_sessions(config.timer.sessions);
-            let auto_advance = timer.get_auto_advance(config.timer.auto_advance);
+
+            // Get auto_advance mode as string
+            let default_mode_str = match config.timer.auto_advance {
+                config::AutoAdvanceMode::None => "none",
+                config::AutoAdvanceMode::All => "all",
+                config::AutoAdvanceMode::ToBreak => "to-break",
+                config::AutoAdvanceMode::ToWork => "to-work",
+            };
+            let auto_advance_str = timer.get_auto_advance_str(default_mode_str);
+
             let sound_enabled = timer.get_sound(config.sound.enabled);
             let system_beep = timer.get_beep(config.sound.system_beep);
             let volume = timer.get_volume(config.sound.volume);
@@ -96,7 +105,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "break": break_time,
                 "long_break": long_break,
                 "sessions": sessions,
-                "auto_advance": auto_advance,
+                "auto_advance": auto_advance_str,
                 "sound_enabled": sound_enabled,
                 "system_beep": system_beep,
                 "volume": volume

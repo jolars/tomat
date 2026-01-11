@@ -118,7 +118,7 @@ fn test_status_plain_format_shows_play_symbol() -> Result<(), Box<dyn std::error
     let daemon = TestDaemon::start()?;
 
     // Start timer with auto-advance
-    daemon.send_command(&["start", "--work", "0.1", "--auto-advance"])?;
+    daemon.send_command(&["start", "--work", "0.1", "--auto-advance", "all"])?;
 
     // Get plain output status
     let status = daemon.send_command(&["status", "--output", "plain"])?;

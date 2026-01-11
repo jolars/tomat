@@ -56,6 +56,7 @@ fn test_auto_advance_true_continues_automatically() -> Result<(), Box<dyn std::e
         "--break",
         "0.05",
         "--auto-advance",
+        "all",
     ])?;
 
     // Wait for timer to complete and auto-advance
@@ -237,7 +238,7 @@ fn test_stop_and_start_preserves_auto_advance_setting() -> Result<(), Box<dyn st
     let daemon = TestDaemon::start()?;
 
     // Start with auto-advance enabled
-    daemon.send_command(&["start", "--work", "0.05", "--auto-advance"])?;
+    daemon.send_command(&["start", "--work", "0.05", "--auto-advance", "all"])?;
 
     // Stop timer
     daemon.send_command(&["stop"])?;
@@ -250,6 +251,7 @@ fn test_stop_and_start_preserves_auto_advance_setting() -> Result<(), Box<dyn st
         "--break",
         "0.05",
         "--auto-advance",
+        "all",
     ])?;
 
     // Wait for completion - should auto-advance to running break
@@ -286,7 +288,7 @@ fn test_manual_skip_respects_auto_advance_setting() -> Result<(), Box<dyn std::e
 
     // Stop and test skip with auto_advance=true
     daemon.send_command(&["stop"])?;
-    daemon.send_command(&["start", "--work", "0.1", "--auto-advance"])?;
+    daemon.send_command(&["start", "--work", "0.1", "--auto-advance", "all"])?;
     daemon.send_command(&["skip"])?;
 
     let status = daemon.get_status()?;

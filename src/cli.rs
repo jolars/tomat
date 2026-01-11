@@ -110,15 +110,16 @@ pub struct TimerArgs {
     )]
     pub sessions: Option<u32>,
     /// Automatically advance to the next phase
-    #[arg(short, long, action = ArgAction::SetTrue)]
-    #[arg(help = "Auto-advance between phases (default: from config or false)")]
-    #[arg(
-        long_help = "If enabled, automatically start the next phase when the current one \
-        completes. If disabled, the timer pauses at phase transitions and requires manual \
-        resume. If not specified, uses the value from ~/.config/tomat/config.toml or the \
-        built-in default of false."
-    )]
-    pub auto_advance: bool,
+    #[arg(short, long)]
+    #[arg(help = "Auto-advance mode: all, none, to-break, to-work (default: from config)")]
+    #[arg(long_help = "Control automatic phase transitions:\n  \
+        all      - Auto-advance through all phases\n  \
+        none     - Never auto-advance (pause at transitions)\n  \
+        to-break - Auto-advance from work to break only\n  \
+        to-work  - Auto-advance from break to work only\n\n\
+        If not specified, uses the value from ~/.config/tomat/config.toml or the \
+        built-in default of 'none'.")]
+    pub auto_advance: Option<String>,
     /// Enable sound notifications for this session
     #[arg(long, action = ArgAction::SetTrue)]
     #[arg(help = "Enable sound notifications")]
@@ -168,10 +169,11 @@ impl TimerArgs {
         self.sessions.unwrap_or(default)
     }
 
-    /// Get auto_advance with fallback
-    pub fn get_auto_advance(&self, default: bool) -> bool {
-        // If flag is set, it's true; otherwise use default
-        if self.auto_advance { true } else { default }
+    /// Get auto_advance with fallback - returns string to avoid circular dependency
+    pub fn get_auto_advance_str(&self, default_str: &str) -> String {
+        self.auto_advance
+            .clone()
+            .unwrap_or_else(|| default_str.to_string())
     }
 
     /// Get sound enabled with fallback

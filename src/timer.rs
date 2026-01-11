@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::audio::{AudioPlayer, SoundType};
-use crate::config::{NotificationConfig, SoundConfig};
+use crate::config::{AutoAdvanceMode, NotificationConfig, SoundConfig};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
 #[serde(rename_all = "lowercase")]
@@ -118,7 +118,7 @@ pub struct TimerState {
     pub long_break_duration: f32,
     pub sessions_until_long_break: u32,
     pub current_session_count: u32,
-    pub auto_advance: bool,
+    pub auto_advance: AutoAdvanceMode,
     pub is_paused: bool,
     /// Elapsed seconds when timer was paused (to preserve progress on resume)
     #[serde(default)]
@@ -185,7 +185,7 @@ impl TimerState {
             long_break_duration: long_break,
             sessions_until_long_break: sessions,
             current_session_count: 0,
-            auto_advance: false,
+            auto_advance: AutoAdvanceMode::None,
             is_paused: true, // Start in paused state
             paused_elapsed_seconds: None,
         }
@@ -258,7 +258,7 @@ impl TimerState {
                 let (sound_type, hook_event) =
                     if self.current_session_count >= self.sessions_until_long_break {
                         self.current_session_count = 0;
-                        if self.auto_advance {
+                        if self.auto_advance.should_advance(true) {
                             self.start_long_break();
                         } else {
                             self.phase = Phase::LongBreak;
@@ -267,7 +267,7 @@ impl TimerState {
                         }
                         (SoundType::WorkToLongBreak, "long_break_start")
                     } else {
-                        if self.auto_advance {
+                        if self.auto_advance.should_advance(true) {
                             self.start_break();
                         } else {
                             self.phase = Phase::Break;
@@ -286,7 +286,7 @@ impl TimerState {
                 (message, sound_type, hook_event)
             }
             Phase::Break => {
-                if self.auto_advance {
+                if self.auto_advance.should_advance(false) {
                     self.start_work();
                 } else {
                     self.phase = Phase::Work;
@@ -300,7 +300,7 @@ impl TimerState {
                 )
             }
             Phase::LongBreak => {
-                if self.auto_advance {
+                if self.auto_advance.should_advance(false) {
                     self.start_work();
                 } else {
                     self.phase = Phase::Work;
@@ -334,12 +334,12 @@ impl TimerState {
             let phase_str = self.phase.to_string();
             let remaining = self.get_remaining_seconds();
             let session_count = self.current_session_count;
-            let auto_advance = self.auto_advance;
+            let auto_advance = format!("{:?}", self.auto_advance).to_lowercase();
             let event = hook_event.to_string();
 
             tokio::spawn(async move {
                 hooks
-                    .execute_hook(&event, &phase_str, remaining, session_count, auto_advance)
+                    .execute_hook(&event, &phase_str, remaining, session_count, &auto_advance)
                     .await;
             });
         }
@@ -639,7 +639,7 @@ mod tests {
         assert_eq!(timer.long_break_duration, 15.0);
         assert_eq!(timer.sessions_until_long_break, 4);
         assert_eq!(timer.current_session_count, 0);
-        assert!(!timer.auto_advance);
+        assert_eq!(timer.auto_advance, AutoAdvanceMode::None);
     }
 
     #[test]
@@ -702,7 +702,7 @@ mod tests {
     #[test]
     fn test_stop_resets_to_paused_work() {
         let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
-        timer.auto_advance = true;
+        timer.auto_advance = AutoAdvanceMode::All;
         timer.current_session_count = 2;
         timer.start_work();
 
@@ -718,7 +718,7 @@ mod tests {
     fn test_next_phase_work_to_break_auto_advance_false() {
         setup_test_env();
         let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
-        timer.auto_advance = false;
+        timer.auto_advance = AutoAdvanceMode::None;
         timer.phase = Phase::Work;
         timer.current_session_count = 0;
 
@@ -741,7 +741,7 @@ mod tests {
     fn test_next_phase_work_to_break_auto_advance_true() {
         setup_test_env();
         let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
-        timer.auto_advance = true;
+        timer.auto_advance = AutoAdvanceMode::All;
         timer.phase = Phase::Work;
         timer.current_session_count = 0;
 
@@ -765,7 +765,7 @@ mod tests {
     fn test_next_phase_work_to_long_break_after_sessions() {
         setup_test_env();
         let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
-        timer.auto_advance = false;
+        timer.auto_advance = AutoAdvanceMode::None;
         timer.phase = Phase::Work;
         timer.current_session_count = 3; // Fourth work session
 
@@ -788,7 +788,7 @@ mod tests {
     fn test_next_phase_break_to_work() {
         setup_test_env();
         let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
-        timer.auto_advance = false;
+        timer.auto_advance = AutoAdvanceMode::None;
         timer.phase = Phase::Break;
 
         timer
@@ -809,7 +809,7 @@ mod tests {
     fn test_next_phase_long_break_to_work() {
         setup_test_env();
         let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
-        timer.auto_advance = false;
+        timer.auto_advance = AutoAdvanceMode::None;
         timer.phase = Phase::LongBreak;
 
         timer
@@ -936,7 +936,7 @@ mod tests {
     fn test_session_count_increments_correctly() {
         setup_test_env();
         let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
-        timer.auto_advance = false;
+        timer.auto_advance = AutoAdvanceMode::None;
         timer.phase = Phase::Work;
 
         // Complete 3 work sessions
@@ -1028,7 +1028,7 @@ mod tests {
     fn test_auto_advance_persists_through_phases() {
         setup_test_env();
         let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
-        timer.auto_advance = true;
+        timer.auto_advance = AutoAdvanceMode::All;
         timer.phase = Phase::Work;
 
         // Transition to break
@@ -1150,5 +1150,95 @@ mod tests {
 
         // Clean up
         std::fs::remove_file(&temp_icon).ok();
+    }
+
+    #[test]
+    fn test_granular_auto_advance_to_break() {
+        setup_test_env();
+        let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
+        timer.auto_advance = AutoAdvanceMode::ToBreak;
+        timer.phase = Phase::Work;
+
+        // Work -> Break should auto-advance
+        timer
+            .next_phase(
+                &SoundConfig::default(),
+                &NotificationConfig::default(),
+                None,
+                &crate::config::HooksConfig::default(),
+            )
+            .unwrap();
+
+        assert!(matches!(timer.phase, Phase::Break));
+        assert!(!timer.is_paused); // Should be running
+
+        // Break -> Work should NOT auto-advance
+        timer
+            .next_phase(
+                &SoundConfig::default(),
+                &NotificationConfig::default(),
+                None,
+                &crate::config::HooksConfig::default(),
+            )
+            .unwrap();
+
+        assert!(matches!(timer.phase, Phase::Work));
+        assert!(timer.is_paused); // Should be paused
+    }
+
+    #[test]
+    fn test_granular_auto_advance_to_work() {
+        setup_test_env();
+        let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
+        timer.auto_advance = AutoAdvanceMode::ToWork;
+        timer.phase = Phase::Work;
+
+        // Work -> Break should NOT auto-advance
+        timer
+            .next_phase(
+                &SoundConfig::default(),
+                &NotificationConfig::default(),
+                None,
+                &crate::config::HooksConfig::default(),
+            )
+            .unwrap();
+
+        assert!(matches!(timer.phase, Phase::Break));
+        assert!(timer.is_paused); // Should be paused
+
+        // Break -> Work should auto-advance
+        timer
+            .next_phase(
+                &SoundConfig::default(),
+                &NotificationConfig::default(),
+                None,
+                &crate::config::HooksConfig::default(),
+            )
+            .unwrap();
+
+        assert!(matches!(timer.phase, Phase::Work));
+        assert!(!timer.is_paused); // Should be running
+    }
+
+    #[test]
+    fn test_granular_auto_advance_to_long_break() {
+        setup_test_env();
+        let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
+        timer.auto_advance = AutoAdvanceMode::ToBreak;
+        timer.phase = Phase::Work;
+        timer.current_session_count = 3; // Fourth session
+
+        // Work -> Long Break should auto-advance (ToBreak mode)
+        timer
+            .next_phase(
+                &SoundConfig::default(),
+                &NotificationConfig::default(),
+                None,
+                &crate::config::HooksConfig::default(),
+            )
+            .unwrap();
+
+        assert!(matches!(timer.phase, Phase::LongBreak));
+        assert!(!timer.is_paused); // Should be running
     }
 }

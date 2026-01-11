@@ -1,6 +1,67 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::fs;
 use std::path::PathBuf;
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+pub enum AutoAdvanceMode {
+    None,
+    All,
+    ToBreak,
+    ToWork,
+}
+
+impl Default for AutoAdvanceMode {
+    fn default() -> Self {
+        Self::None
+    }
+}
+
+impl AutoAdvanceMode {
+    pub fn should_advance(&self, from_work: bool) -> bool {
+        match self {
+            Self::None => false,
+            Self::All => true,
+            Self::ToBreak => from_work,
+            Self::ToWork => !from_work,
+        }
+    }
+}
+
+impl std::str::FromStr for AutoAdvanceMode {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "none" => Ok(Self::None),
+            "all" => Ok(Self::All),
+            "to-break" => Ok(Self::ToBreak),
+            "to-work" => Ok(Self::ToWork),
+            _ => Err(format!(
+                "Unknown auto-advance mode: '{}'. Supported: none, all, to-break, to-work",
+                s
+            )),
+        }
+    }
+}
+
+fn deserialize_auto_advance<'de, D>(deserializer: D) -> Result<AutoAdvanceMode, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum AutoAdvanceValue {
+        Bool(bool),
+        String(String),
+    }
+
+    match AutoAdvanceValue::deserialize(deserializer)? {
+        AutoAdvanceValue::Bool(true) => Ok(AutoAdvanceMode::All),
+        AutoAdvanceValue::Bool(false) => Ok(AutoAdvanceMode::None),
+        AutoAdvanceValue::String(s) => s.parse().map_err(serde::de::Error::custom),
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct Config {
@@ -30,9 +91,9 @@ pub struct TimerConfig {
     /// Sessions until long break (default: 4)
     #[serde(default = "default_sessions")]
     pub sessions: u32,
-    /// Automatically advance between timer states (default: false)
-    #[serde(default)]
-    pub auto_advance: bool,
+    /// Automatically advance between timer states (default: none)
+    #[serde(default, deserialize_with = "deserialize_auto_advance")]
+    pub auto_advance: AutoAdvanceMode,
 }
 
 fn default_work() -> f32 {
@@ -140,7 +201,7 @@ impl Default for TimerConfig {
             break_time: default_break(),
             long_break: default_long_break(),
             sessions: default_sessions(),
-            auto_advance: false,
+            auto_advance: AutoAdvanceMode::None,
         }
     }
 }
@@ -213,7 +274,7 @@ impl HookCommand {
         phase: &str,
         remaining_seconds: u64,
         session_count: u32,
-        auto_advance: bool,
+        auto_advance: &str,
     ) {
         use std::process::Stdio;
         use tokio::process::Command;
@@ -226,7 +287,7 @@ impl HookCommand {
         cmd.env("TOMAT_PHASE", phase);
         cmd.env("TOMAT_REMAINING_SECONDS", remaining_seconds.to_string());
         cmd.env("TOMAT_SESSION_COUNT", session_count.to_string());
-        cmd.env("TOMAT_AUTO_ADVANCE", auto_advance.to_string());
+        cmd.env("TOMAT_AUTO_ADVANCE", auto_advance);
 
         // Set working directory
         if let Some(cwd) = &self.cwd {
@@ -283,7 +344,7 @@ impl HooksConfig {
         phase: &str,
         remaining_seconds: u64,
         session_count: u32,
-        auto_advance: bool,
+        auto_advance: &str,
     ) {
         let hook = match event {
             "work_start" => &self.on_work_start,
@@ -338,7 +399,7 @@ mod tests {
         assert_eq!(config.timer.break_time, 5.0);
         assert_eq!(config.timer.long_break, 15.0);
         assert_eq!(config.timer.sessions, 4);
-        assert!(!config.timer.auto_advance);
+        assert_eq!(config.timer.auto_advance, AutoAdvanceMode::None);
 
         // Test notification defaults
         assert!(config.notification.enabled);
@@ -386,6 +447,7 @@ mod tests {
         assert_eq!(config.timer.break_time, 5.0);
         assert_eq!(config.timer.long_break, 15.0);
         assert_eq!(config.timer.sessions, 4);
+        assert_eq!(config.timer.auto_advance, AutoAdvanceMode::None);
     }
 
     #[test]
@@ -398,7 +460,7 @@ mod tests {
         assert_eq!(config.timer.break_time, 5.0);
         assert_eq!(config.timer.long_break, 15.0);
         assert_eq!(config.timer.sessions, 4);
-        assert!(!config.timer.auto_advance);
+        assert_eq!(config.timer.auto_advance, AutoAdvanceMode::None);
     }
 
     #[test]
@@ -524,5 +586,71 @@ mod tests {
         assert_eq!(hook.timeout, 5); // Default
         assert!(hook.cwd.is_none()); // Default
         assert!(!hook.capture_output); // Default
+    }
+
+    #[test]
+    fn test_auto_advance_mode_parsing() {
+        // Test boolean backwards compatibility
+        let toml_str = r#"
+            [timer]
+            auto_advance = true
+        "#;
+        let config: Config = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.timer.auto_advance, AutoAdvanceMode::All);
+
+        let toml_str = r#"
+            [timer]
+            auto_advance = false
+        "#;
+        let config: Config = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.timer.auto_advance, AutoAdvanceMode::None);
+
+        // Test string values
+        let toml_str = r#"
+            [timer]
+            auto_advance = "all"
+        "#;
+        let config: Config = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.timer.auto_advance, AutoAdvanceMode::All);
+
+        let toml_str = r#"
+            [timer]
+            auto_advance = "none"
+        "#;
+        let config: Config = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.timer.auto_advance, AutoAdvanceMode::None);
+
+        let toml_str = r#"
+            [timer]
+            auto_advance = "to-break"
+        "#;
+        let config: Config = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.timer.auto_advance, AutoAdvanceMode::ToBreak);
+
+        let toml_str = r#"
+            [timer]
+            auto_advance = "to-work"
+        "#;
+        let config: Config = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.timer.auto_advance, AutoAdvanceMode::ToWork);
+    }
+
+    #[test]
+    fn test_auto_advance_mode_logic() {
+        // None - never advances
+        assert!(!AutoAdvanceMode::None.should_advance(true));
+        assert!(!AutoAdvanceMode::None.should_advance(false));
+
+        // All - always advances
+        assert!(AutoAdvanceMode::All.should_advance(true));
+        assert!(AutoAdvanceMode::All.should_advance(false));
+
+        // ToBreak - only from work (true) to break
+        assert!(AutoAdvanceMode::ToBreak.should_advance(true));
+        assert!(!AutoAdvanceMode::ToBreak.should_advance(false));
+
+        // ToWork - only from break (false) to work
+        assert!(!AutoAdvanceMode::ToWork.should_advance(true));
+        assert!(AutoAdvanceMode::ToWork.should_advance(false));
     }
 }

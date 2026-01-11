@@ -8,11 +8,17 @@
 #   cp examples/config.toml ~/.config/tomat/config.toml
 
 [timer]
-work = 25.0          # Work session duration in minutes (default: 25.0)
-break = 5.0          # Break duration in minutes (default: 5.0)
-long_break = 15.0    # Long break duration in minutes (default: 15.0)
-sessions = 4         # Number of work sessions before long break (default: 4)
-auto_advance = false # Whether to automatically continue to next phase (default: false)
+work = 25.0           # Work session duration in minutes (default: 25.0)
+break = 5.0           # Break duration in minutes (default: 5.0)
+long_break = 15.0     # Long break duration in minutes (default: 15.0)
+sessions = 4          # Number of work sessions before long break (default: 4)
+auto_advance = "none" # Auto-advance mode (default: "none")
+                      # Options: "none", "all", "to-break", "to-work"
+                      # - "none": Pause after every transition (full manual control)
+                      # - "all": Auto-advance through all phases
+                      # - "to-break": Auto-advance only from work to break
+                      # - "to-work": Auto-advance only from break to work
+                      # (boolean true/false also supported for backwards compatibility)
 
 [sound]
 enabled = true      # Enable sound notifications (default: true)
@@ -76,7 +82,7 @@ text_format = "{icon} {time} {state}" # Text display format (default: "{icon} {t
 #   TOMAT_PHASE - Current phase ("work", "break", "long_break")
 #   TOMAT_REMAINING_SECONDS - Seconds remaining in current phase
 #   TOMAT_SESSION_COUNT - Current session number
-#   TOMAT_AUTO_ADVANCE - Whether auto-advance is enabled ("true"/"false")
+#   TOMAT_AUTO_ADVANCE - Auto-advance mode ("none", "all", "to-break", "to-work")
 
 # Example: Send custom notification when work starts
 # [hooks.on_work_start]
@@ -118,9 +124,17 @@ text_format = "{icon} {time} {state}" # Text display format (default: "{icon} {t
 # work = 45.0
 # break = 15.0
 #
-# Automatic progression:
+# Automatic progression through all phases:
 # [timer]
-# auto_advance = true
+# auto_advance = "all"
+#
+# Enforced breaks (auto-advance only to break):
+# [timer]
+# auto_advance = "to-break"
+#
+# Self-paced breaks (auto-advance only to work):
+# [timer]
+# auto_advance = "to-work"
 #
 # Silent mode:
 # [sound]
