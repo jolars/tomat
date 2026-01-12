@@ -2,19 +2,14 @@ use serde::{Deserialize, Deserializer, Serialize};
 use std::fs;
 use std::path::PathBuf;
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Default)]
 #[serde(rename_all = "kebab-case")]
 pub enum AutoAdvanceMode {
+    #[default]
     None,
     All,
     ToBreak,
     ToWork,
-}
-
-impl Default for AutoAdvanceMode {
-    fn default() -> Self {
-        Self::None
-    }
 }
 
 impl AutoAdvanceMode {
