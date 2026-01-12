@@ -2,21 +2,6 @@
 
 This document tracks known issues and planned improvements for tomat.
 
-## Medium Priority - Improvements
-
-### Improve Error Handling in Phase Transitions
-
-**Location:** `src/server.rs:130-131`, `src/server.rs:223-224`
-
-**Issue:** Errors during phase transitions are only logged to stderr, not
-visible to user.
-
-**Proposed Fix:**
-
-- Consider how to surface notification errors to user
-- Maybe add status field for "last error"
-- Log to file in addition to stderr
-
 ## Low Priority - Features
 
 ### Additional Status Bar Integration
