@@ -76,16 +76,16 @@ template customization.
 - ✅ Icon customization (`notification.icon` config: "auto", "theme", or custom
   path)
 - ✅ Timeout customization (`notification.timeout` config)
-
-**Proposed Features:**
-
-- Allow customization of notification message text via config file:
+- ✅ Custom notification message text via config file:
   ```toml
   [notification]
   work_message = "Break time! Step away from the screen."
   break_message = "Back to work! Let's get things done."
   long_break_message = "Long break! You've earned it."
   ```
+
+**Proposed Features:**
+
 - Support notification urgency levels (low/normal/critical)
 
 ## Testing

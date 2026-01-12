@@ -124,6 +124,15 @@ pub struct NotificationConfig {
     /// Notification timeout in milliseconds (default: 5000)
     #[serde(default = "default_timeout")]
     pub timeout: u32,
+    /// Custom message for work->break transition
+    #[serde(default = "default_work_message")]
+    pub work_message: String,
+    /// Custom message for break->work transition
+    #[serde(default = "default_break_message")]
+    pub break_message: String,
+    /// Custom message for work->long break transition
+    #[serde(default = "default_long_break_message")]
+    pub long_break_message: String,
 }
 
 fn default_notification_enabled() -> bool {
@@ -136,6 +145,18 @@ fn default_icon() -> String {
 
 fn default_timeout() -> u32 {
     5000
+}
+
+fn default_work_message() -> String {
+    "Break time! Take a short rest ☕".to_string()
+}
+
+fn default_break_message() -> String {
+    "Back to work! Let's focus 🍅".to_string()
+}
+
+fn default_long_break_message() -> String {
+    "Long break time! Take a well-deserved rest 🏖️".to_string()
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -212,6 +233,9 @@ impl Default for NotificationConfig {
             enabled: default_notification_enabled(),
             icon: default_icon(),
             timeout: default_timeout(),
+            work_message: default_work_message(),
+            break_message: default_break_message(),
+            long_break_message: default_long_break_message(),
         }
     }
 }
@@ -514,6 +538,19 @@ mod tests {
         assert!(!config.notification.enabled);
         assert_eq!(config.notification.icon, "/path/to/custom/icon.png");
         assert_eq!(config.notification.timeout, 5000);
+        // Custom messages should use defaults
+        assert_eq!(
+            config.notification.work_message,
+            "Break time! Take a short rest ☕"
+        );
+        assert_eq!(
+            config.notification.break_message,
+            "Back to work! Let's focus 🍅"
+        );
+        assert_eq!(
+            config.notification.long_break_message,
+            "Long break time! Take a well-deserved rest 🏖️"
+        );
 
         // Timer should still use defaults
         assert_eq!(config.timer.work, 25.0);
@@ -530,6 +567,63 @@ mod tests {
         assert!(config.notification.enabled); // Should use default
         assert_eq!(config.notification.icon, "theme");
         assert_eq!(config.notification.timeout, 5000); // Should use default
+        // Custom messages should use defaults
+        assert_eq!(
+            config.notification.work_message,
+            "Break time! Take a short rest ☕"
+        );
+        assert_eq!(
+            config.notification.break_message,
+            "Back to work! Let's focus 🍅"
+        );
+        assert_eq!(
+            config.notification.long_break_message,
+            "Long break time! Take a well-deserved rest 🏖️"
+        );
+    }
+
+    #[test]
+    fn test_custom_notification_messages() {
+        let toml_str = r#"
+            [notification]
+            work_message = "Break time! Step away from the screen."
+            break_message = "Back to work! Let's get things done."
+            long_break_message = "Long break! You've earned it."
+        "#;
+
+        let config: Config = toml::from_str(toml_str).unwrap();
+        assert_eq!(
+            config.notification.work_message,
+            "Break time! Step away from the screen."
+        );
+        assert_eq!(
+            config.notification.break_message,
+            "Back to work! Let's get things done."
+        );
+        assert_eq!(
+            config.notification.long_break_message,
+            "Long break! You've earned it."
+        );
+        // Other fields should still use defaults
+        assert!(config.notification.enabled);
+        assert_eq!(config.notification.icon, "auto");
+    }
+
+    #[test]
+    fn test_notification_message_defaults() {
+        let config = Config::default();
+        assert_eq!(
+            config.notification.work_message,
+            "Break time! Take a short rest ☕"
+        );
+        assert_eq!(
+            config.notification.break_message,
+            "Back to work! Let's focus 🍅"
+        );
+        assert_eq!(
+            config.notification.long_break_message,
+            "Long break time! Take a well-deserved rest 🏖️"
+        );
     }
 
     #[test]

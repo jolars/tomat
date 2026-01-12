@@ -255,7 +255,7 @@ impl TimerState {
             Phase::Work => {
                 self.current_session_count += 1;
 
-                let (sound_type, hook_event) =
+                let (sound_type, hook_event, message) =
                     if self.current_session_count >= self.sessions_until_long_break {
                         self.current_session_count = 0;
                         if self.auto_advance.should_advance(true) {
@@ -265,7 +265,11 @@ impl TimerState {
                             self.duration_minutes = self.long_break_duration;
                             self.is_paused = true;
                         }
-                        (SoundType::WorkToLongBreak, "long_break_start")
+                        (
+                            SoundType::WorkToLongBreak,
+                            "long_break_start",
+                            &notification_config.long_break_message,
+                        )
                     } else {
                         if self.auto_advance.should_advance(true) {
                             self.start_break();
@@ -274,14 +278,12 @@ impl TimerState {
                             self.duration_minutes = self.break_duration;
                             self.is_paused = true;
                         }
-                        (SoundType::WorkToBreak, "break_start")
+                        (
+                            SoundType::WorkToBreak,
+                            "break_start",
+                            &notification_config.work_message,
+                        )
                     };
-
-                let message = if self.current_session_count == 0 {
-                    "Long break time! Take a well-deserved rest 🏖️"
-                } else {
-                    "Break time! Take a short rest ☕"
-                };
 
                 (message, sound_type, hook_event)
             }
@@ -294,7 +296,7 @@ impl TimerState {
                     self.is_paused = true;
                 }
                 (
-                    "Back to work! Let's focus 🍅",
+                    &notification_config.break_message,
                     SoundType::BreakToWork,
                     "work_start",
                 )
@@ -308,7 +310,7 @@ impl TimerState {
                     self.is_paused = true;
                 }
                 (
-                    "Ready for another session! 🚀",
+                    &notification_config.break_message,
                     SoundType::BreakToWork,
                     "work_start",
                 )
@@ -1113,9 +1115,8 @@ mod tests {
 
         // Test "auto" mode
         let config = NotificationConfig {
-            enabled: true,
             icon: "auto".to_string(),
-            timeout: 5000,
+            ..Default::default()
         };
         let icon = get_notification_icon(&config).expect("Should get auto icon");
         assert!(
@@ -1125,9 +1126,8 @@ mod tests {
 
         // Test "theme" mode
         let config = NotificationConfig {
-            enabled: true,
             icon: "theme".to_string(),
-            timeout: 5000,
+            ..Default::default()
         };
         let icon = get_notification_icon(&config).expect("Should get theme icon");
         assert_eq!(icon, "timer", "Theme icon should be 'timer'");
@@ -1137,9 +1137,8 @@ mod tests {
         std::fs::write(&temp_icon, b"fake icon data").expect("Should create temp icon");
 
         let config = NotificationConfig {
-            enabled: true,
             icon: temp_icon.to_str().unwrap().to_string(),
-            timeout: 5000,
+            ..Default::default()
         };
         let icon = get_notification_icon(&config).expect("Should get custom icon");
         assert_eq!(
