@@ -93,7 +93,8 @@ notification system supports three icon modes:
 [notification]
 enabled = true        # Enable desktop notifications (default: true)
 icon = "auto"         # Icon mode: "auto", "theme", or path (default: "auto")
-timeout = 5000        # Notification timeout in milliseconds (default: 3000)
+timeout = 5000        # Notification timeout in milliseconds (default: 5000)
+urgency = "normal"    # Urgency level: "low", "normal", "critical" (default: "normal")
 ```
 
 To disable desktop notifications:
@@ -116,6 +117,18 @@ To use longer notification timeout:
 [notification]
 timeout = 10000  # 10 seconds
 ```
+
+To set notification urgency (affects how prominently notifications are displayed):
+
+```toml
+[notification]
+urgency = "critical"  # Options: "low", "normal", "critical"
+```
+
+**Urgency levels**:
+- **`"low"`**: Minimal interruption, typically shown without sound
+- **`"normal"`** (default): Standard notification priority
+- **`"critical"`**: High priority, may bypass do-not-disturb settings
 
 ## Priority Order
 

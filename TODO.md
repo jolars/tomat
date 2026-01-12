@@ -66,28 +66,6 @@ template customization.
 - Need to decide on data format
 - Consider privacy implications (rotation, optional feature?)
 
-### Custom Notification Messages
-
-**Issue:** Notification messages are hardcoded in `src/timer.rs`.
-
-**Already Implemented:**
-
-- ✅ Option to disable notifications (`notification.enabled` config)
-- ✅ Icon customization (`notification.icon` config: "auto", "theme", or custom
-  path)
-- ✅ Timeout customization (`notification.timeout` config)
-- ✅ Custom notification message text via config file:
-  ```toml
-  [notification]
-  work_message = "Break time! Step away from the screen."
-  break_message = "Back to work! Let's get things done."
-  long_break_message = "Long break! You've earned it."
-  ```
-
-**Proposed Features:**
-
-- Support notification urgency levels (low/normal/critical)
-
 ## Testing
 
 ### Add Stress Tests

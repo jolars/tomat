@@ -32,14 +32,20 @@ volume = 0.5        # Volume level 0.0-1.0 (default: 0.5)
 # work_to_long_break = "/path/to/custom/work-to-long-break.wav"
 
 [notification]
-enabled = true # Enable desktop notifications (default: true)
-icon = "auto"  # Icon mode (default: "auto")
-timeout = 5000 # Notification timeout in milliseconds (default: 3000)
+enabled = true   # Enable desktop notifications (default: true)
+icon = "auto"    # Icon mode (default: "auto")
+timeout = 5000   # Notification timeout in milliseconds (default: 5000)
+urgency = "normal" # Urgency level: "low", "normal", "critical" (default: "normal")
 
 # Icon mode options:
 # "auto"               - Use embedded icon, cached to ~/.cache/tomat/icon.png (works with mako)
 # "theme"              - Use system theme icon ("timer")
 # "/path/to/icon.png"  - Use custom icon file
+#
+# Urgency level options:
+# "low"      - Minimal interruption, shown without sound
+# "normal"   - Standard notification priority
+# "critical" - High priority, may bypass do-not-disturb settings
 
 [display]
 text_format = "{icon} {time} {state}" # Text display format (default: "{icon} {time} {state}")
@@ -142,4 +148,8 @@ text_format = "{icon} {time} {state}" # Text display format (default: "{icon} {t
 #
 # Custom notification timeout:
 # [notification]
-# timeout = 5000  # 5 seconds
+# timeout = 10000  # 10 seconds
+#
+# High priority notifications:
+# [notification]
+# urgency = "critical"

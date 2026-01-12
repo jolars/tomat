@@ -413,7 +413,8 @@ impl TimerState {
         notification
             .summary("Tomat")
             .body(message)
-            .timeout(config.timeout as i32);
+            .timeout(config.timeout as i32)
+            .urgency(config.urgency.clone().into());
 
         // Use configured icon
         match get_notification_icon(config) {

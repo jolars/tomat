@@ -3,6 +3,41 @@ use std::fs;
 use std::path::PathBuf;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum NotificationUrgency {
+    Low,
+    #[default]
+    Normal,
+    Critical,
+}
+
+impl std::str::FromStr for NotificationUrgency {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "low" => Ok(Self::Low),
+            "normal" => Ok(Self::Normal),
+            "critical" => Ok(Self::Critical),
+            _ => Err(format!(
+                "Unknown urgency level: '{}'. Supported: low, normal, critical",
+                s
+            )),
+        }
+    }
+}
+
+impl From<NotificationUrgency> for notify_rust::Urgency {
+    fn from(urgency: NotificationUrgency) -> Self {
+        match urgency {
+            NotificationUrgency::Low => notify_rust::Urgency::Low,
+            NotificationUrgency::Normal => notify_rust::Urgency::Normal,
+            NotificationUrgency::Critical => notify_rust::Urgency::Critical,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Default)]
 #[serde(rename_all = "kebab-case")]
 pub enum AutoAdvanceMode {
     #[default]
@@ -119,6 +154,9 @@ pub struct NotificationConfig {
     /// Notification timeout in milliseconds (default: 5000)
     #[serde(default = "default_timeout")]
     pub timeout: u32,
+    /// Notification urgency level (default: normal)
+    #[serde(default)]
+    pub urgency: NotificationUrgency,
     /// Custom message for work->break transition
     #[serde(default = "default_work_message")]
     pub work_message: String,
@@ -228,6 +266,7 @@ impl Default for NotificationConfig {
             enabled: default_notification_enabled(),
             icon: default_icon(),
             timeout: default_timeout(),
+            urgency: NotificationUrgency::default(),
             work_message: default_work_message(),
             break_message: default_break_message(),
             long_break_message: default_long_break_message(),
@@ -533,6 +572,7 @@ mod tests {
         assert!(!config.notification.enabled);
         assert_eq!(config.notification.icon, "/path/to/custom/icon.png");
         assert_eq!(config.notification.timeout, 5000);
+        assert_eq!(config.notification.urgency, NotificationUrgency::Normal); // Default
         // Custom messages should use defaults
         assert_eq!(
             config.notification.work_message,
@@ -562,6 +602,7 @@ mod tests {
         assert!(config.notification.enabled); // Should use default
         assert_eq!(config.notification.icon, "theme");
         assert_eq!(config.notification.timeout, 5000); // Should use default
+        assert_eq!(config.notification.urgency, NotificationUrgency::Normal); // Should use default
         // Custom messages should use defaults
         assert_eq!(
             config.notification.work_message,
@@ -741,5 +782,71 @@ mod tests {
         // ToWork - only from break (false) to work
         assert!(!AutoAdvanceMode::ToWork.should_advance(true));
         assert!(AutoAdvanceMode::ToWork.should_advance(false));
+    }
+
+    #[test]
+    fn test_notification_urgency_parsing() {
+        // Test default urgency
+        let toml_str = r#"
+            [notification]
+            enabled = true
+        "#;
+        let config: Config = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.notification.urgency, NotificationUrgency::Normal);
+
+        // Test low urgency
+        let toml_str = r#"
+            [notification]
+            urgency = "low"
+        "#;
+        let config: Config = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.notification.urgency, NotificationUrgency::Low);
+
+        // Test normal urgency
+        let toml_str = r#"
+            [notification]
+            urgency = "normal"
+        "#;
+        let config: Config = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.notification.urgency, NotificationUrgency::Normal);
+
+        // Test critical urgency
+        let toml_str = r#"
+            [notification]
+            urgency = "critical"
+        "#;
+        let config: Config = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.notification.urgency, NotificationUrgency::Critical);
+    }
+
+    #[test]
+    fn test_notification_urgency_from_str() {
+        use std::str::FromStr;
+
+        assert_eq!(
+            NotificationUrgency::from_str("low").unwrap(),
+            NotificationUrgency::Low
+        );
+        assert_eq!(
+            NotificationUrgency::from_str("normal").unwrap(),
+            NotificationUrgency::Normal
+        );
+        assert_eq!(
+            NotificationUrgency::from_str("critical").unwrap(),
+            NotificationUrgency::Critical
+        );
+
+        // Test case insensitivity
+        assert_eq!(
+            NotificationUrgency::from_str("LOW").unwrap(),
+            NotificationUrgency::Low
+        );
+        assert_eq!(
+            NotificationUrgency::from_str("Critical").unwrap(),
+            NotificationUrgency::Critical
+        );
+
+        // Test invalid input
+        assert!(NotificationUrgency::from_str("invalid").is_err());
     }
 }
