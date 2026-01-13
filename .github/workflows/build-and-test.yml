@@ -54,6 +54,20 @@ jobs:
       - name: Check formatting
         run: cargo fmt -- --check
 
+  test-docs:
+    name: Test Documentation Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup mdBook
+        uses: peaceiris/actions-mdbook@v2
+        with:
+          mdbook-version: "latest"
+
+      - name: Build documentation
+        run: mdbook build docs
+
   security-audit:
     name: Security Audit
     runs-on: ubuntu-latest

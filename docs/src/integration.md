@@ -487,4 +487,4 @@ cmd = "/home/user/.local/bin/tomat-focus-mode.sh"
 cmd = "/home/user/.local/bin/tomat-focus-mode.sh"
 ```
 
-See the [Configuration Guide](configuration.md#hooks) for complete hooks documentation.
+See the [Configuration Reference](configuration.md#hooks) for complete hooks documentation.

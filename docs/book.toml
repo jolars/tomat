@@ -1,0 +1,13 @@
+[book]
+title = "Tomat Documentation"
+authors = ["Johan Larsson"]
+description = "A Pomodoro timer with daemon support for waybar and other status bars"
+language = "en"
+
+[output.html]
+default-theme = "light"
+preferred-dark-theme = "navy"
+git-repository-url = "https://github.com/jolars/tomat"
+edit-url-template = "https://github.com/jolars/tomat/edit/main/docs/{path}"
+
+[output.linkcheck]

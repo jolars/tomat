@@ -1,21 +1,12 @@
 # Documentation Index
 
-Welcome to the tomat documentation! This guide will help you get the most out of
+Welcome to the Tomat documentation! This guide will help you get the most out of
 your Pomodoro timer.
-
-## Quick Navigation
-
-- **[📖 Configuration Guide](configuration.md)** - Complete configuration
-  options and examples
-- **[🔗 Integration Guide](integration.md)** - Waybar, systemd, notification
-  systems, and desktop environment setup
-- **[🐛 Troubleshooting](troubleshooting.md)** - Common issues and their
-  solutions
 
 ## Getting Started
 
-1. **First time?** Start with the main [README](../README.md) for installation
-   and basic usage
+1. **Just installed tomat?** Start with the
+   [Configuration Guide](configuration.md)
 2. **Setting up your status bar?** Check the
    [Integration Guide](integration.md#waybar-integration)
 3. **Want to customize?** See the [Configuration Guide](configuration.md)
@@ -55,10 +46,6 @@ your Pomodoro timer.
 - **[Main Repository](https://github.com/jolars/tomat)** - Source code and issue
   tracking
 - **[Crates.io Page](https://crates.io/crates/tomat)** - Official package page
-- **[📁 Examples Directory](../examples/)** - Ready-to-use configurations
-- **[Example Config](../examples/config.toml)** - Complete configuration example
-- **[License](../LICENSE)** - MIT License details
-- **[Contribution guide](../CONTRIBUTING.md)** - How to contribute to tomat
 
 ## Support
 
@@ -68,7 +55,3 @@ your Pomodoro timer.
   [Ask questions or share ideas](https://github.com/jolars/tomat/discussions)
 - **Pull Requests**:
   [Contribute code improvements](https://github.com/jolars/tomat/pulls)
-
----
-
-_Happy focusing! 🍅_

@@ -12,6 +12,8 @@ mod cli;
 
 fn main() -> Result<()> {
     generate_man_page()?;
+    generate_cli_markdown()?;
+    generate_mdbook()?;
     generate_images()?;
     embed_icon_file()?;
     generate_completions()?;
@@ -280,6 +282,50 @@ fn generate_completions() -> Result<()> {
 
     println!("cargo:rerun-if-changed=src/cli.rs");
     println!("cargo:rerun-if-changed=build.rs");
+
+    Ok(())
+}
+
+fn generate_cli_markdown() -> Result<()> {
+    let cmd = cli::Cli::command();
+    let docs_src = PathBuf::from("docs/src");
+
+    // Generate markdown documentation
+    let markdown = clap_markdown::help_markdown_command(&cmd);
+
+    // Write to docs/src/cli-reference.md
+    let output_path = docs_src.join("cli-reference.md");
+    fs::write(&output_path, markdown)?;
+
+    println!("Generated CLI markdown: {:?}", output_path);
+    println!("cargo:rerun-if-changed=src/cli.rs");
+
+    Ok(())
+}
+
+fn generate_mdbook() -> Result<()> {
+    use std::process::Command;
+
+    let docs_dir = PathBuf::from("docs");
+
+    // Only proceed if docs directory exists
+    if !docs_dir.exists() {
+        return Ok(());
+    }
+
+    println!("Building mdbook documentation...");
+
+    // Run mdbook build
+    let status = Command::new("mdbook")
+        .arg("build")
+        .arg(&docs_dir)
+        .status()?;
+
+    if !status.success() {
+        return Err(std::io::Error::other("mdbook build failed"));
+    }
+
+    println!("cargo:rerun-if-changed=docs/");
 
     Ok(())
 }
