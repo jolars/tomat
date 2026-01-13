@@ -443,6 +443,11 @@ impl HooksConfig {
 impl Config {
     /// Get the config file path
     pub fn config_path() -> Option<PathBuf> {
+        // Check for TOMAT_CONFIG environment variable first
+        if let Ok(config_path) = std::env::var("TOMAT_CONFIG") {
+            return Some(PathBuf::from(config_path));
+        }
+
         dirs::config_dir().map(|dir| dir.join("tomat").join("config.toml"))
     }
 

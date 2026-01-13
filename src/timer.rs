@@ -123,6 +123,9 @@ pub struct TimerState {
     /// Elapsed seconds when timer was paused (to preserve progress on resume)
     #[serde(default)]
     pub paused_elapsed_seconds: Option<u64>,
+    /// Hook that should be executed when timer resumes from paused state after phase transition
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pending_hook: Option<String>,
 }
 
 /// Raw timer status data - pure state, no presentation
@@ -188,6 +191,7 @@ impl TimerState {
             auto_advance: AutoAdvanceMode::None,
             is_paused: true, // Start in paused state
             paused_elapsed_seconds: None,
+            pending_hook: None,
         }
     }
 
@@ -330,20 +334,28 @@ impl TimerState {
             self.send_notification(message, notification_config)?;
         }
 
-        // Execute hook asynchronously (fire-and-forget)
-        if !is_testing() {
-            let hooks = hooks_config.clone();
-            let phase_str = self.phase.to_string();
-            let remaining = self.get_remaining_seconds();
-            let session_count = self.current_session_count;
-            let auto_advance = format!("{:?}", self.auto_advance).to_lowercase();
-            let event = hook_event.to_string();
+        // Execute hook asynchronously only if timer is running (not paused)
+        // If paused, store the hook to be executed when user resumes
+        if !self.is_paused {
+            // Timer is running, execute hook immediately
+            // Only spawn async task if we have a Tokio runtime (not in unit tests)
+            if tokio::runtime::Handle::try_current().is_ok() {
+                let hooks = hooks_config.clone();
+                let phase_str = self.phase.to_string();
+                let remaining = self.get_remaining_seconds();
+                let session_count = self.current_session_count;
+                let auto_advance = format!("{:?}", self.auto_advance).to_lowercase();
+                let event = hook_event.to_string();
 
-            tokio::spawn(async move {
-                hooks
-                    .execute_hook(&event, &phase_str, remaining, session_count, &auto_advance)
-                    .await;
-            });
+                tokio::spawn(async move {
+                    hooks
+                        .execute_hook(&event, &phase_str, remaining, session_count, &auto_advance)
+                        .await;
+                });
+            }
+        } else {
+            // Timer is paused, store hook for later execution on resume
+            self.pending_hook = Some(hook_event.to_string());
         }
 
         Ok(())
@@ -437,7 +449,7 @@ impl TimerState {
         Ok(())
     }
 
-    pub fn resume(&mut self) {
+    pub fn resume(&mut self) -> Option<String> {
         if self.is_paused {
             // If we have stored elapsed time from a pause, restore it
             if let Some(elapsed) = self.paused_elapsed_seconds {
@@ -449,6 +461,11 @@ impl TimerState {
                 self.start_time = current_timestamp();
             }
             self.is_paused = false;
+
+            // Return and clear any pending hook
+            self.pending_hook.take()
+        } else {
+            None
         }
     }
 
@@ -468,6 +485,7 @@ impl TimerState {
         self.current_session_count = 0;
         self.is_paused = true;
         self.paused_elapsed_seconds = None;
+        self.pending_hook = None;
     }
 
     /// Get raw timer status data for client-side formatting

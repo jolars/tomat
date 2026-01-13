@@ -334,10 +334,15 @@ async fn handle_client(
         "toggle" => {
             if state.is_paused {
                 // Resume if paused
-                state.resume();
+                let pending_hook = state.resume();
 
-                // Execute hook
+                // Execute resume hook
                 execute_hook(&config.hooks, "resume", state);
+
+                // Execute pending phase hook if any
+                if let Some(hook_event) = pending_hook {
+                    execute_hook(&config.hooks, &hook_event, state);
+                }
 
                 // Save state after resuming
                 save_state(state);
@@ -395,10 +400,15 @@ async fn handle_client(
                     message: "Timer is already running".to_string(),
                 }
             } else {
-                state.resume();
+                let pending_hook = state.resume();
 
-                // Execute hook
+                // Execute resume hook
                 execute_hook(&config.hooks, "resume", state);
+
+                // Execute pending phase hook if any
+                if let Some(hook_event) = pending_hook {
+                    execute_hook(&config.hooks, &hook_event, state);
+                }
 
                 // Save state after resuming
                 save_state(state);

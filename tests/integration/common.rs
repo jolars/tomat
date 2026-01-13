@@ -8,6 +8,7 @@ use tempfile::TempDir;
 pub struct TestDaemon {
     pub _temp_dir: TempDir,
     pub daemon_process: Child,
+    pub config_path: Option<std::path::PathBuf>,
 }
 
 impl TestDaemon {
@@ -40,24 +41,35 @@ impl TestDaemon {
 
     /// Start a new test daemon with a temporary socket
     pub fn start() -> Result<Self, Box<dyn std::error::Error>> {
+        Self::start_with_config(None)
+    }
+
+    /// Start a new test daemon with a temporary socket and optional config
+    pub fn start_with_config(
+        config_path: Option<&std::path::Path>,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         let temp_dir = tempfile::tempdir()?;
         let binary_path = Self::get_binary_path();
 
         // Start daemon with custom socket path and testing flag to disable notifications
-        let mut daemon_process = Command::new(&binary_path)
-            .arg("daemon")
+        let mut cmd = Command::new(&binary_path);
+        cmd.arg("daemon")
             .arg("run") // Use the internal run command for testing
             .env("XDG_RUNTIME_DIR", temp_dir.path())
             .env("TOMAT_TESTING", "1") // Disable notifications during testing
             .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .spawn()
-            .map_err(|e| {
-                format!(
-                    "Failed to start daemon with binary '{}': {}",
-                    binary_path, e
-                )
-            })?;
+            .stderr(Stdio::null());
+
+        if let Some(config) = config_path {
+            cmd.env("TOMAT_CONFIG", config);
+        }
+
+        let mut daemon_process = cmd.spawn().map_err(|e| {
+            format!(
+                "Failed to start daemon with binary '{}': {}",
+                binary_path, e
+            )
+        })?;
 
         // Wait a bit for daemon to start
         thread::sleep(Duration::from_millis(100));
@@ -70,15 +82,22 @@ impl TestDaemon {
         Ok(TestDaemon {
             _temp_dir: temp_dir,
             daemon_process,
+            config_path: config_path.map(|p| p.to_path_buf()),
         })
     }
 
     /// Send a command to the test daemon
     pub fn send_command(&self, args: &[&str]) -> Result<Value, Box<dyn std::error::Error>> {
         let binary_path = Self::get_binary_path();
-        let output = Command::new(&binary_path)
-            .args(args)
-            .env("XDG_RUNTIME_DIR", self._temp_dir.path())
+        let mut cmd = Command::new(&binary_path);
+        cmd.args(args).env("XDG_RUNTIME_DIR", self._temp_dir.path());
+
+        // Pass config path if available
+        if let Some(config_path) = &self.config_path {
+            cmd.env("TOMAT_CONFIG", config_path);
+        }
+
+        let output = cmd
             .output()
             .map_err(|e| format!("Failed to run command with binary '{}': {}", binary_path, e))?;
 
