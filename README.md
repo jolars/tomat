@@ -175,8 +175,13 @@ text_format = "{icon} {time} {state}"  # Text display format
 #   cwd (optional): Working directory, default $HOME
 #   capture_output (optional): Capture stdout/stderr for debugging, default false
 #
-# Available hooks: on_work_start, on_break_start, on_long_break_start,
-#                  on_pause, on_resume, on_stop, on_complete, on_skip
+# Available hooks:
+#   Phase transitions:
+#     on_work_start, on_work_end
+#     on_break_start, on_break_end
+#     on_long_break_start, on_long_break_end
+#   Timer control:
+#     on_pause, on_resume, on_stop, on_skip
 #
 # SECURITY: Hooks execute with daemon's user privileges. Only configure
 # trusted commands. Commands are executed directly (no shell), preventing
