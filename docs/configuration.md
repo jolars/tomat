@@ -273,12 +273,12 @@ cmd = "brightnessctl"
 args = ["set", "100%"]
 ```
 
-**Log completed sessions:**
+**Log when work sessions end:**
 
 ```toml
-[hooks.on_complete]
+[hooks.on_work_end]
 cmd = "sh"
-args = ["-c", "echo \"$(date): $TOMAT_PHASE completed\" >> ~/tomat.log"]
+args = ["-c", "echo \"$(date): Work session completed\" >> ~/tomat.log"]
 capture_output = true
 ```
 

@@ -370,12 +370,12 @@ args = ["☕ On break", "idle"]
 
 #### Productivity Logging
 
-Track your pomodoros in external systems:
+Track your work sessions in external systems:
 
 ```toml
-[hooks.on_complete]
+[hooks.on_work_end]
 cmd = "sh"
-args = ["-c", "echo \"$(date +%Y-%m-%d\\ %H:%M:%S),$TOMAT_PHASE,$TOMAT_SESSION_COUNT\" >> ~/productivity.csv"]
+args = ["-c", "echo \"$(date +%Y-%m-%d\\ %H:%M:%S),work,$TOMAT_SESSION_COUNT\" >> ~/productivity.csv"]
 capture_output = true
 ```
 

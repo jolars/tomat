@@ -303,8 +303,6 @@ pub struct HooksConfig {
     #[serde(default)]
     pub on_stop: Option<HookCommand>,
     #[serde(default)]
-    pub on_complete: Option<HookCommand>,
-    #[serde(default)]
     pub on_skip: Option<HookCommand>,
 }
 
@@ -436,7 +434,6 @@ impl HooksConfig {
             "pause" => &self.on_pause,
             "resume" => &self.on_resume,
             "stop" => &self.on_stop,
-            "complete" => &self.on_complete,
             "skip" => &self.on_skip,
             _ => return,
         };

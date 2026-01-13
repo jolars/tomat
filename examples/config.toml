@@ -80,7 +80,6 @@ text_format = "{icon} {time} {state}" # Text display format (default: "{icon} {t
 #     on_long_break_start, on_long_break_end
 #   Timer control:
 #     on_pause, on_resume, on_stop, on_skip
-#   (on_complete is defined but currently unused)
 #
 # SECURITY NOTES:
 #   - Hooks execute with daemon's user privileges
@@ -127,10 +126,10 @@ text_format = "{icon} {time} {state}" # Text display format (default: "{icon} {t
 # cmd = "/home/user/scripts/restore-brightness.sh"
 # cwd = "/home/user"
 
-# Example: Log completed sessions to file
-# [hooks.on_complete]
+# Example: Log when work ends
+# [hooks.on_work_end]
 # cmd = "sh"
-# args = ["-c", "echo \"$(date): $TOMAT_PHASE completed\" >> ~/tomat.log"]
+# args = ["-c", "echo \"$(date): Work session completed\" >> ~/tomat.log"]
 # capture_output = true
 
 # Common customizations:
