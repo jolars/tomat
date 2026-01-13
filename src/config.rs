@@ -372,23 +372,39 @@ impl HookCommand {
             }
         };
 
-        // Wait for command to complete with timeout
-        let timeout_duration = std::time::Duration::from_secs(self.timeout);
-        match tokio::time::timeout(timeout_duration, child.wait()).await {
-            Ok(Ok(status)) => {
-                if !status.success() {
-                    eprintln!("Hook command '{}' exited with status: {}", self.cmd, status);
+        // Wait for command to complete with optional timeout
+        // timeout = 0 means no timeout (wait indefinitely)
+        if self.timeout == 0 {
+            // No timeout - wait indefinitely
+            match child.wait().await {
+                Ok(status) => {
+                    if !status.success() {
+                        eprintln!("Hook command '{}' exited with status: {}", self.cmd, status);
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Hook command '{}' failed: {}", self.cmd, e);
                 }
             }
-            Ok(Err(e)) => {
-                eprintln!("Hook command '{}' failed: {}", self.cmd, e);
-            }
-            Err(_) => {
-                eprintln!(
-                    "Hook command '{}' timed out after {} seconds",
-                    self.cmd, self.timeout
-                );
-                let _ = child.kill().await;
+        } else {
+            // Apply timeout
+            let timeout_duration = std::time::Duration::from_secs(self.timeout);
+            match tokio::time::timeout(timeout_duration, child.wait()).await {
+                Ok(Ok(status)) => {
+                    if !status.success() {
+                        eprintln!("Hook command '{}' exited with status: {}", self.cmd, status);
+                    }
+                }
+                Ok(Err(e)) => {
+                    eprintln!("Hook command '{}' failed: {}", self.cmd, e);
+                }
+                Err(_) => {
+                    eprintln!(
+                        "Hook command '{}' timed out after {} seconds",
+                        self.cmd, self.timeout
+                    );
+                    let _ = child.kill().await;
+                }
             }
         }
     }

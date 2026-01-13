@@ -221,7 +221,7 @@ Each hook supports these optional fields:
 [hooks.on_work_start]
 cmd = "/usr/bin/notify-send"        # Command to execute (required)
 args = ["Title", "Message"]         # Command arguments (optional, default: [])
-timeout = 5                         # Timeout in seconds (optional, default: 5)
+timeout = 5                         # Timeout in seconds (optional, default: 5, 0 = no timeout)
 cwd = "/home/user"                  # Working directory (optional, default: $HOME)
 capture_output = false              # Capture stdout/stderr (optional, default: false)
 ```
