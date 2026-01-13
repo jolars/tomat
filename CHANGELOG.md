@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.7.0](https://github.com/jolars/tomat/compare/v2.6.0...v2.7.0) (2026-01-13)
+
+### Features
+
+* add granular options for auto advancing ([80d7f31](https://github.com/jolars/tomat/commit/80d7f31bde1ee83b6da1d4b0c0bbc8c0357b4211))
+* add support for customizing notification urgency ([337ebd1](https://github.com/jolars/tomat/commit/337ebd17372ec5aac99e6aa0b18ac1649c7957c6))
+* allow customization of notification messages ([feb3b13](https://github.com/jolars/tomat/commit/feb3b131237cc1365bf7948f9bd8a91333e3178e))
+
+### Performance Improvements
+
+* reduce size of sound alerts ([755b791](https://github.com/jolars/tomat/commit/755b791a12733de600326ee9e475cf49d908ea4b))
+
 ## [2.6.0](https://github.com/jolars/tomat/compare/v2.5.0...v2.6.0) (2026-01-09)
 
 ### Features
