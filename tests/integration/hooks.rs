@@ -407,3 +407,96 @@ cmd = "{}"
         "on_work_end hook should execute regardless of auto_advance setting"
     );
 }
+
+#[test]
+fn test_skip_hook_fires_before_phase_transition() {
+    use std::fs;
+
+    // Create temp dir for hooks and config
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let temp_path = temp_dir.path().to_path_buf();
+
+    // Create hook scripts that write the phase they see
+    let skip_hook = temp_path.join("skip_hook.sh");
+    let skip_marker = temp_path.join("skip_marker");
+    let work_end_hook = temp_path.join("work_end_hook.sh");
+    let work_end_marker = temp_path.join("work_end_marker");
+
+    // Skip hook writes current phase
+    let skip_content = format!(
+        "#!/usr/bin/env bash\necho \"$TOMAT_PHASE\" > {}",
+        skip_marker.display()
+    );
+    fs::write(&skip_hook, skip_content).expect("Failed to write skip hook");
+
+    // Work end hook writes a marker
+    let work_end_content = format!(
+        "#!/usr/bin/env bash\necho \"work_ended\" > {}",
+        work_end_marker.display()
+    );
+    fs::write(&work_end_hook, work_end_content).expect("Failed to write work end hook");
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut perms = fs::metadata(&skip_hook).unwrap().permissions();
+        perms.set_mode(0o755);
+        fs::set_permissions(&skip_hook, perms).unwrap();
+
+        let mut perms = fs::metadata(&work_end_hook).unwrap().permissions();
+        perms.set_mode(0o755);
+        fs::set_permissions(&work_end_hook, perms).unwrap();
+    }
+
+    // Create config
+    let config_path = temp_path.join("config.toml");
+    let config_content = format!(
+        r#"
+[timer]
+work = 0.1
+break = 0.05
+auto_advance = false
+
+[hooks.on_skip]
+cmd = "{}"
+
+[hooks.on_work_end]
+cmd = "{}"
+"#,
+        skip_hook.display(),
+        work_end_hook.display()
+    );
+    fs::write(&config_path, config_content).expect("Failed to write config");
+
+    // Start daemon with config
+    let daemon = TestDaemon::start_with_config(Some(&config_path)).expect("Failed to start daemon");
+
+    // Start timer
+    daemon
+        .send_command(&["start"])
+        .expect("Failed to start timer");
+
+    // Skip immediately
+    thread::sleep(Duration::from_millis(100));
+    daemon.send_command(&["skip"]).expect("Failed to skip");
+
+    // Wait for hooks to execute
+    thread::sleep(Duration::from_millis(500));
+
+    // Verify skip hook executed and saw "work" phase (before transition)
+    assert!(skip_marker.exists(), "skip hook should have executed");
+    let phase_seen = fs::read_to_string(&skip_marker)
+        .expect("Failed to read skip marker")
+        .trim()
+        .to_string();
+    assert_eq!(
+        phase_seen, "work",
+        "skip hook should see 'work' phase (before transition to break)"
+    );
+
+    // Verify work_end hook also executed
+    assert!(
+        work_end_marker.exists(),
+        "work_end hook should have executed after skip"
+    );
+}

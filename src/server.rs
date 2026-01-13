@@ -310,6 +310,9 @@ async fn handle_client(
             }
         }
         "skip" => {
+            // Execute skip hook BEFORE phase transition
+            execute_hook(&config.hooks, "skip", state);
+
             if let Err(e) = state.next_phase(
                 &config.sound,
                 &config.notification,
@@ -318,9 +321,6 @@ async fn handle_client(
             ) {
                 eprintln!("Error during phase transition: {}", e);
             }
-
-            // Execute skip hook
-            execute_hook(&config.hooks, "skip", state);
 
             // Save state after phase transition
             save_state(state);
