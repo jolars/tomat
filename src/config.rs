@@ -287,9 +287,15 @@ pub struct HooksConfig {
     #[serde(default)]
     pub on_work_start: Option<HookCommand>,
     #[serde(default)]
+    pub on_work_end: Option<HookCommand>,
+    #[serde(default)]
     pub on_break_start: Option<HookCommand>,
     #[serde(default)]
+    pub on_break_end: Option<HookCommand>,
+    #[serde(default)]
     pub on_long_break_start: Option<HookCommand>,
+    #[serde(default)]
+    pub on_long_break_end: Option<HookCommand>,
     #[serde(default)]
     pub on_pause: Option<HookCommand>,
     #[serde(default)]
@@ -422,8 +428,11 @@ impl HooksConfig {
     ) {
         let hook = match event {
             "work_start" => &self.on_work_start,
+            "work_end" => &self.on_work_end,
             "break_start" => &self.on_break_start,
+            "break_end" => &self.on_break_end,
             "long_break_start" => &self.on_long_break_start,
+            "long_break_end" => &self.on_long_break_end,
             "pause" => &self.on_pause,
             "resume" => &self.on_resume,
             "stop" => &self.on_stop,

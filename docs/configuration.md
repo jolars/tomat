@@ -203,15 +203,25 @@ args = ["pause"]
 
 ### Available Hooks
 
+**Phase Transition Hooks:**
+
 - `on_work_start` - Triggered when a work session starts
+- `on_work_end` - Triggered when a work session completes
 - `on_break_start` - Triggered when a break starts
+- `on_break_end` - Triggered when a break completes
 - `on_long_break_start` - Triggered when a long break starts
+- `on_long_break_end` - Triggered when a long break completes
+
+**Timer Control Hooks:**
+
 - `on_pause` - Triggered when timer is paused
 - `on_resume` - Triggered when timer is resumed
 - `on_stop` - Triggered when timer is stopped manually
-- `on_complete` - Triggered when a phase completes naturally (auto or manual
-  transition)
 - `on_skip` - Triggered when user skips to next phase
+
+**Note:** With `auto_advance = false`, start hooks for the new phase are
+deferred until you manually resume the timer. End hooks always execute
+immediately when a phase completes, regardless of auto_advance setting.
 
 ### Hook Configuration Fields
 

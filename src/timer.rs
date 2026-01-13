@@ -255,11 +255,35 @@ impl TimerState {
         audio_player: Option<&AudioPlayer>,
         hooks_config: &crate::config::HooksConfig,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let (message, sound_type, hook_event) = match self.phase {
+        // Execute "end" hook for the current phase BEFORE transitioning
+        let end_hook_event = match self.phase {
+            Phase::Work => "work_end",
+            Phase::Break => "break_end",
+            Phase::LongBreak => "long_break_end",
+        };
+
+        // Execute end hook synchronously (always execute, never defer)
+        if tokio::runtime::Handle::try_current().is_ok() {
+            let hooks = hooks_config.clone();
+            let phase_str = self.phase.to_string();
+            let remaining = self.get_remaining_seconds();
+            let session_count = self.current_session_count;
+            let auto_advance = format!("{:?}", self.auto_advance).to_lowercase();
+            let event = end_hook_event.to_string();
+
+            tokio::spawn(async move {
+                hooks
+                    .execute_hook(&event, &phase_str, remaining, session_count, &auto_advance)
+                    .await;
+            });
+        }
+
+        // Now handle the phase transition
+        let (message, sound_type, start_hook_event) = match self.phase {
             Phase::Work => {
                 self.current_session_count += 1;
 
-                let (sound_type, hook_event, message) =
+                let (sound_type, start_hook_event, message) =
                     if self.current_session_count >= self.sessions_until_long_break {
                         self.current_session_count = 0;
                         if self.auto_advance.should_advance(true) {
@@ -289,7 +313,7 @@ impl TimerState {
                         )
                     };
 
-                (message, sound_type, hook_event)
+                (message, sound_type, start_hook_event)
             }
             Phase::Break => {
                 if self.auto_advance.should_advance(false) {
@@ -334,7 +358,7 @@ impl TimerState {
             self.send_notification(message, notification_config)?;
         }
 
-        // Execute hook asynchronously only if timer is running (not paused)
+        // Execute "start" hook asynchronously only if timer is running (not paused)
         // If paused, store the hook to be executed when user resumes
         if !self.is_paused {
             // Timer is running, execute hook immediately
@@ -345,7 +369,7 @@ impl TimerState {
                 let remaining = self.get_remaining_seconds();
                 let session_count = self.current_session_count;
                 let auto_advance = format!("{:?}", self.auto_advance).to_lowercase();
-                let event = hook_event.to_string();
+                let event = start_hook_event.to_string();
 
                 tokio::spawn(async move {
                     hooks
@@ -355,7 +379,7 @@ impl TimerState {
             }
         } else {
             // Timer is paused, store hook for later execution on resume
-            self.pending_hook = Some(hook_event.to_string());
+            self.pending_hook = Some(start_hook_event.to_string());
         }
 
         Ok(())

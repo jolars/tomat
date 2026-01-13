@@ -252,3 +252,158 @@ cmd = "{}"
         "on_break_start hook should execute when timer is resumed after phase transition"
     );
 }
+
+#[test]
+fn test_work_end_hook_executes_before_transition() {
+    // Create temp dir for hooks and config
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let temp_path = temp_dir.path().to_path_buf();
+
+    // Create hook scripts for both work_end and break_start
+    let work_end_script = create_hook_script(&temp_path, "work_end_hook.sh", "work_end_marker");
+    let break_start_script =
+        create_hook_script(&temp_path, "break_start_hook.sh", "break_start_marker");
+
+    // Create config with both hooks
+    let config_path = temp_path.join("config.toml");
+    let config_content = format!(
+        r#"
+[timer]
+work = 0.1
+break = 0.05
+auto_advance = true
+
+[hooks.on_work_end]
+cmd = "{}"
+
+[hooks.on_break_start]
+cmd = "{}"
+"#,
+        work_end_script.display(),
+        break_start_script.display()
+    );
+    fs::write(&config_path, config_content).expect("Failed to write config");
+
+    // Start daemon with config
+    let daemon = TestDaemon::start_with_config(Some(&config_path)).expect("Failed to start daemon");
+
+    // Start timer
+    daemon
+        .send_command(&["start"])
+        .expect("Failed to start timer");
+
+    // Let work session complete
+    thread::sleep(Duration::from_secs(7));
+
+    // Both hooks should have been executed
+    thread::sleep(Duration::from_millis(500));
+    assert!(
+        hook_was_executed(&temp_path, "work_end_marker"),
+        "on_work_end hook should execute when work session completes"
+    );
+    assert!(
+        hook_was_executed(&temp_path, "break_start_marker"),
+        "on_break_start hook should execute after work_end"
+    );
+}
+
+#[test]
+fn test_break_end_hook_executes_before_transition() {
+    // Create temp dir for hooks and config
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let temp_path = temp_dir.path().to_path_buf();
+
+    // Create hook scripts
+    let break_end_script = create_hook_script(&temp_path, "break_end_hook.sh", "break_end_marker");
+    let work_start_script =
+        create_hook_script(&temp_path, "work_start_hook.sh", "work_start_marker");
+
+    // Create config with both hooks and auto_advance = true
+    let config_path = temp_path.join("config.toml");
+    let config_content = format!(
+        r#"
+[timer]
+work = 0.1
+break = 0.05
+auto_advance = true
+
+[hooks.on_break_end]
+cmd = "{}"
+
+[hooks.on_work_start]
+cmd = "{}"
+"#,
+        break_end_script.display(),
+        work_start_script.display()
+    );
+    fs::write(&config_path, config_content).expect("Failed to write config");
+
+    // Start daemon with config
+    let daemon = TestDaemon::start_with_config(Some(&config_path)).expect("Failed to start daemon");
+
+    // Start timer
+    daemon
+        .send_command(&["start"])
+        .expect("Failed to start timer");
+
+    // Let work complete and transition to break
+    thread::sleep(Duration::from_secs(7));
+
+    // Let break complete
+    thread::sleep(Duration::from_secs(4));
+
+    // Both hooks should have been executed
+    thread::sleep(Duration::from_millis(500));
+    assert!(
+        hook_was_executed(&temp_path, "break_end_marker"),
+        "on_break_end hook should execute when break completes"
+    );
+    assert!(
+        hook_was_executed(&temp_path, "work_start_marker"),
+        "on_work_start hook should execute after break_end"
+    );
+}
+
+#[test]
+fn test_end_hooks_execute_even_with_auto_advance_false() {
+    // Create temp dir for hooks and config
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let temp_path = temp_dir.path().to_path_buf();
+
+    // Create hook script for work_end
+    let work_end_script = create_hook_script(&temp_path, "work_end_hook.sh", "work_end_marker");
+
+    // Create config with auto_advance = false
+    let config_path = temp_path.join("config.toml");
+    let config_content = format!(
+        r#"
+[timer]
+work = 0.1
+break = 0.05
+auto_advance = false
+
+[hooks.on_work_end]
+cmd = "{}"
+"#,
+        work_end_script.display()
+    );
+    fs::write(&config_path, config_content).expect("Failed to write config");
+
+    // Start daemon with config
+    let daemon = TestDaemon::start_with_config(Some(&config_path)).expect("Failed to start daemon");
+
+    // Start timer
+    daemon
+        .send_command(&["start"])
+        .expect("Failed to start timer");
+
+    // Let work session complete
+    thread::sleep(Duration::from_secs(7));
+
+    // End hook should have executed even though timer is now paused
+    thread::sleep(Duration::from_millis(500));
+    assert!(
+        hook_was_executed(&temp_path, "work_end_marker"),
+        "on_work_end hook should execute regardless of auto_advance setting"
+    );
+}

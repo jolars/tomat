@@ -74,8 +74,13 @@ text_format = "{icon} {time} {state}" # Text display format (default: "{icon} {t
 #   capture_output (optional): Capture stdout/stderr for debugging, default false
 #
 # Available hooks:
-#   on_work_start, on_break_start, on_long_break_start
-#   on_pause, on_resume, on_stop, on_complete, on_skip
+#   Phase transitions:
+#     on_work_start, on_work_end
+#     on_break_start, on_break_end
+#     on_long_break_start, on_long_break_end
+#   Timer control:
+#     on_pause, on_resume, on_stop, on_skip
+#   (on_complete is defined but currently unused)
 #
 # SECURITY NOTES:
 #   - Hooks execute with daemon's user privileges
@@ -95,16 +100,21 @@ text_format = "{icon} {time} {state}" # Text display format (default: "{icon} {t
 # cmd = "notify-send"
 # args = ["🍅 Work Time", "Focus for 25 minutes"]
 
-# Example: Pause music during work sessions
+# Example: Pause music when work starts
 # [hooks.on_work_start]
 # cmd = "playerctl"
 # args = ["pause"]
 # timeout = 2
 
-# Example: Resume music during breaks
-# [hooks.on_break_start]
+# Example: Resume music when work ends
+# [hooks.on_work_end]
 # cmd = "playerctl"
 # args = ["play"]
+
+# Example: Send notification when break starts
+# [hooks.on_break_start]
+# cmd = "notify-send"
+# args = ["☕ Break Time", "Relax for 5 minutes"]
 
 # Example: Dim screen when timer is paused
 # [hooks.on_pause]
