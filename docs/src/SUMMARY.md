@@ -12,4 +12,5 @@
 # Reference
 
 - [CLI Reference](cli-reference.md)
-
+- [Contributing](contributing.md)
+- [Changelog](changelog.md)
