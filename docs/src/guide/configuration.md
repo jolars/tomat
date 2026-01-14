@@ -9,16 +9,21 @@ durations and behavior, `[sound]` for audio notification settings,
 `[notification]` for desktop notification settings, `[display]` for output
 formatting, and `[hooks]` for custom commands triggered by timer events.
 
-```admonish tip
-Copy the [complete example config](https://github.com/jolars/tomat/blob/main/examples/config.toml)
-to get started quickly.
-```
+> [!TIP]
+>
+> Ready-to-use configuration files are available in the
+> [`examples/`](https://github.com/jolars/tomat/tree/main/examples) directory.
+> Copy the
+> [complete example config](https://github.com/jolars/tomat/blob/main/examples/config.toml)
+> to get started quickly.
+
+````
 
 ```bash
 mkdir -p ~/.config/tomat
 cp examples/config.toml ~/.config/tomat/config.toml
 # Then edit ~/.config/tomat/config.toml as needed
-```
+````
 
 ## Timer Settings
 
@@ -397,23 +402,23 @@ cmd = "/home/user/scripts/end-focus-mode.sh"
 cwd = "/home/user/scripts"
 ```
 
-```admonish warning
-Hooks execute with the daemon's user privileges. Follow these security best
-practices:
-
-- **Only configure trusted commands**: Hooks can execute any command your user
-  can run.
-- **Use absolute paths**: Prefer `/usr/bin/notify-send` over `notify-send` to
-  avoid PATH manipulation.
-- **Never run the daemon as root**: Always use the `--user` systemd service.
-- **Verify config file ownership**: Ensure `~/.config/tomat/config.toml` is
-  owned by your user.
-- **No shell injection**: Commands are executed directly without a shell,
-  preventing injection attacks.
-- **Timeout protection**: Hooks are automatically killed after the timeout to
-  prevent hanging processes.
-
-**_Note:_** _If an attacker controls your `~/.config` directory, they already
-have code execution via shell rc files. Hooks don't introduce new attack vectors
-beyond standard Unix permissions._
-```
+> [!WARNING]
+>
+> Hooks execute with the daemon's user privileges. Follow these security best
+> practices:
+>
+> - **Only configure trusted commands**: Hooks can execute any command your user
+>   can run.
+> - **Use absolute paths**: Prefer `/usr/bin/notify-send` over `notify-send` to
+>   avoid PATH manipulation.
+> - **Never run the daemon as root**: Always use the `--user` systemd service.
+> - **Verify config file ownership**: Ensure `~/.config/tomat/config.toml` is
+>   owned by your user.
+> - **No shell injection**: Commands are executed directly without a shell,
+>   preventing injection attacks.
+> - **Timeout protection**: Hooks are automatically killed after the timeout to
+>   prevent hanging processes.
+>
+> **_Note:_** _If an attacker controls your `~/.config` directory, they already
+> have code execution via shell rc files. Hooks don't introduce new attack
+> vectors beyond standard Unix permissions._

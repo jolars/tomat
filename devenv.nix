@@ -11,10 +11,8 @@
     pkgs.alsa-lib
     pkgs.cargo-llvm-cov
     pkgs.ffmpeg
-    pkgs.mdbook
+    # pkgs.mdbook installed via cargo for latest version
     pkgs.mdbook-mermaid
-    pkgs.mdbook-admonish
-    pkgs.mdbook-pagetoc
     pkgs.mdbook-linkcheck
   ];
 

@@ -3,10 +3,10 @@
 This guide covers integrating tomat with various status bars and notification
 systems.
 
-```admonish tip
-Ready-to-use configuration files are available in the
-[`examples/`](https://github.com/jolars/tomat/tree/main/examples) directory.
-```
+> [!TIP]
+>
+> Ready-to-use configuration files are available in the
+> [`examples/`](https://github.com/jolars/tomat/tree/main/examples) directory.
 
 ## Status Bars
 

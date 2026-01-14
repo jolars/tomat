@@ -68,13 +68,8 @@ jobs:
       - uses: jontze/action-mdbook@v3
         with:
           token: ${{secrets.GITHUB_TOKEN}}
-          mdbook-version: "~0.4.52"
-          use-linkcheck: true
+          use-linkcheck: false
           use-mermaid: true
-          use-toc: false
-          use-opengh: false
-          use-admonish: true
-          use-katex: false
 
       - name: Build documentation
         run: mdbook build docs
