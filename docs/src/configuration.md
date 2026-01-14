@@ -9,8 +9,11 @@ durations and behavior, `[sound]` for audio notification settings,
 `[notification]` for desktop notification settings, `[display]` for output
 formatting, and `[hooks]` for custom commands triggered by timer events.
 
-**💡 Quick Start**: Copy the
+```admonish tip
+Copy the
 [complete example config](https://github.com/jolars/tomat/blob/main/examples/config.toml)
+to get started quickly.
+```
 
 ```bash
 mkdir -p ~/.config/tomat
@@ -395,7 +398,7 @@ cmd = "/home/user/scripts/end-focus-mode.sh"
 cwd = "/home/user/scripts"
 ```
 
-### Security Considerations
+```admonish warning
 
 Hooks execute with the daemon's user privileges. Follow these security best
 practices:
@@ -412,11 +415,11 @@ practices:
 - **Timeout protection**: Hooks are automatically killed after the timeout to
   prevent hanging processes.
 
----
-
 **_Note:_** _If an attacker controls your `~/.config` directory, they already
 have code execution via shell rc files. Hooks don't introduce new attack vectors
 beyond standard Unix permissions._
+
+```
 
 ## Troubleshooting
 

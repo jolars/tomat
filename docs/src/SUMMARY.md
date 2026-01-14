@@ -4,7 +4,7 @@
 
 # User Guide
 
-- [Overview](overview.md)
+- [Getting Started](getting_started.md)
 - [Configuration](configuration.md)
 - [Integration](integration.md)
 - [Troubleshooting](troubleshooting.md)

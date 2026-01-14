@@ -9,7 +9,7 @@ default-theme = "light"
 preferred-dark-theme = "navy"
 git-repository-url = "https://github.com/jolars/tomat"
 edit-url-template = "https://github.com/jolars/tomat/edit/main/docs/{path}"
-additional-css = ["docs/mdbook-admonish.css"]
+additional-css = ["mdbook-admonish.css"]
 
 [output.linkcheck]
 
