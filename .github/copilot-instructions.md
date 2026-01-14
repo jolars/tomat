@@ -121,16 +121,6 @@ clippy and rustfmt automatically if using the Nix devenv.
 │       ├── timer.rs         # Timer behavior and auto-advance tests
 │       ├── commands.rs      # Command validation tests
 │       └── formats.rs       # Output format tests
-├── docs/
-│   ├── book.toml             # mdbook configuration
-│   └── src/                  # Documentation source (markdown)
-│       ├── SUMMARY.md       # Navigation structure
-│       ├── index.md         # Documentation index
-│       ├── overview.md      # Architecture, quick start, examples
-│       ├── configuration.md # Configuration guide
-│       ├── integration.md   # Waybar, systemd, hooks
-│       ├── troubleshooting.md # Common issues
-│       └── cli-reference.md # Auto-generated from clap (DO NOT EDIT)
 ├── assets/
 │   ├── icon.png              # Embedded notification icon
 │   └── sounds/               # Embedded audio files
@@ -138,7 +128,6 @@ clippy and rustfmt automatically if using the Nix devenv.
 │   ├── logo.svg              # Source logo (visual identity)
 │   ├── logo.png              # Generated logo for GitHub/docs (256x256)
 │   └── og.png                # Generated social media image (1280x640)
-├── build.rs                  # Build script for man pages, mdbook, icons, completions
 ├── Cargo.toml               # Dependencies and metadata, includes cargo-deb config
 ├── Cargo.lock               # Dependency lockfile
 ├── Taskfile.yml             # Task runner commands (dev, lint, build-release, test-*)
@@ -203,37 +192,6 @@ The project is organized into four main modules:
 - `fs2`: File locking for daemon instance prevention (prevents race conditions)
 - `toml`: Configuration file parsing
 - `tempfile` (dev-dependency): Temporary directories for integration tests
-
-### Documentation Architecture
-
-The project uses a **single source of truth** approach with automatic generation:
-
-**Source:**
-1. **`src/cli.rs`** - Clap command definitions
-   - Auto-generates → Section 1 man pages via `clap_mangen` (17 command pages)
-   - Auto-generates → `docs/src/cli-reference.md` via `clap-markdown`
-
-2. **`docs/src/*.md`** - Hand-written guides in clean markdown
-   - `overview.md` - Architecture, quick start, examples
-   - `configuration.md` - Configuration guide
-   - `integration.md` - Waybar, systemd, hooks
-   - `troubleshooting.md` - Common issues
-   - `cli-reference.md` - **DO NOT EDIT** (auto-generated)
-
-**Output:**
-- **Man pages**: `target/man/*.1` - CLI command reference
-- **HTML docs**: `docs/book/html/` - mdbook with sidebar, search, themes
-
-**Build process:** `cargo build` runs:
-1. `clap_mangen` - Generates man pages from clap definitions
-2. `clap-markdown` - Generates CLI reference markdown
-3. `mdbook` - Builds HTML documentation
-
-**Important:**
-- Never edit `docs/src/cli-reference.md` - it's regenerated on every build
-- To update CLI docs, modify the clap definitions in `src/cli.rs`
-- Write guides in normal markdown (no man page YAML frontmatter)
-- Only section 1 man pages are generated (commands), not sections 5/7
 
 ## Continuous Integration
 

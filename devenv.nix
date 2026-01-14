@@ -11,11 +11,6 @@
     pkgs.alsa-lib
     pkgs.cargo-llvm-cov
     pkgs.ffmpeg
-    pkgs.mdbook
-    pkgs.mdbook-mermaid
-    pkgs.mdbook-admonish
-    pkgs.mdbook-pagetoc
-    pkgs.mdbook-linkcheck
   ];
 
   languages.rust = {

@@ -124,178 +124,84 @@ timer will still work normally with desktop notifications only.
 
 ## Configuration Issues
 
-#### Config file not loading
+### Config File Not Loading
 
-Check that your config file is at the correct location:
-`~/.config/tomat/config.toml`. You can verify the path exists:
+**Problem**: Changes to `~/.config/tomat/config.toml` don't take effect.
 
-```bash
-ls -l ~/.config/tomat/config.toml
-```
+**Solutions**:
 
-#### Syntax errors
+1. **Check file location**:
 
-TOML is whitespace-sensitive and requires proper quoting. Use a TOML validator
-or check that brackets, quotes, and equal signs are balanced.
+   ```bash
+   ls -la ~/.config/tomat/config.toml
+   # File should exist and be readable
+   ```
 
-#### Permission denied
+2. **Validate TOML syntax**:
 
-Ensure the config file is readable by your user:
+   ```bash
+   # Use any TOML validator, or try:
+   python3 -c "import tomllib; tomllib.load(open('~/.config/tomat/config.toml', 'rb'))"
+   ```
 
-```bash
-chmod 644 ~/.config/tomat/config.toml
-```
+3. **Restart daemon** after config changes:
 
-### Audio Issues
+   ```bash
+   tomat daemon stop
+   tomat daemon start
+   ```
 
-#### No sound playing
+4. **Check for typos** in configuration keys:
 
-On Linux, audio requires ALSA (Advanced Linux Sound Architecture). If ALSA is
-not available, tomat will automatically disable audio or fall back to the system
-beep.
+   ```toml
+   # Correct:
+   [timer]
+   break = 5.0  # Note: "break", not "break_time"
 
-#### Custom sounds not working
+   # Wrong:
+   [timer]
+   break_time = 5.0  # This will be ignored
+   ```
 
-Verify that your sound files exist and are in WAV format:
+### Invalid Configuration Values
 
-```bash
-file /path/to/your/sound.wav
-```
+**Problem**: Config file has invalid values causing errors.
 
-#### Volume too low or too high
+**Common issues and fixes**:
 
-Adjust the `volume` setting in your config file. Valid range is 0.0 (silent) to
-1.0 (full volume):
+1. **Negative durations**:
 
-```toml
-[sound]
-volume = 0.8
-```
+   ```toml
+   # Wrong:
+   work = -5.0
 
-#### Fallback to system beep
+   # Right:
+   work = 25.0
+   ```
 
-If you're hearing the system beep instead of audio files, your system may not
-have ALSA available. You can explicitly enable this behavior:
+2. **Invalid icon paths**:
 
-```toml
-[sound]
-system_beep = true
-```
+   ```toml
+   # Wrong:
+   [notification]
+   icon = "/nonexistent/path.png"
 
-### Notification Issues
+   # Right:
+   [notification]
+   icon = "auto"  # or valid file path
+   ```
 
-#### No notifications appearing
+3. **Out of range values**:
 
-Check if your notification daemon is running. Common daemons include `dunst` and
-`mako`. You can test with:
+   ```toml
+   # Wrong:
+   [sound]
+   volume = 2.0  # Must be 0.0-1.0
 
-```bash
-notify-send "Test" "Notification test"
-```
-
-#### Icon not showing
-
-Try different icon modes. The `"auto"` mode works best with mako:
-
-```toml
-[notification]
-icon = "auto"
-```
-
-Alternatively, use the system theme icon:
-
-```toml
-[notification]
-icon = "theme"
-```
-
-#### Timeout too short
-
-Increase the timeout value (in milliseconds):
-
-```toml
-[notification]
-timeout = 10000
-```
-
-### Hook Issues
-
-#### Hook not executing
-
-Verify the command exists and is executable:
-
-```bash
-which playerctl
-ls -l /home/user/scripts/my-script.sh
-```
-
-Use absolute paths in your hook configuration:
-
-```toml
-[hooks.on_work_start]
-cmd = "/usr/bin/playerctl"
-```
-
-#### Permission denied
-
-Check that the command has execute permissions:
-
-```bash
-chmod +x /home/user/scripts/my-script.sh
-```
-
-#### Hook timing out
-
-If your command takes longer than the default 5 seconds, increase the timeout:
-
-```toml
-[hooks.on_work_start]
-cmd = "/home/user/scripts/slow-script.sh"
-timeout = 10
-```
-
-Check if the command hangs when run manually. Ensure it doesn't require
-interactive input.
-
-#### No error output
-
-Enable output capture to see error messages:
-
-```toml
-[hooks.on_work_start]
-cmd = "/usr/bin/my-command"
-capture_output = true
-```
-
-#### Working directory errors
-
-Verify the working directory exists and has correct permissions:
-
-```bash
-ls -ld /path/to/working/directory
-```
-
-Use absolute paths for both commands and working directories.
-
-#### Hook not triggered
-
-Check that the hook name is spelled correctly (e.g., `on_work_start`, not
-`on_start_work`). After changing your config, restart the daemon:
-
-```bash
-tomat daemon stop
-tomat daemon start
-```
-
-#### Environment variables not working
-
-Test your hook manually with environment variables:
-
-```bash
-TOMAT_EVENT=work_start TOMAT_PHASE=work /path/to/command
-```
-
-Verify your script or command is reading the correct variable names.
+   # Right:
+   [sound]
+   volume = 0.8
+   ```
 
 ## Audio Issues
 
@@ -677,3 +583,4 @@ If you're still experiencing issues:
    echo "=== Daemon Status ==="
    tomat daemon status 2>&1
    ```
+
