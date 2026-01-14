@@ -1,4 +1,4 @@
-# Overview
+# Getting Started
 
 **tomat** is a Pomodoro timer with daemon support designed for seamless
 integration with waybar and other status bars. It uses a client-daemon

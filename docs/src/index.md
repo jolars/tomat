@@ -6,11 +6,12 @@ out of your Pomodoro timer.
 ## Getting Started
 
 1. **Just installed tomat?** Start with the
-   [Configuration Guide](configuration.md)
+   [Configuration Guide](guide/configuration.md)
 2. **Setting up your status bar?** Check the
-   [Integration Guide](integration.md#waybar-integration)
-3. **Want to customize?** See the [Configuration Guide](configuration.md)
-4. **Having problems?** Try the [Troubleshooting Guide](troubleshooting.md)
+   [Integration Guide](guide/integration.md#waybar-integration)
+3. **Want to customize?** See the [Configuration Guide](guide/configuration.md)
+4. **Having problems?** Try the
+   [Troubleshooting Guide](guide/troubleshooting.md)
 
 ## Additional Resources
 

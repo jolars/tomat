@@ -4,10 +4,10 @@
 
 # User Guide
 
-- [Getting Started](getting_started.md)
-- [Configuration](configuration.md)
-- [Integration](integration.md)
-- [Troubleshooting](troubleshooting.md)
+- [Getting Started](guide/getting_started.md)
+- [Configuration](guide/configuration.md)
+- [Integration](guide/integration.md)
+- [Troubleshooting](guide/troubleshooting.md)
 
 # Reference
 
