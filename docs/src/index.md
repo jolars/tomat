@@ -1,4 +1,4 @@
-# Introduction
+# Introduction <img src="./images/logo.svg" alt="Tomat logo" style="float: right; margin-left: 3ex; margin-bottom: 3ex; width: 200px;" />
 
 Welcome to the documentation for Tomat! This guide will help you get the most
 out of your Pomodoro timer.
