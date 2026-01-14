@@ -65,10 +65,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup mdBook
-        uses: peaceiris/actions-mdbook@v2
+      - uses: jontze/action-mdbook@v3
         with:
-          mdbook-version: "latest"
+          token: ${{secrets.GITHUB_TOKEN}}
+          use-linkcheck: true
+          use-mermaid: true
+          use-toc: false
+          use-opengh: false
+          use-admonish: true
+          use-katex: false
 
       - name: Build documentation
         run: mdbook build docs
