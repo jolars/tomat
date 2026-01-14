@@ -12,8 +12,8 @@
     pkgs.cargo-llvm-cov
     pkgs.ffmpeg
     pkgs.mdbook
-    pkgs.mdbook-man
     pkgs.mdbook-mermaid
+    pkgs.mdbook-admonish
     pkgs.mdbook-pagetoc
     pkgs.mdbook-linkcheck
   ];
