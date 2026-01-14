@@ -54,6 +54,26 @@ jobs:
       - name: Check formatting
         run: cargo fmt -- --check
 
+  test-docs:
+    name: Test Documentation Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: jontze/action-mdbook@v3
+        with:
+          token: ${{secrets.GITHUB_TOKEN}}
+          mdbook-version: "~0.4.52"
+          use-linkcheck: true
+          use-mermaid: true
+          use-toc: false
+          use-opengh: false
+          use-admonish: true
+          use-katex: false
+
+      - name: Build documentation
+        run: mdbook build docs
+
   security-audit:
     name: Security Audit
     runs-on: ubuntu-latest

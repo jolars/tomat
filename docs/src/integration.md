@@ -3,6 +3,11 @@
 This guide covers integrating tomat with various status bars and notification
 systems.
 
+```admonish tip
+Ready-to-use configuration files are available in the
+[`examples/`](https://github.com/jolars/tomat/tree/main/examples) directory.
+```
+
 ## Status Bars
 
 ### Waybar Integration
@@ -423,12 +428,16 @@ args = ["stop"]
 
 ### Tips for Hook Integration
 
-1. **Test commands manually first** - Verify commands work before adding to config
+1. **Test commands manually first** - Verify commands work before adding to
+   config
 2. **Use absolute paths** - More reliable than relying on PATH
 3. **Enable capture_output for debugging** - See what went wrong
-4. **Set appropriate timeouts** - Longer for network calls, shorter for local commands
-5. **Use shell scripts for complex logic** - Keep config simple, put complexity in scripts
-6. **Check environment variables** - Scripts can use `$TOMAT_*` variables for context
+4. **Set appropriate timeouts** - Longer for network calls, shorter for local
+   commands
+5. **Use shell scripts for complex logic** - Keep config simple, put complexity
+   in scripts
+6. **Check environment variables** - Scripts can use `$TOMAT_*` variables for
+   context
 
 ### Example Integration Script
 
@@ -487,4 +496,5 @@ cmd = "/home/user/.local/bin/tomat-focus-mode.sh"
 cmd = "/home/user/.local/bin/tomat-focus-mode.sh"
 ```
 
-See the [Configuration Guide](configuration.md#hooks) for complete hooks documentation.
+See the [Configuration Reference](configuration.md#hooks) for complete hooks
+documentation.

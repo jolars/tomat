@@ -38,3 +38,8 @@ tasks:
       - cargo check
       - cargo test
       - cargo clippy --all-targets --all-features -- -D warnings
+
+  docs-serve:
+    desc: Serve mdbook documentation locally
+    cmds:
+      - mdbook serve docs
