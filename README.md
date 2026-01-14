@@ -1,6 +1,6 @@
 # Tomat <img src='https://raw.githubusercontent.com/jolars/tomat/refs/heads/main/images/logo.svg' align="right" width="139" />
 
-[![Build Status](https://github.com/jolars/tomat/workflows/Build%20and%20Test/badge.svg)](https://github.com/jolars/tomat/actions)
+[![Build Status](https://github.com/jolars/tomat/actions/workflows/build-and-test.yml/badge.svg?branch=main)](https://github.com/jolars/tomat/actions/workflows/build-and-test.yml)
 [![codecov](https://codecov.io/gh/jolars/tomat/graph/badge.svg?token=21Kx0unk2A)](https://codecov.io/gh/jolars/tomat)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Crates.io](https://img.shields.io/crates/v/tomat.svg)](https://crates.io/crates/tomat)
