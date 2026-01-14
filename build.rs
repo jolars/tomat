@@ -315,6 +315,14 @@ fn generate_mdbook() -> Result<()> {
 
     println!("Building mdbook documentation...");
 
+    // Check if mdbook is available
+    let mdbook_check = Command::new("mdbook").arg("--version").output();
+
+    if mdbook_check.is_err() {
+        println!("cargo:warning=mdbook not found, skipping documentation build");
+        return Ok(());
+    }
+
     // Run mdbook build
     let status = Command::new("mdbook")
         .arg("build")
