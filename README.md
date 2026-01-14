@@ -18,6 +18,10 @@ seamless integration with waybar and other status bars.
 
 ## Quick Start
 
+Unless Tomat is available in your package manager (currently only on NixOS), the
+easiest way to get started is via Cargo. Unless you have Rust and Cargo
+installed, follow the instructions at <https://www.rust-lang.org/tools/install>.
+
 ```bash
 # Install from crates.io
 cargo install tomat
@@ -26,7 +30,7 @@ cargo install tomat
 tomat daemon start
 tomat start
 
-# Check status (perfect for waybar)
+# Check status
 tomat status
 ```
 
@@ -56,13 +60,42 @@ timer will still work normally with desktop notifications only.
 cargo install tomat
 ```
 
+### NixOS
+
+If you are using NixOS, tomat is available in the official packages:
+
+```nix
+{
+  environment.systemPackages = [
+    pkgs.tomat
+  ];
+}
+```
+
+You still need to set up the systemd service for automatic startup. But if
+you're using home manager, you're in luck! Tomat is supported as a module:
+
+```nix
+{
+  services.tomat = {
+    enable = true;
+
+    settings = {
+      timer = {
+        work = 25;
+        break = 5;
+      };
+    };
+  };
+}
+```
+
 ### Quick Setup with Systemd
 
 After installing tomat, you can set up the systemd service with a single
 command:
 
 ```bash
-# Install systemd user service (recommended)
 tomat daemon install
 
 # Start the daemon
@@ -103,6 +136,8 @@ tomat start --auto-advance to-work
 
 ### Control Timer
 
+The timer is controlled through several `tomat` subcommands:
+
 ```bash
 tomat status    # Get current status (JSON for waybar)
 tomat watch     # Continuously output status updates
@@ -112,6 +147,8 @@ tomat stop      # Stop timer and return to idle
 ```
 
 ### Daemon Management
+
+The server (daemon) can be managed with `tomat daemon <subcommand>`:
 
 ```bash
 tomat daemon start     # Start background daemon
@@ -123,7 +160,7 @@ tomat daemon uninstall # Remove systemd user service
 
 ## Uninstall
 
-To completely remove tomat:
+To completely remove tomat, follow these steps:
 
 ```bash
 # Stop and remove systemd service
@@ -147,7 +184,6 @@ break = 5.0           # Break duration in minutes
 long_break = 15.0     # Long break duration in minutes
 sessions = 4          # Sessions until long break
 auto_advance = "none" # Auto-advance mode: "none", "all", "to-break", "to-work"
-                      # (boolean true/false also supported for backwards compatibility)
 
 [sound]
 enabled = true        # Enable sound notifications
@@ -183,10 +219,6 @@ text_format = "{icon} {time} {state}"  # Text display format
 #   Timer control:
 #     on_pause, on_resume, on_stop, on_skip
 #
-# SECURITY: Hooks execute with daemon's user privileges. Only configure
-# trusted commands. Commands are executed directly (no shell), preventing
-# injection attacks.
-#
 # Environment variables passed to hooks:
 #   TOMAT_EVENT - Event name (e.g., "work_start", "pause")
 #   TOMAT_PHASE - Current phase ("work", "break", "long_break")
@@ -217,26 +249,9 @@ cp examples/config.toml ~/.config/tomat/config.toml
 # Edit as needed
 ```
 
-### Security Notes
-
-**Hooks execute with daemon's user privileges.** Follow these guidelines:
-
-- ✅ **Config file ownership**: Ensure `~/.config/tomat/config.toml` is owned by
-  your user
-- ✅ **Never run as root**: Always use `--user` systemd service or run daemon as
-  regular user
-- ✅ **No shell injection**: Hook commands are executed directly (not via
-  shell), preventing injection attacks
-- ⚠️ **Validate commands**: Only configure hooks with trusted executables
-- ⚠️ **Path safety**: If using `cwd`, ensure the directory exists and is safe
-
-**Threat model**: If an attacker controls your `~/.config` directory, they
-already have code execution (via shell rc files, etc.). Hooks don't introduce
-new attack vectors beyond standard Unix permissions.
-
 ## Waybar Integration
 
-Add to your waybar config (`~/.config/waybar/config`):
+Add this to your waybar config (`~/.config/waybar/config`):
 
 ```json
 {
@@ -280,7 +295,7 @@ and other status bars.
 
 ## Output
 
-By default, Tomat provides waybar-optimized JSON output:
+By default, Tomat provides Waybar-optimized JSON output:
 
 ```json
 {
@@ -291,26 +306,11 @@ By default, Tomat provides waybar-optimized JSON output:
 }
 ```
 
-Outupt can be styled by using the css classes `work`, `work-paused`, `break`,
+Outupt can be styled by using the CSS classes `work`, `work-paused`, `break`,
 `break-paused`, `long-break`, and `long-break-paused`.
 
 The output type can be changed via the `-o` (`--output`) flag, with options
 `waybar` (default), `i3status-rs`, and `plain`.
-
-## Documentation
-
-For detailed guides and advanced configuration:
-
-- **[📋 Documentation Index](https://github.com/jolars/tomat/blob/main/docs/index.md)** -
-  Complete documentation overview
-- **[📁 Examples](https://github.com/jolars/tomat/tree/main/examples)** -
-  Ready-to-use configurations (waybar, systemd, etc.)
-- **[📖 Configuration Guide](https://github.com/jolars/tomat/blob/main/docs/configuration.md)** -
-  Complete configuration options
-- **[🔗 Integration Guide](https://github.com/jolars/tomat/blob/main/docs/integration.md)** -
-  Waybar, systemd, and notification setup
-- **[🐛 Troubleshooting](https://github.com/jolars/tomat/blob/main/docs/troubleshooting.md)** -
-  Common issues and solutions
 
 ## Examples
 
@@ -356,20 +356,6 @@ tomat start
 **Note**: Custom durations only apply to the current session. Running
 `tomat start` without flags will always use your configured defaults from
 `~/.config/tomat/config.toml` (or built-in defaults if no config exists).
-
-## Architecture
-
-Tomat uses a client-daemon architecture with Unix socket communication to allow
-fast and reliable interactions, with persistent timer state managed by the
-daemon.
-
-![](images/architecture.png)
-
-- **Daemon**: Runs continuously, manages timer state and notifications
-- **Client**: Sends commands via Unix socket
-- **Persistence**: Timer survives waybar restarts and system suspend/resume
-- **Notifications**: Desktop alerts and optional sound notifications on phase
-  transitions
 
 ## Contributing
 
