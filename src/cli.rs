@@ -58,16 +58,22 @@ pub enum DaemonAction {
     client-server communication, ensuring your timer state persists across waybar restarts \
     and system suspend/resume."
 )]
-#[command(after_help = "EXAMPLES:\n    \
-    # Start daemon and begin a session\n    \
-    tomat daemon start\n    \
-    tomat start\n\n    \
-    # Custom session durations\n    \
-    tomat start --work 45 --break 15\n\n    \
-    # Check status (outputs JSON for waybar)\n    \
-    tomat status\n\n    \
-    # Toggle pause/resume\n    \
-    tomat toggle\n\n\
+#[command(after_help = "\
+EXAMPLES:
+
+    # Start daemon and begin a session
+    tomat daemon start
+    tomat start
+
+    # Custom session durations
+    tomat start --work 45 --break 15
+
+    # Check status (outputs JSON for waybar)
+    tomat status
+
+    # Toggle pause/resume
+    tomat toggle
+
 For more information, visit: https://github.com/jolars/tomat")]
 pub struct Cli {
     #[command(subcommand)]
@@ -220,13 +226,17 @@ pub enum Commands {
         built-in defaults (25min work, 5min break, 15min long break, 4 sessions). \
         Custom durations only apply to the current session."
     )]
-    #[command(after_help = "EXAMPLES:\n    \
-        # Start with defaults\n    \
-        tomat start\n\n    \
-        # Custom work/break durations\n    \
-        tomat start --work 45 --break 15\n\n    \
-        # Auto-advance between phases\n    \
-        tomat start --auto-advance")]
+    #[command(after_help = "\
+EXAMPLES:
+
+    # Start with defaults
+    tomat start
+
+    # Custom work/break durations
+    tomat start --work 45 --break 15
+
+    # Auto-advance between phases
+    tomat start --auto-advance")]
     Start {
         #[command(flatten)]
         timer: TimerArgs,
@@ -240,21 +250,41 @@ pub enum Commands {
         for different status bars (waybar, i3status-rs) or plain text. Text appearance can be \
         customized using format templates."
     )]
-    #[command(after_help = "OUTPUT FORMATS:\n    \
-        waybar      - JSON output for waybar (default)\n    \
-        i3status-rs - JSON output for i3status-rs\n    \
-        plain       - Plain text output\n\n\
-    FORMAT PLACEHOLDERS:\n    \
-        {icon}    - Phase icon (🍅 work, ☕ break, 🏖️ long break)\n    \
-        {time}    - Remaining time (MM:SS)\n    \
-        {state}   - Play/pause symbol (▶/⏸)\n    \
-        {phase}   - Phase name (Work/Break/Long Break)\n    \
-        {session} - Session progress (e.g. 1/4)\n\n\
-    EXAMPLES:\n\
-        tomat status\n\
-        tomat status --output plain\n\
-        tomat status --format \"{time}\"\n\
-        tomat status --format \"{phase}: {time} {state}\"")]
+    #[command(after_help = "\
+OUTPUT FORMATS:
+
+`waybar`
+  : JSON output for waybar (default)
+
+`i3status-rs`
+  : JSON output for i3status-rs
+
+`plain`
+  : Plain text output
+
+FORMAT PLACEHOLDERS:
+
+`{icon}`
+  : Phase icon (🍅 work, ☕ break, 🏖️ long break)
+
+`{time}`
+  : Remaining time (MM:SS)
+
+`{state}`
+  : Play/pause symbol (▶/⏸)
+
+`{phase}`
+  : Phase name (Work/Break/Long Break)
+
+`{session}`
+  : Session progress (e.g. 1/4)
+
+EXAMPLES:
+
+    tomat status
+    tomat status --output plain
+    tomat status --format \"{time}\"
+    tomat status --format \"{phase}: {time} {state}\"")]
     Status {
         /// Output format: waybar, i3status-rs, or plain
         #[arg(short, long, default_value = "waybar")]
@@ -277,13 +307,17 @@ pub enum Commands {
         a single connection to the daemon and updates at the specified interval. Automatically \
         exits when the daemon stops. More efficient than polling with 'status' command."
     )]
-    #[command(after_help = "EXAMPLES:\n    \
-        # Watch with default interval (0.25 seconds)\n    \
-        tomat watch\n\n    \
-        # Watch with 5-second updates\n    \
-        tomat watch --interval 5\n\n    \
-        # Watch with plain text output\n    \
-        tomat watch --output plain")]
+    #[command(after_help = "\
+EXAMPLES:
+
+    # Watch with default interval (0.25 seconds)
+    tomat watch
+
+    # Watch with 5-second updates
+    tomat watch --interval 5
+
+    # Watch with plain text output
+    tomat watch --output plain")]
     Watch {
         /// Output format: waybar, i3status-rs, or plain
         #[arg(short, long, default_value = "waybar")]
