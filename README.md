@@ -306,7 +306,7 @@ By default, Tomat provides Waybar-optimized JSON output:
 }
 ```
 
-Outupt can be styled by using the CSS classes `work`, `work-paused`, `break`,
+Output can be styled by using the CSS classes `work`, `work-paused`, `break`,
 `break-paused`, `long-break`, and `long-break-paused`.
 
 The output type can be changed via the `-o` (`--output`) flag, with options
