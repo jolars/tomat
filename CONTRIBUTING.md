@@ -1,8 +1,8 @@
-## Contributing
+# Contributing
 
 We welcome contributions to tomat! Here's a guide to help you get started.
 
-### Quick Contribution Checklist
+## Quick Contribution Checklist
 
 Before submitting any changes:
 
@@ -12,7 +12,7 @@ Before submitting any changes:
 - **Compilation**: `cargo check` (MUST pass)
 - **Tests**: `cargo test` (all integration tests must pass)
 
-### Getting Started
+## Getting Started
 
 1. [Fork](https://github.com/jolars/tomat/fork) the repository.
 
@@ -38,9 +38,9 @@ Before submitting any changes:
    for easier task management. The following `task` commands assume you have it
    installed.
 
-### Development Workflow
+## Development Workflow
 
-#### Essential Build Commands
+### Essential Build Commands
 
 Always run commands from the repository root.
 
@@ -60,7 +60,7 @@ cargo build                    # Development build
 cargo build --release          # Release build
 ```
 
-#### Testing Your Changes
+### Testing Your Changes
 
 ```bash
 # Build and start daemon for testing
@@ -76,9 +76,9 @@ cargo build
 ./target/debug/tomat daemon stop
 ```
 
-### Code Quality Standards
+## Code Quality Standards
 
-#### Mandatory Requirements
+### Mandatory Requirements
 
 All code changes MUST pass these checks before commit:
 
@@ -88,7 +88,7 @@ All code changes MUST pass these checks before commit:
 3. **All tests pass**: `cargo test`
 4. **Compilation success**: `cargo check`
 
-#### Code Style
+### Code Style
 
 - **Error handling**: Uses `Box<dyn std::error::Error>` for simplicity
 - **Comments**: Only add comments when they match existing style or explain
@@ -99,12 +99,12 @@ All code changes MUST pass these checks before commit:
   [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`,
   `docs:`, `test:`, `refactor:`)
 
-### Architecture Overview
+## Architecture Overview
 
 Tomat is designed as a small, focused Rust project with a client-server
 architecture.
 
-#### Module Structure
+### Module Structure
 
 - **`src/main.rs`** Main entry point, command parsing, high-level flow
 - **`src/cli.rs`** CLI argument parsing with `clap`
@@ -117,7 +117,7 @@ architecture.
 - **`src/audio.rs`** Audio playback utilities
 - **`tests/`** integration tests
 
-#### Communication Flow
+### Communication Flow
 
 ```
 Client CLI Commands
@@ -131,7 +131,7 @@ TimerState (Work/Break/LongBreak phases)
 JSON Status Output (optimized for waybar)
 ```
 
-#### Key Design Decisions
+### Key Design Decisions
 
 **Client-Server Architecture:**
 
@@ -149,9 +149,9 @@ JSON Status Output (optimized for waybar)
   - `true`: Timer automatically continues through all phases
 - Timer starts in paused work state
 
-### Testing Infrastructure
+## Testing Infrastructure
 
-#### Integration Test Pattern
+### Integration Test Pattern
 
 All tests use the `TestDaemon` helper struct for isolated testing:
 
@@ -179,7 +179,7 @@ daemon.wait_for_completion(10)?;
   notifications
 - **Automatic cleanup**: `TestDaemon` Drop impl kills daemon process
 
-#### Test Categories
+### Test Categories
 
 1. **Auto-advance behavior**: Verify `auto_advance=false` pauses after
    transitions, `auto_advance=true` continues automatically
@@ -189,23 +189,23 @@ daemon.wait_for_completion(10)?;
 5. **Configuration**: Timer, sound, and notification configuration parsing
 6. **Icon management**: Embedded icon caching and different icon modes
 
-### Adding New Features
+## Adding New Features
 
-#### Adding a New Command
+### Adding a New Command
 
 1. Add enum variant to `Commands` in `src/main.rs`
 2. Add command handling in `handle_client()` in `src/server.rs`
 3. Add match arm in `main()` in `src/main.rs`
 4. Write integration tests in `tests/` using `TestDaemon`
 
-#### Modifying Timer Behavior
+### Modifying Timer Behavior
 
 1. Update `TimerState` struct in `src/timer.rs` if new fields needed
 2. Modify state machine logic in `next_phase()`, `start_work()`, etc.
 3. Update status output in `get_status_output()`
 4. Test both `auto_advance=true` and `auto_advance=false` modes
 
-#### Adding Configuration Options
+### Adding Configuration Options
 
 1. Update appropriate config struct in `src/config.rs`
 2. Add default value functions
@@ -213,9 +213,9 @@ daemon.wait_for_completion(10)?;
 4. Add comprehensive tests for new configuration options
 5. Update documentation and examples
 
-### Technical Implementation Details
+## Technical Implementation Details
 
-#### Process Management
+### Process Management
 
 - **Daemon lifecycle**: SIGTERM with 5-second timeout, then SIGKILL
 - **PID file locking**: Uses `fs2::FileExt::try_lock_exclusive()` to prevent
@@ -223,7 +223,7 @@ daemon.wait_for_completion(10)?;
 - **Socket cleanup**: Automatic cleanup of socket and PID files on graceful
   shutdown
 
-#### Notification System
+### Notification System
 
 - **Desktop notifications**: Via `notify-rust` with embedded icon system
 - **Icon caching**: Embedded icon automatically cached to
@@ -231,12 +231,12 @@ daemon.wait_for_completion(10)?;
 - **Mako compatibility**: Default "auto" icon mode works with mako out of the
   box
 
-#### Configuration System
+### Configuration System
 
 - **TOML-based**: Configuration loaded from `~/.config/tomat/config.toml`
 - **Hierarchical**: Built-in defaults → config file → CLI arguments
 
-### Debugging Tips
+## Debugging Tips
 
 ```bash
 # Run daemon in foreground (see output directly)
@@ -255,7 +255,7 @@ cat $XDG_RUNTIME_DIR/tomat.pid && ps -p <PID>
 journalctl --user -u tomat.service -f
 ```
 
-### Backward Compatibility
+## Backward Compatibility
 
 When contributing, ensure:
 
@@ -264,7 +264,7 @@ When contributing, ensure:
 - **Configuration compatibility**: Existing config files remain valid
 - **API consistency**: JSON output format remains stable for waybar integration
 
-### Release Process
+## Release Process
 
 The project uses automated semantic versioning:
 
