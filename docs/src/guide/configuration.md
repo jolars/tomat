@@ -42,12 +42,17 @@ auto_advance = "none"
 
 The `auto_advance` setting controls how the timer transitions between phases:
 
-| Mode         | Behavior                                                    |
-| ------------ | ----------------------------------------------------------- |
-| `"none"`     | Pause after every phase transition (requires manual resume) |
-| `"all"`      | Automatically continue through all phases without pausing   |
-| `"to-break"` | Auto-advance only from work to break/long-break             |
-| `"to-work"`  | Auto-advance only from break/long-break to work             |
+`"none"`
+  : Pause after every phase transition (requires manual resume)
+
+`"all"`
+  : Automatically continue through all phases without pausing
+
+`"to-break"`
+  : Auto-advance only from work to break/long-break
+
+`"to-work"`
+  : Auto-advance only from break/long-break to work
 
 ---
 
@@ -65,42 +70,61 @@ system beep or disable audio.
 
 ```toml
 [sound]
-enabled = true
-system_beep = false
-use_embedded = true
+mode = "embedded"  # Options: "embedded", "system-beep", "none"
 volume = 0.5
 ```
 
-### Quick Reference
+### Options
 
-| Option               | Default |
-| -------------------- | ------- |
-| `enabled`            | `true`  |
-| `system_beep`        | `false` |
-| `use_embedded`       | `true`  |
-| `volume`             | `0.5`   |
-| `work_to_break`      | -       |
-| `break_to_work`      | -       |
-| `work_to_long_break` | -       |
+`mode`
+  : Sound notification mode. Controls how phase transitions are announced:
+    - `"embedded"` (default): Use built-in audio files
+    - `"system-beep"`: Use system beep (terminal bell)
+    - `"none"`: No sound notifications
+
+`volume`
+  : Audio volume level for embedded and custom sounds (0.0-1.0). Default: `0.5`
+
+`work_to_break`
+  : Path to custom sound file for work→break transitions. Overrides embedded sound. Optional.
+
+`break_to_work`
+  : Path to custom sound file for break→work transitions. Overrides embedded sound. Optional.
+
+`work_to_long_break`
+  : Path to custom sound file for work→long break transitions. Overrides embedded sound. Optional.
+
+**Deprecated options** (kept for backwards compatibility):
+- `enabled`: Use `mode = "none"` instead
+- `system_beep`: Use `mode = "system-beep"` instead  
+- `use_embedded`: Use `mode = "embedded"` instead
 
 ### Using Custom Sounds
 
-To use your own sound files, set `use_embedded = false` and specify the paths to
-your WAV files:
+To use your own sound files, keep `mode = "embedded"` and specify paths to your
+audio files. Custom sounds override the built-in ones:
 
 ```toml
 [sound]
-use_embedded = false
-work_to_break = "/home/user/sounds/work-done.wav"
-break_to_work = "/home/user/sounds/break-over.wav"
-work_to_long_break = "/home/user/sounds/long-break.wav"
+mode = "embedded"
+work_to_break = "/home/user/sounds/work-done.ogg"
+break_to_work = "/home/user/sounds/break-over.ogg"
+work_to_long_break = "/home/user/sounds/long-break.ogg"
+volume = 0.7
 ```
 
 To disable all audio:
 
 ```toml
 [sound]
-enabled = false
+mode = "none"
+```
+
+To use system beep only:
+
+```toml
+[sound]
+mode = "system-beep"
 ```
 
 ## Notification Settings
@@ -119,31 +143,50 @@ urgency = "normal"
 
 ### Quick Reference
 
-| Option               | Default                                           |
-| -------------------- | ------------------------------------------------- |
-| `enabled`            | `true`                                            |
-| `icon`               | `"auto"`                                          |
-| `timeout`            | `5000`                                            |
-| `urgency`            | `"normal"`                                        |
-| `work_message`       | `"Break time! Take a short rest ☕"`              |
-| `break_message`      | `"Back to work! Let's focus 🍅"`                  |
-| `long_break_message` | `"Long break time! Take a well-deserved rest 🏖️"` |
+`enabled`
+  : Whether to show desktop notifications. 
+
+`icon`
+  : Controls notification icon.
+
+    `"auto"` (default)
+    : Uses embedded icon, cached to `$XDG_CACHE_HOME/tomat/icon.png` (mako-compatible)
+
+    `"theme"`
+    : Uses system theme icon (`"timer"`)
+
+    path
+    : Specify a file path (e.g., `"/home/user/my-icon.png"`)
+
+`timeout`
+  : Default: `5000`
+
+`urgency`
+  : Controls notification priority level.
+
+    `"normal"` (default)
+    : Standard notification priority
+
+    `"low"`
+    : Minimal interruption, typically shown without sound
+
+    `"critical"`
+    : High priority, may bypass do-not-disturb settings
+
+`work_message`
+  : Default: `"Break time! Take a short rest ☕"`
+
+`break_message`
+  : Default: `"Back to work! Let's focus 🍅"`
+
+`long_break_message`
+  : Default: `"Long break time! Take a well-deserved rest 🏖️"`
 
 ### Icon Modes
 
-| Mode        | Description                                                               |
-| ----------- | ------------------------------------------------------------------------- |
-| `"auto"`    | Uses embedded icon, cached to `~/.cache/tomat/icon.png` (mako-compatible) |
-| `"theme"`   | Uses system theme icon (`"timer"`)                                        |
-| Custom path | Specify a file path (e.g., `"/home/user/my-icon.png"`)                    |
 
 ### Urgency Levels
 
-| Level        | Behavior                                            |
-| ------------ | --------------------------------------------------- |
-| `"low"`      | Minimal interruption, typically shown without sound |
-| `"normal"`   | Standard notification priority                      |
-| `"critical"` | High priority, may bypass do-not-disturb settings   |
 
 ### Examples
 
@@ -301,16 +344,29 @@ args = ["play"]
 
 ### Available Hooks
 
-| Hook                  | Triggered When                                          |
-| --------------------- | ------------------------------------------------------- |
-| `on_work_start`       | A work session starts                                   |
-| `on_break_start`      | A break starts                                          |
-| `on_long_break_start` | A long break starts                                     |
-| `on_pause`            | Timer is paused                                         |
-| `on_resume`           | Timer is resumed                                        |
-| `on_stop`             | Timer is stopped manually                               |
-| `on_complete`         | A phase completes naturally (auto or manual transition) |
-| `on_skip`             | User skips to next phase                                |
+`on_work_start`
+  : A work session starts
+
+`on_break_start`
+  : A break starts
+
+`on_long_break_start`
+  : A long break starts
+
+`on_pause`
+  : Timer is paused
+
+`on_resume`
+  : Timer is resumed
+
+`on_stop`
+  : Timer is stopped manually
+
+`on_complete`
+  : A phase completes naturally (auto or manual transition)
+
+`on_skip`
+  : User skips to next phase
 
 ### Hook Configuration Fields
 
@@ -332,13 +388,20 @@ args = ["play"]
 
 All hooks receive these environment variables:
 
-| Variable                  | Description                                                      |
-| ------------------------- | ---------------------------------------------------------------- |
-| `TOMAT_EVENT`             | Event name (e.g., `"work_start"`, `"pause"`)                     |
-| `TOMAT_PHASE`             | Current phase (`"work"`, `"break"`, `"long_break"`)              |
-| `TOMAT_REMAINING_SECONDS` | Seconds remaining in current phase                               |
-| `TOMAT_SESSION_COUNT`     | Current session number (1, 2, 3, ...)                            |
-| `TOMAT_AUTO_ADVANCE`      | Auto-advance mode (`"none"`, `"all"`, `"to-break"`, `"to-work"`) |
+`TOMAT_EVENT`
+  : Event name (e.g., `"work_start"`, `"pause"`)
+
+`TOMAT_PHASE`
+  : Current phase (`"work"`, `"break"`, `"long_break"`)
+
+`TOMAT_REMAINING_SECONDS`
+  : Seconds remaining in current phase
+
+`TOMAT_SESSION_COUNT`
+  : Current session number (1, 2, 3, ...)
+
+`TOMAT_AUTO_ADVANCE`
+  : Auto-advance mode (`"none"`, `"all"`, `"to-break"`, `"to-work"`)
 
 ### Example Configurations
 
