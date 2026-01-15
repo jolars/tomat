@@ -16,7 +16,6 @@ env:
 jobs:
   docs:
     name: Build Documentation
-    needs: release
     runs-on: ubuntu-latest
     permissions:
       contents: read
