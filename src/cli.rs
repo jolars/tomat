@@ -126,22 +126,21 @@ pub struct TimerArgs {
         If not specified, uses the value from ~/.config/tomat/config.toml or the \
         built-in default of 'none'.")]
     pub auto_advance: Option<String>,
-    /// Enable sound notifications for this session
-    #[arg(long, action = ArgAction::SetTrue)]
-    #[arg(help = "Enable sound notifications")]
-    #[arg(
-        long_help = "Enable sound notifications for phase transitions in this session. \
-        Overrides the configuration file setting."
-    )]
+    /// Sound notification mode
+    #[arg(long)]
+    #[arg(help = "Sound mode: embedded, system-beep, none (default: from config)")]
+    #[arg(long_help = "Control sound notifications:\n  \
+        embedded    - Use built-in audio files (default)\n  \
+        system-beep - Use system beep (terminal bell)\n  \
+        none        - No sound notifications\n\n\
+        If not specified, uses the value from ~/.config/tomat/config.toml or the \
+        built-in default of 'embedded'.")]
+    pub sound_mode: Option<String>,
+    /// DEPRECATED: Enable sound notifications for this session
+    #[arg(long, action = ArgAction::SetTrue, hide = true)]
     pub sound: bool,
-    /// Use system beep instead of audio files
-    #[arg(long, action = ArgAction::SetTrue)]
-    #[arg(help = "Use system beep instead of sound files")]
-    #[arg(
-        long_help = "Use the system beep (terminal bell) for notifications instead of \
-        playing audio files. Useful on systems without audio support or for minimal \
-        notification sound."
-    )]
+    /// DEPRECATED: Use system beep instead of audio files
+    #[arg(long, action = ArgAction::SetTrue, hide = true)]
     pub beep: bool,
     /// Audio volume level (0.0 to 1.0)
     #[arg(long)]
@@ -182,14 +181,22 @@ impl TimerArgs {
             .unwrap_or_else(|| default_str.to_string())
     }
 
-    /// Get sound enabled with fallback
-    pub fn get_sound(&self, default: bool) -> bool {
-        if self.sound { true } else { default }
-    }
+    /// Get sound mode with fallback, considering deprecated fields
+    pub fn get_sound_mode(&self, default_str: &str) -> String {
+        // Check for new sound_mode first
+        if let Some(ref mode) = self.sound_mode {
+            return mode.clone();
+        }
 
-    /// Get beep enabled with fallback
-    pub fn get_beep(&self, default: bool) -> bool {
-        if self.beep { true } else { default }
+        // Handle deprecated flags for backwards compatibility
+        if self.beep {
+            return "system-beep".to_string();
+        }
+        if self.sound {
+            return "embedded".to_string();
+        }
+
+        default_str.to_string()
     }
 
     /// Get volume with fallback

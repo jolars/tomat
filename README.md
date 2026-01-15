@@ -186,7 +186,7 @@ sessions = 4          # Sessions until long break
 auto_advance = "none" # Auto-advance mode: "none", "all", "to-break", "to-work"
 
 [sound]
-enabled = true        # Enable sound notifications
+mode = "embedded"     # Sound mode: "embedded", "system-beep", "none"
 volume = 0.5          # Volume level (0.0-1.0)
 
 [notification]

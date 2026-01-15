@@ -39,6 +39,34 @@ impl From<NotificationUrgency> for notify_rust::Urgency {
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Default)]
 #[serde(rename_all = "kebab-case")]
+pub enum SoundMode {
+    /// Use embedded sound files (default)
+    #[default]
+    Embedded,
+    /// Use system beep
+    SystemBeep,
+    /// No sound
+    None,
+}
+
+impl std::str::FromStr for SoundMode {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "embedded" => Ok(Self::Embedded),
+            "system-beep" => Ok(Self::SystemBeep),
+            "none" => Ok(Self::None),
+            _ => Err(format!(
+                "Unknown sound mode: '{}'. Supported: embedded, system-beep, none",
+                s
+            )),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Default)]
+#[serde(rename_all = "kebab-case")]
 pub enum AutoAdvanceMode {
     #[default]
     None,
@@ -206,13 +234,23 @@ fn default_text_format() -> String {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SoundConfig {
-    /// Enable sound notifications (default: true)
-    #[serde(default)]
+    /// Sound mode: "embedded", "system-beep", or "none" (default: "embedded")
+    /// If not specified, will be derived from deprecated fields for backwards compatibility
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mode: Option<SoundMode>,
+    /// DEPRECATED: Use mode = "none" instead. Enable sound notifications (default: true)
+    #[deprecated(
+        since = "0.5.0",
+        note = "Use `mode` field instead. Set mode = \"none\" to disable sounds."
+    )]
+    #[serde(default = "default_sound_enabled")]
     pub enabled: bool,
-    /// Use system beep instead of any sound files (default: false)
+    /// DEPRECATED: Use mode = "system-beep" instead. Use system beep instead of any sound files (default: false)
+    #[deprecated(since = "0.5.0", note = "Use `mode = \"system-beep\"` instead")]
     #[serde(default)]
     pub system_beep: bool,
-    /// Use embedded sounds (default: true)
+    /// DEPRECATED: Use mode = "embedded" instead. Use embedded sounds (default: true)
+    #[deprecated(since = "0.5.0", note = "Use `mode = \"embedded\"` instead")]
     #[serde(default = "default_use_embedded")]
     pub use_embedded: bool,
     /// Volume level 0.0-1.0 (default: 0.5)
@@ -234,17 +272,53 @@ fn default_volume() -> f32 {
     0.5
 }
 
+fn default_sound_enabled() -> bool {
+    true
+}
+
 impl Default for SoundConfig {
     fn default() -> Self {
         Self {
+            mode: None, // Will derive from other fields or default to Embedded
+            #[allow(deprecated)]
             enabled: true,
+            #[allow(deprecated)]
             system_beep: false,
+            #[allow(deprecated)]
             use_embedded: true,
             volume: 0.5,
             work_to_break: None,
             break_to_work: None,
             work_to_long_break: None,
         }
+    }
+}
+
+impl SoundConfig {
+    /// Get the effective sound mode, considering backwards compatibility with deprecated fields
+    pub fn effective_mode(&self) -> SoundMode {
+        // If mode is explicitly set, use it
+        if let Some(ref mode) = self.mode {
+            return mode.clone();
+        }
+
+        // Otherwise, derive from deprecated fields for backwards compatibility
+        #[allow(deprecated)]
+        {
+            if !self.enabled {
+                return SoundMode::None;
+            }
+            if self.system_beep {
+                return SoundMode::SystemBeep;
+            }
+            if !self.use_embedded {
+                // If use_embedded is explicitly false, fall back to system beep
+                return SoundMode::SystemBeep;
+            }
+        }
+
+        // Default to Embedded
+        SoundMode::Embedded
     }
 }
 
@@ -809,6 +883,111 @@ mod tests {
         // ToWork - only from break (false) to work
         assert!(!AutoAdvanceMode::ToWork.should_advance(true));
         assert!(AutoAdvanceMode::ToWork.should_advance(false));
+    }
+
+    #[test]
+    fn test_sound_mode_parsing() {
+        // Test default mode (derived from defaults)
+        let toml_str = r#"
+            [sound]
+        "#;
+        let config: Config = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.sound.effective_mode(), SoundMode::Embedded);
+
+        // Test explicit modes
+        let toml_str = r#"
+            [sound]
+            mode = "embedded"
+        "#;
+        let config: Config = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.sound.effective_mode(), SoundMode::Embedded);
+
+        let toml_str = r#"
+            [sound]
+            mode = "system-beep"
+        "#;
+        let config: Config = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.sound.effective_mode(), SoundMode::SystemBeep);
+
+        let toml_str = r#"
+            [sound]
+            mode = "none"
+        "#;
+        let config: Config = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.sound.effective_mode(), SoundMode::None);
+    }
+
+    #[test]
+    fn test_sound_mode_backwards_compatibility() {
+        // Test deprecated enabled = false -> None
+        let toml_str = r#"
+            [sound]
+            enabled = false
+        "#;
+        let config: Config = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.sound.effective_mode(), SoundMode::None);
+
+        // Test deprecated system_beep = true -> SystemBeep
+        let toml_str = r#"
+            [sound]
+            system_beep = true
+        "#;
+        let config: Config = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.sound.effective_mode(), SoundMode::SystemBeep);
+
+        // Test deprecated use_embedded = true (default) -> Embedded
+        let toml_str = r#"
+            [sound]
+            use_embedded = true
+        "#;
+        let config: Config = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.sound.effective_mode(), SoundMode::Embedded);
+
+        // Test deprecated use_embedded = false -> SystemBeep (fallback)
+        let toml_str = r#"
+            [sound]
+            use_embedded = false
+        "#;
+        let config: Config = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.sound.effective_mode(), SoundMode::SystemBeep);
+
+        // Test new mode takes precedence over deprecated fields
+        let toml_str = r#"
+            [sound]
+            mode = "none"
+            enabled = true
+            system_beep = true
+        "#;
+        let config: Config = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.sound.effective_mode(), SoundMode::None);
+    }
+
+    #[test]
+    fn test_sound_mode_from_str() {
+        use std::str::FromStr;
+
+        assert_eq!(
+            SoundMode::from_str("embedded").unwrap(),
+            SoundMode::Embedded
+        );
+        assert_eq!(
+            SoundMode::from_str("system-beep").unwrap(),
+            SoundMode::SystemBeep
+        );
+        assert_eq!(SoundMode::from_str("none").unwrap(), SoundMode::None);
+
+        // Test case insensitivity
+        assert_eq!(
+            SoundMode::from_str("EMBEDDED").unwrap(),
+            SoundMode::Embedded
+        );
+        assert_eq!(
+            SoundMode::from_str("System-Beep").unwrap(),
+            SoundMode::SystemBeep
+        );
+
+        // Test invalid input
+        assert!(SoundMode::from_str("invalid").is_err());
     }
 
     #[test]

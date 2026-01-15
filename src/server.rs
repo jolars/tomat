@@ -218,16 +218,15 @@ async fn handle_client(
                     }
                 })
                 .unwrap_or(crate::config::AutoAdvanceMode::None);
-            let _sound_enabled = message
+
+            // Parse sound_mode (ignore for now, not stored in state)
+            let _sound_mode = message
                 .args
-                .get("sound_enabled")
-                .and_then(|v| v.as_bool())
-                .unwrap_or(false);
-            let _system_beep = message
-                .args
-                .get("system_beep")
-                .and_then(|v| v.as_bool())
-                .unwrap_or(false);
+                .get("sound_mode")
+                .and_then(|v| v.as_str())
+                .and_then(|s| s.parse::<crate::config::SoundMode>().ok())
+                .unwrap_or(crate::config::SoundMode::Embedded);
+
             let _volume = message
                 .args
                 .get("volume")

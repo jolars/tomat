@@ -346,7 +346,7 @@ impl TimerState {
         };
 
         // Play sound if enabled and not testing
-        if sound_config.enabled
+        if sound_config.effective_mode() != crate::config::SoundMode::None
             && !is_testing()
             && let Some(player) = audio_player
         {
@@ -391,9 +391,18 @@ impl TimerState {
         player: &AudioPlayer,
         sound_type: SoundType,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        if config.system_beep {
-            player.play_system_beep();
-            return Ok(());
+        match config.effective_mode() {
+            crate::config::SoundMode::None => {
+                // No sound
+                return Ok(());
+            }
+            crate::config::SoundMode::SystemBeep => {
+                player.play_system_beep();
+                return Ok(());
+            }
+            crate::config::SoundMode::Embedded => {
+                // Continue with embedded/custom sound logic below
+            }
         }
 
         // Check for custom sound file first
@@ -410,12 +419,9 @@ impl TimerState {
                 // Fallback to embedded sound
                 self.try_embedded_sound(config, player, sound_type)?;
             }
-        } else if config.use_embedded {
+        } else {
             // Use embedded sound
             self.try_embedded_sound(config, player, sound_type)?;
-        } else {
-            // Fallback to system beep
-            player.play_system_beep();
         }
 
         Ok(())

@@ -96,8 +96,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             };
             let auto_advance_str = timer.get_auto_advance_str(default_mode_str);
 
-            let sound_enabled = timer.get_sound(config.sound.enabled);
-            let system_beep = timer.get_beep(config.sound.system_beep);
+            // Get sound mode as string
+            let default_sound_mode = match config.sound.effective_mode() {
+                config::SoundMode::Embedded => "embedded",
+                config::SoundMode::SystemBeep => "system-beep",
+                config::SoundMode::None => "none",
+            };
+            let sound_mode = timer.get_sound_mode(default_sound_mode);
             let volume = timer.get_volume(config.sound.volume);
 
             let args = serde_json::json!({
@@ -106,8 +111,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "long_break": long_break,
                 "sessions": sessions,
                 "auto_advance": auto_advance_str,
-                "sound_enabled": sound_enabled,
-                "system_beep": system_beep,
+                "sound_mode": sound_mode,
                 "volume": volume
             });
 
