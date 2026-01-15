@@ -93,19 +93,26 @@ you're using home manager, you're in luck! Tomat is supported as a module:
 }
 ```
 
-### Quick Setup with Systemd
+## Systemd Service Setup
 
-After installing tomat, you can set up the systemd service with a single
-command:
+Most users will want to run the Tomat daemon as a systemd user service so that
+it starts automatically on login. Tomat provides a convenience command to
+install the service:
 
 ```bash
 tomat daemon install
-
-# Start the daemon
-systemctl --user start tomat.service
 ```
 
-**Alternative manual setup:**
+After that, you can enable and start the service with:
+
+```bash
+systemctl --user enable tomat.service --now
+```
+
+### Alternative Manual Setup
+
+If you prefer to set up the systemd service manually, you can copy the service
+file from the examples directory:
 
 ```bash
 # Manual systemd setup (if you prefer)
@@ -178,7 +185,9 @@ rm -rf ~/.config/tomat
 
 ## Configuration
 
-Tomat follows XDG Base Directory standards. Create `$XDG_CONFIG_HOME/tomat/config.toml` (typically `~/.config/tomat/config.toml`) to customize defaults:
+Tomat follows XDG Base Directory standards. Create
+`$XDG_CONFIG_HOME/tomat/config.toml` (typically `~/.config/tomat/config.toml`)
+to customize defaults:
 
 ```toml
 [timer]

@@ -5,6 +5,7 @@
 # User Guide
 
 - [Getting Started](guide/getting_started.md)
+- [Installation](guide/installation.md)
 - [Configuration](guide/configuration.md)
 - [Integration](guide/integration/index.md)
   - [Status Bars](guide/integration/status-bars/index.md)

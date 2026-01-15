@@ -1,142 +1,171 @@
 # Getting Started
 
-**tomat** is a Pomodoro timer with daemon support designed for seamless
-integration with waybar and other status bars. It uses a client-daemon
-architecture with Unix socket communication to ensure timer state persists
-across restarts and system suspend/resume.
+Tomat ("tomato" in Swedish 🇸🇪) is a Pomodoro timer designed for seamless
+integration with Waybar and other status bars. It consists of a background
+service (daemon) that manages the timer state and a command-line client to
+control the timer and query its status.
 
-## Architecture
+If you are new to the Pomodoro technique, it is a time management method that
+breaks work into intervals (typically 25 minutes) separated by short breaks.
+This approach helps improve focus and productivity by encouraging regular breaks
+to rest and recharge.
 
-Tomat consists of:
+<style>
+  figure {
+    text-align: center;
+  }
+</style>
 
-- **Daemon** - Runs continuously, manages timer state and notifications
-- **Client** - Sends commands via Unix socket at $XDG_RUNTIME_DIR/tomat.sock
-- **Notifications** - Desktop alerts and optional sound notifications on phase
-  transitions
+<figure>
 
-The timer supports three phases:
-
-- **Work** - Focus session (default: 25 minutes)
-- **Break** - Short rest (default: 5 minutes)
-- **Long Break** - Extended rest after N work sessions (default: 15 minutes
-  after 4 sessions)
-
-## Quick Start
-
-```bash
-# Install from crates.io
-cargo install tomat
-
-# Start daemon and begin working
-tomat daemon start
-tomat start
-
-# Check status (perfect for waybar)
-tomat status
+```mermaid
+graph TD
+    A[25 min work] -->|Sessions 1-4| B[5 min break]
+    B --> A
+    A -->|Session 5| C[15 min long break]
+    C --> A
 ```
+
+  <figcaption>
+    An illustration of the Pomodoro technique.
+  </figcaption>
+</figure>
 
 ## Installation
 
-### Prerequisites
+Unless Tomat is available in your package manager (currently only on NixOS), the
+easiest way to get started is via Cargo. Unless you have Rust and Cargo
+installed, follow the instructions at <https://www.rust-lang.org/tools/install>
+first to set up your Rust environment.
 
-On Linux systems, audio notifications require ALSA development libraries:
-
-```bash
-# Ubuntu/Debian
-sudo apt-get install libasound2-dev
-
-# Fedora/RHEL
-sudo dnf install alsa-lib-devel
-
-# Arch Linux
-sudo pacman -S alsa-lib
-```
-
-**Note**: Audio will be automatically disabled if ALSA is not available. The
-timer will still work normally with desktop notifications only.
-
-### Install from Crates.io
+After that, you can install Tomat from crates.io:
 
 ```bash
 cargo install tomat
 ```
 
-### Quick Setup with Systemd
-
-After installing tomat, you can set up the systemd service with a single
-command:
-
-```bash
-# Install systemd user service (recommended)
-tomat daemon install
-
-# Start the daemon
-systemctl --user start tomat.service
-```
-
-**Alternative manual setup:**
-
-```bash
-# Manual systemd setup (if you prefer)
-mkdir -p ~/.config/systemd/user
-curl -o ~/.config/systemd/user/tomat.service https://raw.githubusercontent.com/jolars/tomat/main/examples/systemd.service
-systemctl --user daemon-reload
-systemctl --user enable tomat.service
-systemctl --user start tomat.service
-```
+See [installation](installation.md) for alternative installation methods, for
+instance via building from source.
 
 ## Basic Usage
 
-### Start Timer
+The next step is to start the daemon:
 
 ```bash
-# Start with defaults (25min work, 5min break)
+tomat daemon start
+```
+
+After that, you can start a Pomodoro session by calling
+
+```bash
 tomat start
-
-# Custom durations
-tomat start --work 30 --break 10 --long-break 20 --sessions 3
-
-# Auto-advance through all phases
-tomat start --auto-advance all
-
-# Auto-advance only from work to break (forced breaks)
-tomat start --auto-advance to-break
-
-# Auto-advance only from break to work (self-paced work)
-tomat start --auto-advance to-work
 ```
 
-### Control Timer
+You can check the current status of the timer with:
 
 ```bash
-tomat status    # Get current status (JSON for waybar)
-tomat watch     # Continuously output status updates
-tomat toggle    # Pause/resume timer
-tomat skip      # Skip to next phase
-tomat stop      # Stop timer and return to idle
+tomat status
 ```
 
-### Daemon Management
+Which by default returns a JSON object suitable for Waybar integration:
+
+```json
+{
+  "text": "🍅 25:00 ⏸",
+  "tooltip": "Work (2/4) - 25.0min (Paused)",
+  "class": "work-paused",
+  "percentage": 0.0
+}
+```
+
+See the [CLI Reference](../cli-reference.md) for a full list of commands and
+options.
+
+## Systemd Service Setup
+
+Most users will want to run the Tomat daemon as a systemd user service so that
+it starts automatically on login. Tomat provides a convenience command to
+install the service:
 
 ```bash
-tomat daemon start     # Start background daemon
-tomat daemon stop      # Stop daemon
-tomat daemon status    # Check daemon status
-tomat daemon install   # Install systemd user service
-tomat daemon uninstall # Remove systemd user service
+tomat daemon install
 ```
 
-## Uninstall
-
-To completely remove tomat:
+After that, you can enable and start the service with:
 
 ```bash
-# Stop and remove systemd service
-tomat daemon uninstall
-
-# Remove the binary
-cargo uninstall tomat
-
-# Remove configuration (optional)
-rm -rf ~/.config/tomat
+systemctl --user enable tomat.service --now
 ```
+
+## Status Bar Integration
+
+The last step is to integrate Tomat with your status bar. To for instance set up
+Waybar, simply add the following module to your Waybar configuration:
+
+```json
+{
+  "modules-right": ["custom/tomat"],
+  "custom/tomat": {
+    "exec": "tomat status",
+    "interval": 1,
+    "return-type": "json",
+    "format": "{text}",
+    "tooltip": true,
+    "on-click": "tomat toggle",
+    "on-click-right": "tomat skip"
+  }
+}
+```
+
+The documentation features
+[integration guides](integration/status-bars/index.md) for several popular
+status bars, including Waybar, Polybar, and others.
+
+## Configuration
+
+Tomat can be configured via a configuration file located at
+`$XDG_CONFIG_HOME/tomat/config.toml` (usually `~/.config/tomat/config.toml`).
+Here is a basic example to get you started:
+
+```toml
+[timer]
+work = 25.0
+break = 5.0
+long_break = 15.0
+sessions = 4
+auto_advance = "none"
+```
+
+See the [Configuration Guide](../guide/configuration.md) for a detailed
+explanation of all available configuration options
+
+## Architecture
+
+Tomat uses as a client--server architecture consisting of a daemon that runs in
+the background and a command-line client that sends commands to the daemon via a
+Unix socket located at `$XDG_RUNTIME_DIR/tomat.sock`.
+
+<figure>
+
+```mermaid
+graph TD
+    A[Client] -->|Commands| B(Server)
+    B -->|Status| A
+    B -->|Notifications| C[Notification System]
+    B -->|Sound| D[Sound System]
+```
+
+  <figcaption>
+    Overview of Tomat's architecture.
+  </figcaption>
+</figure>
+
+The purpose of this is to avoid having the timer be tied to the lifetime of the
+calling process, which allows several different clients to interact with the
+same timer instance and also prevents the need to save and restore states on
+status bar restarts.
+
+The daemon is also responsible for sending
+[desktop notification](../configuration/notification.md),
+[sound alerts](../configuration/sound.md), and calling
+[hooks](../configuration/hooks.md).

@@ -1,17 +1,26 @@
 # Introduction <img src="./images/logo.svg" alt="Tomat logo" class="right" style="width: 192px;" />
 
-Welcome to the documentation for **Tomat {{ tomat-version }}**! This guide will
-help you get the most out of your Pomodoro timer.
+Welcome to the documentation for **Tomat {{ tomat-version }}**, a customizable
+and lightweight Pomodoro timer designed for seamless integration with waybar and
+other status bars.
 
-## Getting Started
+To get started, have a look at [Getting Started](guide/getting_started.md) for a
+quick guide to install and setup Tomat.
 
-1. **Just installed tomat?** Start with the
-   [Configuration Guide](guide/configuration.md)
-2. **Setting up your status bar?** Check the
-   [Integration Guide](guide/integration/index.md)
-3. **Want to customize?** See the [Configuration Guide](guide/configuration.md)
-4. **Having problems?** Try the
-   [Troubleshooting Guide](guide/troubleshooting/index.md)
+## Contents
+
+This documentation includes the following sections:
+
+- [Getting Started](guide/getting_started.md): Quick start guide to install and
+  use Tomat.
+- [Configuration](guide/configuration.md): Overview of configuration options.
+- [Integration](guide/integration/index.md): Guides to integrate Tomat with
+  various status bars and notification systems.
+- [Troubleshooting](guide/troubleshooting/index.md): Solutions to common issues.
+- [Configuration Reference](configuration/index.md): In-depth reference for all
+  configuration options.
+- [CLI Reference](cli-reference.md): Comprehensive reference for all CLI
+  commands and options.
 
 ## Additional Resources
 
@@ -27,3 +36,8 @@ help you get the most out of your Pomodoro timer.
   [Ask questions or share ideas](https://github.com/jolars/tomat/discussions)
 - **Pull Requests**:
   [Contribute code improvements](https://github.com/jolars/tomat/pulls)
+
+## Contributing
+
+Contributions are welcome! Please see the [Contributing Guide](contributing.md)
+for details on how to get involved.

@@ -10,9 +10,13 @@ default-theme = "light"
 preferred-dark-theme = "navy"
 git-repository-url = "https://github.com/jolars/tomat"
 edit-url-template = "https://github.com/jolars/tomat/edit/main/docs/{path}"
+additional-js = ["mermaid.min.js", "mermaid-init.js"]
 
 [preprocessor]
 
 [preprocessor.doc-utils]
 command = "cargo run --quiet --manifest-path doc-utils/Cargo.toml"
 optional = true
+
+[preprocessor.mermaid]
+command = "mdbook-mermaid"
