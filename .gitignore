@@ -46,6 +46,3 @@ result-*
 
 # mdBook build output
 docs/book/
-
-# Auto-generated documentation
-docs/src/cli-reference.md

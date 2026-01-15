@@ -287,8 +287,24 @@ fn generate_completions() -> Result<()> {
 }
 
 fn generate_cli_markdown() -> Result<()> {
+    // Skip during cargo package/publish - file should be committed to git
+    // During packaging, cargo runs build in a temporary directory
+    let is_packaging = std::env::current_dir()
+        .ok()
+        .and_then(|p| p.to_str().map(|s| s.contains("/target/package/")))
+        .unwrap_or(false);
+
+    if is_packaging {
+        return Ok(());
+    }
+
     let cmd = cli::Cli::command();
     let docs_src = PathBuf::from("docs/src");
+
+    // Only proceed if docs directory exists
+    if !docs_src.exists() {
+        return Ok(());
+    }
 
     // Generate markdown documentation
     let markdown = clap_markdown::help_markdown_command(&cmd);
@@ -305,6 +321,16 @@ fn generate_cli_markdown() -> Result<()> {
 
 fn generate_mdbook() -> Result<()> {
     use std::process::Command;
+
+    // Skip during cargo package/publish
+    let is_packaging = std::env::current_dir()
+        .ok()
+        .and_then(|p| p.to_str().map(|s| s.contains("/target/package/")))
+        .unwrap_or(false);
+
+    if is_packaging {
+        return Ok(());
+    }
 
     let docs_dir = PathBuf::from("docs");
 
