@@ -1,13 +1,32 @@
 # Configuration Guide
 
 Tomat supports comprehensive configuration via a TOML file located at
-`~/.config/tomat/config.toml`. This allows you to set default values for timer
-durations and behaviors without specifying them on every command.
+`$XDG_CONFIG_HOME/tomat/config.toml` (typically `~/.config/tomat/config.toml`).
+This allows you to set default values for timer durations and behaviors without
+specifying them on every command.
 
 The configuration file is organized into five main sections: `[timer]` for timer
 durations and behavior, `[sound]` for audio notification settings,
 `[notification]` for desktop notification settings, `[display]` for output
 formatting, and `[hooks]` for custom commands triggered by timer events.
+
+## File Locations
+
+Tomat follows the [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html):
+
+**Configuration**
+  : `$XDG_CONFIG_HOME/tomat/config.toml` (default: `~/.config/tomat/config.toml`)
+
+**Cache**
+  : `$XDG_CACHE_HOME/tomat/` (default: `~/.cache/tomat/`)
+    - Stores cached notification icon
+
+**Runtime**
+  : `$XDG_RUNTIME_DIR/` (default: `/run/user/$UID/`)
+    - Unix socket: `tomat.sock`
+    - PID file: `tomat.pid`
+
+You can override these locations by setting the respective environment variables.
 
 > [!TIP]
 >
@@ -20,9 +39,9 @@ formatting, and `[hooks]` for custom commands triggered by timer events.
 ````
 
 ```bash
-mkdir -p ~/.config/tomat
-cp examples/config.toml ~/.config/tomat/config.toml
-# Then edit ~/.config/tomat/config.toml as needed
+mkdir -p $XDG_CONFIG_HOME/tomat  # or: mkdir -p ~/.config/tomat
+cp examples/config.toml $XDG_CONFIG_HOME/tomat/config.toml
+# Then edit the config file as needed
 ````
 
 ## Timer Settings
@@ -262,7 +281,7 @@ earlier ones:
 
 1. **Built-in defaults**: Standard Pomodoro timings (25min work, 5min break,
    15min long break, 4 sessions).
-2. **Config file**: Values from `~/.config/tomat/config.toml`.
+2. **Config file**: Values from `$XDG_CONFIG_HOME/tomat/config.toml`.
 3. **CLI arguments**: Flags passed to `tomat start` command.
 
 This means you can set your preferred defaults in the config file and still
@@ -290,7 +309,7 @@ values, and all other sound settings besides `enabled` will also use defaults.
 Here's a complete configuration file with all available options:
 
 ```toml
-# ~/.config/tomat/config.toml
+# $XDG_CONFIG_HOME/tomat/config.toml
 
 # Timer durations and behavior
 [timer]
@@ -475,13 +494,12 @@ cwd = "/home/user/scripts"
 > - **Use absolute paths**: Prefer `/usr/bin/notify-send` over `notify-send` to
 >   avoid PATH manipulation.
 > - **Never run the daemon as root**: Always use the `--user` systemd service.
-> - **Verify config file ownership**: Ensure `~/.config/tomat/config.toml` is
->   owned by your user.
+> - **Verify config file ownership**: Ensure your config file is owned by your user.
 > - **No shell injection**: Commands are executed directly without a shell,
 >   preventing injection attacks.
 > - **Timeout protection**: Hooks are automatically killed after the timeout to
 >   prevent hanging processes.
 >
-> **_Note:_** _If an attacker controls your `~/.config` directory, they already
+> **_Note:_** _If an attacker controls your `$XDG_CONFIG_HOME` directory, they already
 > have code execution via shell rc files. Hooks don't introduce new attack
 > vectors beyond standard Unix permissions._

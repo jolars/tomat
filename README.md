@@ -175,7 +175,7 @@ rm -rf ~/.config/tomat
 
 ## Configuration
 
-Create `~/.config/tomat/config.toml` to customize defaults:
+Tomat follows XDG Base Directory standards. Create `$XDG_CONFIG_HOME/tomat/config.toml` (typically `~/.config/tomat/config.toml`) to customize defaults:
 
 ```toml
 [timer]
@@ -355,7 +355,7 @@ tomat start
 
 **Note**: Custom durations only apply to the current session. Running
 `tomat start` without flags will always use your configured defaults from
-`~/.config/tomat/config.toml` (or built-in defaults if no config exists).
+`$XDG_CONFIG_HOME/tomat/config.toml` (or built-in defaults if no config exists).
 
 ## Contributing
 
