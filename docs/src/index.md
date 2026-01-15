@@ -15,7 +15,7 @@ help you get the most out of your Pomodoro timer.
 
 ## Additional Resources
 
-- **[Main eepository](https://github.com/jolars/tomat)**
+- **[Main repository](https://github.com/jolars/tomat)**
 - **[Crates.io page](https://crates.io/crates/tomat)**
 - **[A blog post about Tomat](https://jolars.co/blog/2026-01-12-tomat/)**
 
