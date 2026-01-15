@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.8.0](https://github.com/jolars/tomat/compare/v2.7.0...v2.8.0) (2026-01-15)
+
+### Features
+
+* add `sound.mode` option ([66b537a](https://github.com/jolars/tomat/commit/66b537a80a6adce43be1a75b0fff91fa2725276a))
+* add hooks for end of states ([494c8be](https://github.com/jolars/tomat/commit/494c8be4b7f299514e8a8d4018c3c5f7b0eae99a))
+* make 0 timeout for hooks mean no timeout ([9c4514a](https://github.com/jolars/tomat/commit/9c4514afe6486aad645e4af705971272871ca7bb))
+
+### Bug Fixes
+
+* await resume for hooks if auto advancing ([15ba349](https://github.com/jolars/tomat/commit/15ba3497162af5c943ef70f8f2a0220f88cbe6c2))
+* execute skip hooks before phase transition ([9ffc487](https://github.com/jolars/tomat/commit/9ffc487f5e652620ac1b62d5acf4878d16111abb))
+* remove dead `on_complete` hook code ([ae61f6e](https://github.com/jolars/tomat/commit/ae61f6ebd2cbb3d7fa24f06f345594ce351f6a40))
+* track cli reference and exclude from cargo build ([4addeaa](https://github.com/jolars/tomat/commit/4addeaa1d1edd58645fc4754e35d9e6059d2d8a4))
+
 ## [2.7.0](https://github.com/jolars/tomat/compare/v2.6.0...v2.7.0) (2026-01-13)
 
 ### Features
