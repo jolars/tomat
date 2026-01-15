@@ -33,6 +33,10 @@ tomat start
 tomat status
 ```
 
+## Documentation
+
+The full documentation is available at <https://jolars.github.io/tomat/>.
+
 ## Installation
 
 ### Prerequisites
