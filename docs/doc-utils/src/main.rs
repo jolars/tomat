@@ -14,7 +14,7 @@ fn main() {
         None => {}
     }
 
-    if let Err(e) = guide_helper::handle_preprocessing() {
+    if let Err(e) = doc_utils::handle_preprocessing() {
         eprintln!("{e:?}");
         std::process::exit(1);
     }

@@ -1,7 +1,7 @@
 # Introduction <img src="./images/logo.svg" alt="Tomat logo" class="right" style="width: 192px;" />
 
-Welcome to the documentation for Tomat! This guide will help you get the most
-out of your Pomodoro timer.
+Welcome to the documentation for **Tomat {{ tomat-version }}**! This guide will
+help you get the most out of your Pomodoro timer.
 
 ## Getting Started
 
