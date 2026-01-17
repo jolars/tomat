@@ -1,5 +1,25 @@
 # Status Bar Integration Troubleshooting
 
+## General Issues
+
+### No Status Showing
+
+#### Problem
+
+The status bar does not display any tomat status.
+
+#### Solution
+
+1. **Ensure daemon is running**:
+
+   ```bash
+   tomat daemon status
+   # Should show "Daemon is running"
+   ```
+
+2. Check that the PATH includes the directory where tomat is installed. See
+   <https://github.com/jolars/tomat/issues/21> for instance.
+
 ## Waybar Integration Issues
 
 ### Status Not Updating
