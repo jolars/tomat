@@ -9,7 +9,6 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{UnixListener, UnixStream};
 
 use crate::ServerResponse;
-use crate::audio::AudioPlayer;
 use crate::timer::TimerState;
 
 #[derive(Serialize, Deserialize)]
@@ -167,7 +166,6 @@ async fn handle_client(
     stream: UnixStream,
     state: &mut TimerState,
     config: &crate::config::Config,
-    audio_player: Option<&AudioPlayer>,
 ) -> Result<bool, Box<dyn std::error::Error>> {
     let mut reader = BufReader::new(stream);
     let mut line = String::new();
@@ -312,12 +310,7 @@ async fn handle_client(
             // Execute skip hook BEFORE phase transition
             execute_hook(&config.hooks, "skip", state);
 
-            if let Err(e) = state.next_phase(
-                &config.sound,
-                &config.notification,
-                audio_player,
-                &config.hooks,
-            ) {
+            if let Err(e) = state.next_phase(&config.sound, &config.notification, &config.hooks) {
                 eprintln!("Error during phase transition: {}", e);
             }
 
@@ -483,23 +476,6 @@ pub async fn run_daemon() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Tomat daemon listening on {:?}", socket_path);
 
-    // Try to initialize audio player (optional - if it fails, continue without sound)
-    let audio_player = match AudioPlayer::new() {
-        Ok(player) => {
-            println!("Audio system initialized");
-            Some(player)
-        }
-        Err(e) => {
-            if std::env::var("TOMAT_TESTING").is_err() {
-                eprintln!(
-                    "Warning: Audio initialization failed: {}. Sound notifications disabled.",
-                    e
-                );
-            }
-            None
-        }
-    };
-
     // Clean up socket and PID file on exit
     let cleanup = || {
         let _ = std::fs::remove_file(&socket_path);
@@ -508,7 +484,7 @@ pub async fn run_daemon() -> Result<(), Box<dyn std::error::Error>> {
 
     // Set up signal handler for graceful shutdown
     let result = tokio::select! {
-        result = daemon_loop(listener, &mut state, &config, audio_player.as_ref()) => result,
+        result = daemon_loop(listener, &mut state, &config) => result,
         _ = tokio::signal::ctrl_c() => {
             println!("Received interrupt signal, shutting down...");
             Ok(())
@@ -525,13 +501,12 @@ async fn daemon_loop(
     listener: UnixListener,
     state: &mut TimerState,
     config: &crate::config::Config,
-    audio_player: Option<&AudioPlayer>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     loop {
         tokio::select! {
             // Handle incoming connections
             Ok((stream, _)) = listener.accept() => {
-                match handle_client(stream, state, config, audio_player).await {
+                match handle_client(stream, state, config).await {
                     Ok(should_shutdown) if should_shutdown => {
                         println!("Shutdown requested, exiting gracefully");
                         return Ok(());
@@ -564,7 +539,7 @@ async fn daemon_loop(
                 }
             } => {
                 if state.is_finished() {
-                    if let Err(e) = state.next_phase(&config.sound, &config.notification, audio_player, &config.hooks) {
+                    if let Err(e) = state.next_phase(&config.sound, &config.notification, &config.hooks) {
                         eprintln!("Error during phase transition: {}", e);
                     }
                     // Save state after automatic phase transition

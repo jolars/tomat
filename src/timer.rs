@@ -5,7 +5,7 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::audio::{AudioPlayer, SoundType};
+use crate::audio::SoundType;
 use crate::config::{AutoAdvanceMode, NotificationConfig, SoundConfig};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
@@ -252,7 +252,6 @@ impl TimerState {
         &mut self,
         sound_config: &SoundConfig,
         notification_config: &NotificationConfig,
-        audio_player: Option<&AudioPlayer>,
         hooks_config: &crate::config::HooksConfig,
     ) -> Result<(), Box<dyn std::error::Error>> {
         // Execute "end" hook for the current phase BEFORE transitioning
@@ -346,11 +345,8 @@ impl TimerState {
         };
 
         // Play sound if enabled and not testing
-        if sound_config.effective_mode() != crate::config::SoundMode::None
-            && !is_testing()
-            && let Some(player) = audio_player
-        {
-            self.play_transition_sound(sound_config, player, sound_type)?;
+        if sound_config.effective_mode() != crate::config::SoundMode::None && !is_testing() {
+            self.play_transition_sound(sound_config, sound_type)?;
         }
 
         // Send notification (existing code)
@@ -388,7 +384,6 @@ impl TimerState {
     fn play_transition_sound(
         &self,
         config: &SoundConfig,
-        player: &AudioPlayer,
         sound_type: SoundType,
     ) -> Result<(), Box<dyn std::error::Error>> {
         match config.effective_mode() {
@@ -397,7 +392,7 @@ impl TimerState {
                 return Ok(());
             }
             crate::config::SoundMode::SystemBeep => {
-                player.play_system_beep();
+                crate::audio::play_system_beep();
                 return Ok(());
             }
             crate::config::SoundMode::Embedded => {
@@ -414,14 +409,14 @@ impl TimerState {
 
         if let Some(file_path) = custom_file {
             // Try custom file first
-            if let Err(e) = player.play_custom_file(file_path, config.volume) {
+            if let Err(e) = crate::audio::play_custom_file(file_path, config.volume) {
                 eprintln!("Failed to play custom sound '{}': {}", file_path, e);
                 // Fallback to embedded sound
-                self.try_embedded_sound(config, player, sound_type)?;
+                self.try_embedded_sound(config, sound_type)?;
             }
         } else {
             // Use embedded sound
-            self.try_embedded_sound(config, player, sound_type)?;
+            self.try_embedded_sound(config, sound_type)?;
         }
 
         Ok(())
@@ -430,13 +425,12 @@ impl TimerState {
     fn try_embedded_sound(
         &self,
         config: &SoundConfig,
-        player: &AudioPlayer,
         sound_type: SoundType,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        if let Err(e) = player.play_embedded_sound(sound_type, config.volume) {
+        if let Err(e) = crate::audio::play_embedded_sound(sound_type, config.volume) {
             eprintln!("Failed to play embedded sound: {}", e);
             // Final fallback to system beep
-            player.play_system_beep();
+            crate::audio::play_system_beep();
         }
         Ok(())
     }
@@ -777,7 +771,6 @@ mod tests {
             .next_phase(
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
-                None,
                 &crate::config::HooksConfig::default(),
             )
             .unwrap();
@@ -800,7 +793,6 @@ mod tests {
             .next_phase(
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
-                None,
                 &crate::config::HooksConfig::default(),
             )
             .unwrap();
@@ -824,7 +816,6 @@ mod tests {
             .next_phase(
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
-                None,
                 &crate::config::HooksConfig::default(),
             )
             .unwrap();
@@ -846,7 +837,6 @@ mod tests {
             .next_phase(
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
-                None,
                 &crate::config::HooksConfig::default(),
             )
             .unwrap();
@@ -867,7 +857,6 @@ mod tests {
             .next_phase(
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
-                None,
                 &crate::config::HooksConfig::default(),
             )
             .unwrap();
@@ -997,7 +986,6 @@ mod tests {
                 .next_phase(
                     &SoundConfig::default(),
                     &NotificationConfig::default(),
-                    None,
                     &crate::config::HooksConfig::default(),
                 )
                 .unwrap(); // Work -> Break
@@ -1006,7 +994,6 @@ mod tests {
                 .next_phase(
                     &SoundConfig::default(),
                     &NotificationConfig::default(),
-                    None,
                     &crate::config::HooksConfig::default(),
                 )
                 .unwrap(); // Break -> Work
@@ -1020,7 +1007,6 @@ mod tests {
             .next_phase(
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
-                None,
                 &crate::config::HooksConfig::default(),
             )
             .unwrap();
@@ -1087,7 +1073,6 @@ mod tests {
             .next_phase(
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
-                None,
                 &crate::config::HooksConfig::default(),
             )
             .unwrap();
@@ -1098,7 +1083,6 @@ mod tests {
             .next_phase(
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
-                None,
                 &crate::config::HooksConfig::default(),
             )
             .unwrap();
@@ -1212,7 +1196,6 @@ mod tests {
             .next_phase(
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
-                None,
                 &crate::config::HooksConfig::default(),
             )
             .unwrap();
@@ -1225,7 +1208,6 @@ mod tests {
             .next_phase(
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
-                None,
                 &crate::config::HooksConfig::default(),
             )
             .unwrap();
@@ -1246,7 +1228,6 @@ mod tests {
             .next_phase(
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
-                None,
                 &crate::config::HooksConfig::default(),
             )
             .unwrap();
@@ -1259,7 +1240,6 @@ mod tests {
             .next_phase(
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
-                None,
                 &crate::config::HooksConfig::default(),
             )
             .unwrap();
@@ -1281,7 +1261,6 @@ mod tests {
             .next_phase(
                 &SoundConfig::default(),
                 &NotificationConfig::default(),
-                None,
                 &crate::config::HooksConfig::default(),
             )
             .unwrap();
