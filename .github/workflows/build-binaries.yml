@@ -28,23 +28,11 @@ jobs:
             build_packages: true
             use_cross: false
 
-          # Linux x86_64 (musl - static)
-          - target: x86_64-unknown-linux-musl
-            os: ubuntu-latest
-            build_packages: false
-            use_cross: true
-
           # Linux ARM64 (glibc)
           - target: aarch64-unknown-linux-gnu
-            os: ubuntu-latest
+            os: ubuntu-24.04-arm
             build_packages: false
-            use_cross: true
-
-          # Linux ARM64 (musl - static)
-          - target: aarch64-unknown-linux-musl
-            os: ubuntu-latest
-            build_packages: false
-            use_cross: true
+            use_cross: false
 
     steps:
       - uses: actions/checkout@v6
@@ -81,10 +69,11 @@ jobs:
 
       - name: Build release binary
         run: |
+          FLAGS="${{ matrix.cargo_flags || '' }}"
           if [ "${{ matrix.use_cross }}" = "true" ]; then
-            cross build --release --target ${{ matrix.target }}
+            cross build --release --target ${{ matrix.target }} $FLAGS
           else
-            cargo build --release --target ${{ matrix.target }}
+            cargo build --release --target ${{ matrix.target }} $FLAGS
           fi
 
       - name: Strip binary
@@ -96,7 +85,17 @@ jobs:
           tar czf tomat-${{ matrix.target }}.tar.gz tomat
           mv tomat-${{ matrix.target }}.tar.gz ../../../
 
+      - name: Upload artifact (for testing)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tomat-${{ matrix.target }}
+          path: tomat-${{ matrix.target }}.tar.gz
+
       - name: Upload binary to release
+        if:
+          github.event_name == 'release' || (github.event_name ==
+          'workflow_dispatch' && inputs.upload == 'true')
         run:
           gh release upload ${{ github.event.release.tag_name }} tomat-${{
           matrix.target }}.tar.gz
