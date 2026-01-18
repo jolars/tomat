@@ -26,23 +26,15 @@ jobs:
             os: ubuntu-latest
             build_packages: true
 
-          # Linux x86_64 (musl - static)
-          - target: x86_64-unknown-linux-musl
-            os: ubuntu-latest
-            build_packages: false
-
           # Linux ARM64 (glibc)
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
             build_packages: false
 
-          # Linux ARM64 (musl - static)
-          - target: aarch64-unknown-linux-musl
-            os: ubuntu-latest
-            build_packages: false
-
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.release.tag_name || github.ref }}
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
