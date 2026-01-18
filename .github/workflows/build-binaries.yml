@@ -13,6 +13,10 @@ on:
         options:
           - "true"
           - "false"
+      tag:
+        description: "Release tag to upload to (only if upload is true)"
+        required: false
+        type: string
 
 jobs:
   build-binaries:
@@ -83,9 +87,9 @@ jobs:
         if:
           github.event_name == 'release' || (github.event_name ==
           'workflow_dispatch' && inputs.upload == 'true')
-        run:
-          gh release upload ${{ github.event.release.tag_name }} tomat-${{
-          matrix.target }}.tar.gz
+        run: |
+          TAG="${{ github.event.release.tag_name || inputs.tag }}"
+          gh release upload "$TAG" tomat-${{ matrix.target }}.tar.gz
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -137,8 +141,9 @@ jobs:
           matrix.build_packages == true && (github.event_name == 'release' ||
           (github.event_name == 'workflow_dispatch' && inputs.upload == 'true'))
         run: |
+          TAG="${{ github.event.release.tag_name || inputs.tag }}"
           DEB_FILE=$(ls target/${{ matrix.target }}/debian/*.deb)
-          gh release upload ${{ github.event.release.tag_name }} "$DEB_FILE"
+          gh release upload "$TAG" "$DEB_FILE"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -147,7 +152,8 @@ jobs:
           matrix.build_packages == true && (github.event_name == 'release' ||
           (github.event_name == 'workflow_dispatch' && inputs.upload == 'true'))
         run: |
+          TAG="${{ github.event.release.tag_name || inputs.tag }}"
           RPM_FILE=$(ls target/${{ matrix.target }}/generate-rpm/*.rpm)
-          gh release upload ${{ github.event.release.tag_name }} "$RPM_FILE"
+          gh release upload "$TAG" "$RPM_FILE"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
