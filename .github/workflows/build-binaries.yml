@@ -26,13 +26,11 @@ jobs:
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
             build_packages: true
-            use_cross: false
 
           # Linux ARM64 (glibc)
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-24.04-arm
-            build_packages: false
-            use_cross: false
+            build_packages: true
 
     steps:
       - uses: actions/checkout@v6
@@ -45,14 +43,9 @@ jobs:
           targets: ${{ matrix.target }}
 
       - name: Install system dependencies
-        if: matrix.use_cross == false
         run: |
           sudo apt-get update
-          sudo apt-get install -y libasound2-dev musl-tools
-
-      - name: Install cross
-        if: matrix.use_cross == true
-        run: cargo install cross --git https://github.com/cross-rs/cross
+          sudo apt-get install -y libasound2-dev
 
       - name: Cache cargo dependencies
         uses: actions/cache@v5
@@ -68,13 +61,7 @@ jobs:
             ${{ runner.os }}-${{ matrix.target }}-cargo-
 
       - name: Build release binary
-        run: |
-          FLAGS="${{ matrix.cargo_flags || '' }}"
-          if [ "${{ matrix.use_cross }}" = "true" ]; then
-            cross build --release --target ${{ matrix.target }} $FLAGS
-          else
-            cargo build --release --target ${{ matrix.target }} $FLAGS
-          fi
+        run: cargo build --release --target ${{ matrix.target }}
 
       - name: Strip binary
         run: strip target/${{ matrix.target }}/release/tomat
