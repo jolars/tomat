@@ -36,40 +36,75 @@ pub fn play_embedded_sound(
         return Ok(());
     }
 
-    let _stream = OutputStreamBuilder::open_default_stream()?;
-    let sink = Sink::connect_new(_stream.mixer());
+    // Use tokio::spawn_blocking for audio playback to avoid blocking the async runtime
+    // and prevent holding the audio device open
+    let sound_data = sound_data.to_vec();
+    if tokio::runtime::Handle::try_current().is_ok() {
+        tokio::task::spawn_blocking(move || {
+            if let Ok(_stream) = OutputStreamBuilder::open_default_stream() {
+                let sink = Sink::connect_new(_stream.mixer());
 
-    let cursor = Cursor::new(sound_data);
-    match Decoder::new(cursor) {
-        Ok(source) => {
-            let source = source.amplify(volume);
-            sink.append(source);
-        }
-        Err(_) => {
-            // If decoding fails, fall back to system beep
-            play_system_beep();
-            return Ok(());
-        }
+                let cursor = Cursor::new(sound_data);
+                if let Ok(source) = Decoder::new(cursor) {
+                    let source = source.amplify(volume);
+                    sink.append(source);
+                    // Wait for playback to complete before dropping the stream
+                    sink.sleep_until_end();
+                }
+                // Stream is dropped here, releasing the audio device
+            }
+        });
+    } else {
+        // Fallback to std::thread if not in tokio runtime (e.g., tests without runtime)
+        std::thread::spawn(move || {
+            if let Ok(_stream) = OutputStreamBuilder::open_default_stream() {
+                let sink = Sink::connect_new(_stream.mixer());
+
+                let cursor = Cursor::new(sound_data);
+                if let Ok(source) = Decoder::new(cursor) {
+                    let source = source.amplify(volume);
+                    sink.append(source);
+                    sink.sleep_until_end();
+                }
+            }
+        });
     }
-
-    // Wait for playback to complete before dropping the stream
-    sink.sleep_until_end();
 
     Ok(())
 }
 
 #[cfg(feature = "audio")]
 pub fn play_system_beep() {
-    if let Ok(_stream) = OutputStreamBuilder::open_default_stream() {
-        let sink = Sink::connect_new(_stream.mixer());
+    // Use tokio::spawn_blocking for beep playback
+    if tokio::runtime::Handle::try_current().is_ok() {
+        tokio::task::spawn_blocking(|| {
+            if let Ok(_stream) = OutputStreamBuilder::open_default_stream() {
+                let sink = Sink::connect_new(_stream.mixer());
 
-        // Generate a simple beep tone
-        let source = rodio::source::SineWave::new(800.0)
-            .take_duration(std::time::Duration::from_millis(300))
-            .amplify(0.3);
+                // Generate a simple beep tone
+                let source = rodio::source::SineWave::new(800.0)
+                    .take_duration(std::time::Duration::from_millis(300))
+                    .amplify(0.3);
 
-        sink.append(source);
-        sink.sleep_until_end();
+                sink.append(source);
+                sink.sleep_until_end();
+                // Stream is dropped here, releasing the audio device
+            }
+        });
+    } else {
+        // Fallback to std::thread if not in tokio runtime
+        std::thread::spawn(|| {
+            if let Ok(_stream) = OutputStreamBuilder::open_default_stream() {
+                let sink = Sink::connect_new(_stream.mixer());
+
+                let source = rodio::source::SineWave::new(800.0)
+                    .take_duration(std::time::Duration::from_millis(300))
+                    .amplify(0.3);
+
+                sink.append(source);
+                sink.sleep_until_end();
+            }
+        });
     }
 }
 
@@ -78,16 +113,43 @@ pub fn play_custom_file<P: AsRef<std::path::Path>>(
     path: P,
     volume: f32,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let _stream = OutputStreamBuilder::open_default_stream()?;
-    let sink = Sink::connect_new(_stream.mixer());
-
+    // Load file data before spawning task
     let file = std::fs::File::open(path)?;
-    let source = Decoder::new(std::io::BufReader::new(file))?.amplify(volume);
+    let mut reader = std::io::BufReader::new(file);
+    let mut buffer = Vec::new();
+    std::io::Read::read_to_end(&mut reader, &mut buffer)?;
 
-    sink.append(source);
+    // Use tokio::spawn_blocking for audio playback
+    if tokio::runtime::Handle::try_current().is_ok() {
+        tokio::task::spawn_blocking(move || {
+            if let Ok(_stream) = OutputStreamBuilder::open_default_stream() {
+                let sink = Sink::connect_new(_stream.mixer());
 
-    // Wait for playback to complete before dropping the stream
-    sink.sleep_until_end();
+                let cursor = Cursor::new(buffer);
+                if let Ok(source) = Decoder::new(cursor) {
+                    let source = source.amplify(volume);
+                    sink.append(source);
+                    // Wait for playback to complete before dropping the stream
+                    sink.sleep_until_end();
+                }
+                // Stream is dropped here, releasing the audio device
+            }
+        });
+    } else {
+        // Fallback to std::thread if not in tokio runtime
+        std::thread::spawn(move || {
+            if let Ok(_stream) = OutputStreamBuilder::open_default_stream() {
+                let sink = Sink::connect_new(_stream.mixer());
+
+                let cursor = Cursor::new(buffer);
+                if let Ok(source) = Decoder::new(cursor) {
+                    let source = source.amplify(volume);
+                    sink.append(source);
+                    sink.sleep_until_end();
+                }
+            }
+        });
+    }
 
     Ok(())
 }
