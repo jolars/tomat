@@ -19,17 +19,32 @@ jobs:
     name: Build ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         include:
           # Linux x86_64 (glibc)
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
             build_packages: true
+            use_cross: false
+
+          # Linux x86_64 (musl - static)
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            build_packages: false
+            use_cross: true
 
           # Linux ARM64 (glibc)
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
             build_packages: false
+            use_cross: true
+
+          # Linux ARM64 (musl - static)
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+            build_packages: false
+            use_cross: true
 
     steps:
       - uses: actions/checkout@v6
@@ -42,12 +57,14 @@ jobs:
           targets: ${{ matrix.target }}
 
       - name: Install system dependencies
+        if: matrix.use_cross == false
         run: |
           sudo apt-get update
           sudo apt-get install -y libasound2-dev musl-tools
-          if [[ "${{ matrix.target }}" == *"aarch64"* ]]; then
-            sudo apt-get install -y gcc-aarch64-linux-gnu
-          fi
+
+      - name: Install cross
+        if: matrix.use_cross == true
+        run: cargo install cross --git https://github.com/cross-rs/cross
 
       - name: Cache cargo dependencies
         uses: actions/cache@v5
@@ -63,9 +80,12 @@ jobs:
             ${{ runner.os }}-${{ matrix.target }}-cargo-
 
       - name: Build release binary
-        run: cargo build --release --target ${{ matrix.target }}
-        env:
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: |
+          if [ "${{ matrix.use_cross }}" = "true" ]; then
+            cross build --release --target ${{ matrix.target }}
+          else
+            cargo build --release --target ${{ matrix.target }}
+          fi
 
       - name: Strip binary
         run: strip target/${{ matrix.target }}/release/tomat
