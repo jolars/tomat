@@ -1,0 +1,155 @@
+name: Build Release Binaries
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      upload:
+        description: "Upload to release (requires a release to exist)"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+jobs:
+  build-binaries:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          # Linux x86_64 (glibc)
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            build_packages: true
+
+          # Linux x86_64 (musl - static)
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            build_packages: false
+
+          # Linux ARM64 (glibc)
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            build_packages: false
+
+          # Linux ARM64 (musl - static)
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+            build_packages: false
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev musl-tools
+          if [[ "${{ matrix.target }}" == *"aarch64"* ]]; then
+            sudo apt-get install -y gcc-aarch64-linux-gnu
+          fi
+
+      - name: Cache cargo dependencies
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key:
+            ${{ runner.os }}-${{ matrix.target }}-cargo-${{
+            hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.target }}-cargo-
+
+      - name: Build release binary
+        run: cargo build --release --target ${{ matrix.target }}
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+
+      - name: Strip binary
+        run: strip target/${{ matrix.target }}/release/tomat
+
+      - name: Create archive
+        run: |
+          cd target/${{ matrix.target }}/release
+          tar czf tomat-${{ matrix.target }}.tar.gz tomat
+          mv tomat-${{ matrix.target }}.tar.gz ../../../
+
+      - name: Upload binary to release
+        run:
+          gh release upload ${{ github.event.release.tag_name }} tomat-${{
+          matrix.target }}.tar.gz
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install cargo-deb and cargo-generate-rpm
+        if: matrix.build_packages == true
+        run: |
+          cargo install cargo-deb
+          cargo install cargo-generate-rpm
+
+      - name: Build DEB package
+        if: matrix.build_packages == true
+        run: cargo deb --target ${{ matrix.target }} --no-build
+
+      - name: Build RPM package
+        if: matrix.build_packages == true
+        run: cargo generate-rpm --target ${{ matrix.target }}
+
+      - name: Upload DEB artifact (for testing)
+        if:
+          matrix.build_packages == true && github.event_name ==
+          'workflow_dispatch'
+        run: |
+          DEB_FILE=$(ls target/${{ matrix.target }}/debian/*.deb)
+          cp "$DEB_FILE" .
+        continue-on-error: true
+
+      - name: Upload RPM artifact (for testing)
+        if:
+          matrix.build_packages == true && github.event_name ==
+          'workflow_dispatch'
+        run: |
+          RPM_FILE=$(ls target/${{ matrix.target }}/generate-rpm/*.rpm)
+          cp "$RPM_FILE" .
+        continue-on-error: true
+
+      - name: Upload package artifacts
+        if:
+          matrix.build_packages == true && github.event_name ==
+          'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tomat-packages-${{ matrix.target }}
+          path: |
+            *.deb
+            *.rpm
+
+      - name: Upload DEB package
+        if:
+          matrix.build_packages == true && (github.event_name == 'release' ||
+          (github.event_name == 'workflow_dispatch' && inputs.upload == 'true'))
+        run: |
+          DEB_FILE=$(ls target/${{ matrix.target }}/debian/*.deb)
+          gh release upload ${{ github.event.release.tag_name }} "$DEB_FILE"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload RPM package
+        if:
+          matrix.build_packages == true && (github.event_name == 'release' ||
+          (github.event_name == 'workflow_dispatch' && inputs.upload == 'true'))
+        run: |
+          RPM_FILE=$(ls target/${{ matrix.target }}/generate-rpm/*.rpm)
+          gh release upload ${{ github.event.release.tag_name }} "$RPM_FILE"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
