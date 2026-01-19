@@ -60,7 +60,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: jontze/action-mdbook@v3
+      - uses: jontze/action-mdbook@v4
         with:
           token: ${{secrets.GITHUB_TOKEN}}
           use-linkcheck: true
