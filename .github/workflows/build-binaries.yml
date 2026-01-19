@@ -74,9 +74,14 @@ jobs:
 
       - name: Create archive
         run: |
-          cd target/${{ matrix.target }}/release
-          tar czf tomat-${{ matrix.target }}.tar.gz tomat
-          mv tomat-${{ matrix.target }}.tar.gz ../../../
+          mkdir -p dist
+          cp target/${{ matrix.target }}/release/tomat dist/
+          cp -r target/man dist/
+          cp -r target/completions dist/
+          cp assets/tomat.service dist/
+          cp LICENSE dist/
+          tar czf tomat-${{ matrix.target }}.tar.gz -C dist .
+          rm -rf dist
 
       - name: Upload artifact (for testing)
         if: github.event_name == 'workflow_dispatch'
