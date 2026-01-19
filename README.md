@@ -117,7 +117,7 @@ file from the examples directory:
 ```bash
 # Manual systemd setup (if you prefer)
 mkdir -p ~/.config/systemd/user
-curl -o ~/.config/systemd/user/tomat.service https://raw.githubusercontent.com/jolars/tomat/main/examples/systemd.service
+curl -o ~/.config/systemd/user/tomat.service https://raw.githubusercontent.com/jolars/tomat/main/assets/tomat.service
 systemctl --user daemon-reload
 systemctl --user enable tomat.service
 systemctl --user start tomat.service

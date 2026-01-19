@@ -12,7 +12,7 @@ Install the service file and enable auto-start:
 
 ```bash
 # Copy service file
-curl -o ~/.config/systemd/user/tomat.service https://raw.githubusercontent.com/jolars/tomat/main/examples/systemd.service
+curl -o ~/.config/systemd/user/tomat.service https://raw.githubusercontent.com/jolars/tomat/main/assets/tomat.service
 
 # Enable auto-start
 systemctl --user enable tomat.service
