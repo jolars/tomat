@@ -17,12 +17,16 @@ seamless integration with waybar and other status bars.
 
 ## Quick Start
 
-Unless Tomat is available in your package manager (currently only on NixOS), the
-easiest way to get started is via Cargo. Unless you have Rust and Cargo
-installed, follow the instructions at <https://www.rust-lang.org/tools/install>.
+The easiest way to get started is to download a pre-built binary from the
+[latest release](https://github.com/jolars/tomat/releases/latest), or use your
+package manager if available.
 
 ```bash
-# Install from crates.io
+# Download and install binary (Linux x86_64)
+curl -L https://github.com/jolars/tomat/releases/latest/download/tomat-x86_64-unknown-linux-gnu.tar.gz | tar xz
+sudo mv tomat /usr/local/bin/
+
+# Or install from crates.io
 cargo install tomat
 
 # Start daemon and begin working
@@ -39,31 +43,40 @@ The full documentation is available at <https://jolars.github.io/tomat/>.
 
 ## Installation
 
-### Prerequisites
+### Pre-built Binaries
 
-On Linux systems, audio notifications require ALSA development libraries:
+Download pre-built binaries from the [releases page](https://github.com/jolars/tomat/releases/latest):
 
-```bash
-# Ubuntu/Debian
-sudo apt-get install libasound2-dev
-
-# Fedora/RHEL
-sudo dnf install alsa-lib-devel
-
-# Arch Linux
-sudo pacman -S alsa-lib
-```
-
-**Note**: Audio will be automatically disabled if ALSA is not available. The
-timer will still work normally with desktop notifications only.
-
-### Install from Crates.io
+- **Generic Linux** (x86_64, aarch64): `.tar.gz` archives
+- **Debian/Ubuntu**: `.deb` packages
+- **Fedora/RHEL**: `.rpm` packages
 
 ```bash
-cargo install tomat
+# Example: Install generic binary for x86_64
+curl -L https://github.com/jolars/tomat/releases/latest/download/tomat-x86_64-unknown-linux-gnu.tar.gz | tar xz
+sudo mv tomat /usr/local/bin/
+
+# Or install DEB package
+curl -LO https://github.com/jolars/tomat/releases/latest/download/tomat_amd64.deb
+sudo dpkg -i tomat_amd64.deb
+
+# Or install RPM package
+curl -LO https://github.com/jolars/tomat/releases/latest/download/tomat-x86_64.rpm
+sudo rpm -i tomat-x86_64.rpm
 ```
 
-### NixOS
+### Package Managers
+
+#### Arch Linux (AUR)
+
+```bash
+# Using your favorite AUR helper
+paru -S tomat-bin
+# or
+yay -S tomat-bin
+```
+
+#### NixOS
 
 If you are using NixOS, tomat is available in the official packages:
 
@@ -92,6 +105,30 @@ you're using home manager, you're in luck! Tomat is supported as a module:
   };
 }
 ```
+
+### Install from Crates.io
+
+```bash
+cargo install tomat
+```
+
+### Prerequisites for Building
+
+On Linux systems, audio notifications require ALSA development libraries:
+
+```bash
+# Ubuntu/Debian
+sudo apt-get install libasound2-dev
+
+# Fedora/RHEL
+sudo dnf install alsa-lib-devel
+
+# Arch Linux
+sudo pacman -S alsa-lib
+```
+
+**Note**: Audio will be automatically disabled if ALSA is not available. The
+timer will still work normally with desktop notifications only.
 
 ## Systemd Service Setup
 

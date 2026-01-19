@@ -33,19 +33,24 @@ graph TD
 
 ## Installation
 
-Unless Tomat is available in your package manager (currently only on NixOS), the
-easiest way to get started is via Cargo. Unless you have Rust and Cargo
-installed, follow the instructions at <https://www.rust-lang.org/tools/install>
-first to set up your Rust environment.
-
-After that, you can install Tomat from crates.io:
+The easiest way to install Tomat is to download a pre-built binary from the
+[releases page](https://github.com/jolars/tomat/releases/latest), or use your
+package manager if available:
 
 ```bash
+# Download pre-built binary (x86_64)
+curl -L https://github.com/jolars/tomat/releases/latest/download/tomat-x86_64-unknown-linux-gnu.tar.gz | tar xz
+sudo mv tomat /usr/local/bin/
+
+# Or install via Cargo
 cargo install tomat
+
+# Or on Arch Linux (AUR)
+paru -S tomat-bin
 ```
 
-See [installation](installation.md) for alternative installation methods, for
-instance via building from source.
+See the [installation guide](installation.md) for more options including DEB/RPM
+packages, NixOS, and building from source.
 
 ## Basic Usage
 

@@ -3,19 +3,60 @@
 This section provides instructions on how to install Tomat, a customizable
 Pomodoro timer.
 
-## Install from Crates.io
+## Pre-built Binaries
 
-The simplest way to install Tomat is via Cargo. If you don't have Rust and Cargo
-installed, follow the instructions at <https://www.rust-lang.org/tools/install>
-first to set up your Rust environment.
+The easiest way to install Tomat is to download a pre-built binary from the
+[releases page](https://github.com/jolars/tomat/releases/latest). Binaries are
+available for multiple architectures and distributions:
 
-Then, you can install Tomat from crates.io:
+- **Generic Linux** (x86_64, aarch64): `.tar.gz` archives
+- **Debian/Ubuntu**: `.deb` packages
+- **Fedora/RHEL/openSUSE**: `.rpm` packages
+
+### Generic Binary
 
 ```bash
-cargo install tomat
+# Download and install (x86_64)
+curl -L https://github.com/jolars/tomat/releases/latest/download/tomat-x86_64-unknown-linux-gnu.tar.gz | tar xz
+sudo mv tomat /usr/local/bin/
+
+# Or for ARM64
+curl -L https://github.com/jolars/tomat/releases/latest/download/tomat-aarch64-unknown-linux-gnu.tar.gz | tar xz
+sudo mv tomat /usr/local/bin/
 ```
 
-## NixOS
+### Debian/Ubuntu Package
+
+```bash
+curl -LO https://github.com/jolars/tomat/releases/latest/download/tomat_amd64.deb
+sudo dpkg -i tomat_amd64.deb
+```
+
+The DEB package includes the systemd service and shell completions.
+
+### RPM Package (Fedora/RHEL/openSUSE)
+
+```bash
+curl -LO https://github.com/jolars/tomat/releases/latest/download/tomat-x86_64.rpm
+sudo rpm -i tomat-x86_64.rpm
+```
+
+The RPM package includes the systemd service and shell completions.
+
+## Package Managers
+
+### Arch Linux (AUR)
+
+Tomat is available in the AUR as `tomat-bin`:
+
+```bash
+# Using your favorite AUR helper
+paru -S tomat-bin
+# or
+yay -S tomat-bin
+```
+
+### NixOS
 
 If you are using [NixOS](https://nixos.org), Tomat is available in the official
 packages:
@@ -49,6 +90,16 @@ Tomat is supported as a module:
     };
   };
 }
+```
+
+## Install from Crates.io
+
+You can also install Tomat via Cargo from crates.io. If you don't have Rust and
+Cargo installed, follow the instructions at
+<https://www.rust-lang.org/tools/install> first to set up your Rust environment.
+
+```bash
+cargo install tomat
 ```
 
 ## Building from Source
