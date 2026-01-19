@@ -48,13 +48,3 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-
-      - name: Trigger AUR update
-        if: steps.semantic.outputs.new_release_published == 'true'
-        run: |
-          VERSION="${{ steps.semantic.outputs.new_release_version }}"
-          gh api repos/jolars/tomat-aur/dispatches \
-            -f event_type=new-release \
-            -f client_payload[version]="$VERSION"
-        env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
