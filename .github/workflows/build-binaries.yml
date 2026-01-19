@@ -96,7 +96,7 @@ jobs:
           'workflow_dispatch' && inputs.upload == 'true')
         run: |
           TAG="${{ github.event.release.tag_name || inputs.tag }}"
-          gh release upload "$TAG" tomat-${{ matrix.target }}.tar.gz
+          gh release upload "$TAG" tomat-${{ matrix.target }}.tar.gz --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -150,7 +150,7 @@ jobs:
         run: |
           TAG="${{ github.event.release.tag_name || inputs.tag }}"
           DEB_FILE=$(ls target/${{ matrix.target }}/debian/*.deb)
-          gh release upload "$TAG" "$DEB_FILE"
+          gh release upload "$TAG" "$DEB_FILE" --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -161,6 +161,6 @@ jobs:
         run: |
           TAG="${{ github.event.release.tag_name || inputs.tag }}"
           RPM_FILE=$(ls target/${{ matrix.target }}/generate-rpm/*.rpm)
-          gh release upload "$TAG" "$RPM_FILE"
+          gh release upload "$TAG" "$RPM_FILE" --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
