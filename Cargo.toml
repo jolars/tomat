@@ -66,12 +66,28 @@ assets = [
         "644",
     ],
     [
-        "examples/systemd.service",
-        "usr/lib/systemd/user/tomat.service",
+        "target/man/*.1",
+        "usr/share/man/man1/",
+        "644",
+    ],
+    [
+        "target/completions/tomat.bash",
+        "usr/share/bash-completion/completions/tomat",
+        "644",
+    ],
+    [
+        "target/completions/tomat.fish",
+        "usr/share/fish/vendor_completions.d/tomat.fish",
+        "644",
+    ],
+    [
+        "target/completions/_tomat",
+        "usr/share/zsh/vendor-completions/_tomat",
         "644",
     ],
 ]
 maintainer-scripts = "debian/"
+systemd-units = { unit-name = "tomat", unit-scripts = "examples/", enable = false }
 
 [package.metadata.generate-rpm]
 assets = [
@@ -79,4 +95,25 @@ assets = [
     { source = "README.md", dest = "/usr/share/doc/tomat/README.md", mode = "644", doc = true },
     { source = "LICENSE", dest = "/usr/share/doc/tomat/LICENSE", mode = "644", doc = true },
     { source = "examples/systemd.service", dest = "/usr/lib/systemd/user/tomat.service", mode = "644" },
+    { source = "target/man/*.1", dest = "/usr/share/man/man1/", mode = "644" },
+    { source = "target/completions/tomat.bash", dest = "/usr/share/bash-completion/completions/tomat", mode = "644" },
+    { source = "target/completions/tomat.fish", dest = "/usr/share/fish/vendor_completions.d/tomat.fish", mode = "644" },
+    { source = "target/completions/_tomat", dest = "/usr/share/zsh/vendor-completions/_tomat", mode = "644" },
 ]
+
+[package.metadata.generate-rpm.requires]
+libasound2 = "*"
+
+post_install_script = """
+if [ $1 -eq 1 ]; then
+    # Initial installation
+    systemctl --global daemon-reload >/dev/null 2>&1 || :
+fi
+"""
+
+post_uninstall_script = """
+if [ $1 -eq 0 ]; then
+    # Package removal
+    systemctl --global daemon-reload >/dev/null 2>&1 || :
+fi
+"""
