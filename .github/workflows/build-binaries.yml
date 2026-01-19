@@ -108,11 +108,15 @@ jobs:
 
       - name: Build DEB package
         if: matrix.build_packages == true
-        run: cargo deb --target ${{ matrix.target }} --no-build
+        run: |
+          rm -rf target/${{ matrix.target }}/debian
+          cargo deb --target ${{ matrix.target }} --no-build
 
       - name: Build RPM package
         if: matrix.build_packages == true
-        run: cargo generate-rpm --target ${{ matrix.target }}
+        run: |
+          rm -rf target/${{ matrix.target }}/generate-rpm
+          cargo generate-rpm --target ${{ matrix.target }}
 
       - name: Upload DEB artifact (for testing)
         if:
