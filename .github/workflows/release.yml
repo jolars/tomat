@@ -57,4 +57,4 @@ jobs:
             -f event_type=new-release \
             -f client_payload[version]="$VERSION"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
