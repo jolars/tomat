@@ -100,17 +100,12 @@ assets = [
     { source = "target/completions/tomat.fish", dest = "/usr/share/fish/vendor_completions.d/tomat.fish", mode = "644" },
     { source = "target/completions/_tomat", dest = "/usr/share/zsh/vendor-completions/_tomat", mode = "644" },
 ]
-
-[package.metadata.generate-rpm.requires]
-libasound2 = "*"
-
 post_install_script = """
 if [ $1 -eq 1 ]; then
     # Initial installation
     systemctl --global daemon-reload >/dev/null 2>&1 || :
 fi
 """
-
 post_uninstall_script = """
 if [ $1 -eq 0 ]; then
     # Package removal
