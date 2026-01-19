@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.1](https://github.com/jolars/tomat/compare/v2.8.0...v2.8.1) (2026-01-19)
+
+### Bug Fixes
+
+* man pages, service unit, and completions in releases ([598f024](https://github.com/jolars/tomat/commit/598f0248b3cc4b0240a9ef106edb75e39d7f13ff))
+* open audio stream on demand ([11bfd92](https://github.com/jolars/tomat/commit/11bfd9240e4896d18e3906a27af72fc97cb295e8))
+
 ## [2.8.0](https://github.com/jolars/tomat/compare/v2.7.0...v2.8.0) (2026-01-15)
 
 ### Features
