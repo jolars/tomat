@@ -3,7 +3,7 @@
 ## Repository Overview
 
 **tomat** is a Pomodoro timer with daemon support designed for waybar and other
-status bars. It's a small Rust project (~800 lines across multiple modules) that
+status bars. It's a Rust project (~4,300 lines across multiple modules) that
 implements a server/client architecture using Unix sockets for inter-process
 communication.
 
@@ -15,7 +15,7 @@ communication.
 - **Purpose:** Lightweight Pomodoro timer for waybar integration
 - **Dependencies:** Standard Rust ecosystem (tokio, clap, serde, chrono,
   notify-rust, fs2, rodio)
-- **Testing:** Comprehensive integration tests (27 tests across 6 modules
+- **Testing:** Comprehensive integration tests (37 tests across 7 modules
   covering all functionality)
 
 ## Build & Development Environment
@@ -54,6 +54,7 @@ communication.
    cargo test --test cli integration::daemon     # Daemon management tests
    cargo test --test cli integration::formats    # Output format tests
    cargo test --test cli integration::commands   # Command validation tests
+   cargo test --test cli integration::hooks      # Hook execution tests
 
    # Lint with clippy - MUST pass with zero warnings
    cargo clippy --all-targets --all-features -- -D warnings
@@ -96,7 +97,7 @@ communication.
 2. **Linting:** `cargo clippy --all-targets --all-features -- -D warnings` (MUST
    exit with code 0, no warnings allowed)
 3. **Compilation:** `cargo check` (MUST pass)
-4. **Tests:** `cargo test` (27 integration tests must pass)
+4. **Tests:** `cargo test` (37 integration tests must pass)
 
 **Pre-commit hooks are configured** in `.pre-commit-config.yaml` and will run
 clippy and rustfmt automatically if using the Nix devenv.
@@ -108,10 +109,12 @@ clippy and rustfmt automatically if using the Nix devenv.
 ```
 /
 ├── src/
-│   ├── main.rs               # CLI parsing and command dispatching
+│   ├── main.rs               # Entry point and command dispatching
+│   ├── cli.rs                # CLI argument parsing with clap (command definitions)
 │   ├── config.rs             # Configuration system (timer, sound, notification settings)
 │   ├── server.rs             # Unix socket server, daemon logic, and process management
-│   └── timer.rs              # Timer state management, phase transitions, and notification system
+│   ├── timer.rs              # Timer state management, phase transitions, and notification system
+│   └── audio.rs              # Sound playback system with embedded audio files
 ├── tests/
 │   ├── cli.rs                # Integration test entry point
 │   └── integration/          # Modular integration test modules
@@ -120,7 +123,8 @@ clippy and rustfmt automatically if using the Nix devenv.
 │       ├── daemon.rs        # Daemon lifecycle tests
 │       ├── timer.rs         # Timer behavior and auto-advance tests
 │       ├── commands.rs      # Command validation tests
-│       └── formats.rs       # Output format tests
+│       ├── formats.rs       # Output format tests
+│       └── hooks.rs         # Hook execution tests
 ├── docs/
 │   ├── book.toml             # mdbook configuration
 │   └── src/                  # Documentation source (markdown)
@@ -156,10 +160,12 @@ clippy and rustfmt automatically if using the Nix devenv.
 
 ### Code Architecture
 
-The project is organized into four main modules:
+The project is organized into six main modules:
 
-- **`main.rs`**: CLI parsing with clap, command dispatching to server/client
-  functions, and client-side formatting logic (applies text templates to timer status)
+- **`main.rs`**: Entry point, command dispatching to server/client functions, and
+  client-side formatting logic (applies text templates to timer status)
+- **`cli.rs`**: CLI argument parsing with clap, defines all commands and their
+  arguments using derive macros
 - **`config.rs`**: Configuration system with timer, sound, notification, and display
   settings loaded from TOML
 - **`server.rs`**: Unix socket server implementation, client communication
@@ -168,13 +174,16 @@ The project is organized into four main modules:
 - **`timer.rs`**: Timer state management (`TimerState`), phase transitions, 
   notification system, and client-side formatting. Contains `TimerStatus` struct
   (pure state) and `format_status()` method (presentation logic).
-- **`tests/`**: Modular integration test suite with 27 tests across 6 modules
+- **`audio.rs`**: Sound playback system with embedded audio files (compiled with
+  `audio` feature flag), handles phase transition sounds via rodio
+- **`tests/`**: Modular integration test suite with 37 tests across 7 modules
   - **`cli.rs`**: Integration test entry point
   - **`integration/common.rs`**: Shared TestDaemon helper and utilities
   - **`integration/timer.rs`**: Timer behavior and auto-advance tests
   - **`integration/daemon.rs`**: Daemon lifecycle tests
   - **`integration/formats.rs`**: Output format tests
   - **`integration/commands.rs`**: Command validation tests
+  - **`integration/hooks.rs`**: Hook execution tests
 
 **Communication flow:**
 
@@ -209,7 +218,7 @@ The project is organized into four main modules:
 The project uses a **single source of truth** approach with automatic generation:
 
 **Source:**
-1. **`src/cli.rs`** - Clap command definitions
+1. **`src/cli.rs`** - Clap command definitions (separated from main.rs)
    - Auto-generates → Section 1 man pages via `clap_mangen` (17 command pages)
    - Auto-generates → `docs/src/cli-reference.md` via `clap-markdown`
 
@@ -476,15 +485,16 @@ text_format = "{icon} {time} {state}"  # Text display template (default)
 
 ### Testing Infrastructure
 
-- **Integration tests:** 27 comprehensive tests across 6 modules covering all
+- **Integration tests:** 37 comprehensive tests across 7 modules covering all
   functionality
 - **Modular architecture:** Tests organized by functionality (timer, daemon,
-  formats, commands)
+  formats, commands, hooks)
 - **TestDaemon helper:** Shared utility for daemon lifecycle management in
   isolated environments
 - **Configuration tests:** Validate TOML parsing and defaults for all config
   sections
 - **Icon system tests:** Test embedded icon caching and different icon modes
+- **Hook tests:** Validate pre/post phase transition hook execution
 - **Isolated environments:** Each test uses temporary directories and custom
   socket paths
 - **Timing handling:** Tests use fractional minutes (0.05 = 3 seconds) for fast
