@@ -533,17 +533,63 @@ impl Config {
 
     /// Load config from file, falling back to defaults if not found
     pub fn load() -> Self {
-        Self::config_path()
+        Self::load_with_logging(false)
+    }
+
+    /// Load config with optional logging (for daemon mode)
+    pub fn load_with_logging(log: bool) -> Self {
+        let config_path = Self::config_path();
+
+        config_path
+            .as_ref()
             .and_then(|path| {
                 if path.exists() {
-                    fs::read_to_string(&path)
-                        .ok()
-                        .and_then(|contents| toml::from_str(&contents).ok())
+                    match fs::read_to_string(path) {
+                        Ok(contents) => match toml::from_str::<Config>(&contents) {
+                            Ok(config) => {
+                                if log {
+                                    println!("Loaded config from: {:?}", path);
+                                    println!(
+                                        "  Timer settings: work={}min, break={}min, long_break={}min, sessions={}",
+                                        config.timer.work,
+                                        config.timer.break_time,
+                                        config.timer.long_break,
+                                        config.timer.sessions
+                                    );
+                                }
+                                Some(config)
+                            }
+                            Err(e) => {
+                                if log {
+                                    eprintln!("Failed to parse config file {:?}: {}", path, e);
+                                    eprintln!("Using default configuration");
+                                }
+                                None
+                            }
+                        },
+                        Err(e) => {
+                            if log {
+                                eprintln!("Failed to read config file {:?}: {}", path, e);
+                                eprintln!("Using default configuration");
+                            }
+                            None
+                        }
+                    }
                 } else {
+                    if log {
+                        println!("Config file not found at: {:?}", path);
+                        println!("Using default configuration");
+                    }
                     None
                 }
             })
-            .unwrap_or_default()
+            .unwrap_or_else(|| {
+                if log && config_path.is_none() {
+                    println!("Could not determine config directory");
+                    println!("Using default configuration");
+                }
+                Config::default()
+            })
     }
 }
 
@@ -624,9 +670,27 @@ mod tests {
 
     #[test]
     fn test_config_load_returns_default_when_no_file() {
-        // This should not panic and should return defaults
+        // Create a temporary directory that doesn't have a config file
+        let temp_dir = tempfile::tempdir().unwrap();
+        let non_existent = temp_dir.path().join("nonexistent.toml");
+
+        // Use TOMAT_CONFIG to point to non-existent file
+        // SAFETY: This is safe in a single-threaded test context
+        unsafe {
+            std::env::set_var("TOMAT_CONFIG", non_existent.to_str().unwrap());
+        }
+
         let config = Config::load();
         assert_eq!(config.timer.work, 25.0);
+        assert_eq!(config.timer.break_time, 5.0);
+        assert_eq!(config.timer.long_break, 15.0);
+        assert_eq!(config.timer.sessions, 4);
+
+        // Clean up
+        // SAFETY: This is safe in a single-threaded test context
+        unsafe {
+            std::env::remove_var("TOMAT_CONFIG");
+        }
     }
 
     #[test]

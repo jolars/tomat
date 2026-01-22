@@ -59,9 +59,17 @@ fn load_state() -> Option<TimerState> {
     }
 
     match std::fs::read_to_string(&state_path) {
-        Ok(contents) => match serde_json::from_str(&contents) {
+        Ok(contents) => match serde_json::from_str::<TimerState>(&contents) {
             Ok(state) => {
                 println!("Restored timer state from {:?}", state_path);
+                println!(
+                    "  State: phase={:?}, paused={}, work={}min, break={}min, long_break={}min",
+                    state.phase,
+                    state.is_paused,
+                    state.work_duration,
+                    state.break_duration,
+                    state.long_break_duration
+                );
                 Some(state)
             }
             Err(e) => {
@@ -466,13 +474,13 @@ pub async fn run_daemon() -> Result<(), Box<dyn std::error::Error>> {
 
     // Try to load existing state, fallback to default if not found
     let mut state = load_state().unwrap_or_else(|| {
-        println!("No existing state found, starting with defaults");
+        println!("No existing state found, starting with default state");
+        println!("  Using: work=25min, break=5min, long_break=15min, sessions=4");
         TimerState::new(25.0, 5.0, 15.0, 4)
     });
 
     // Load configuration
-    let config = crate::config::Config::load();
-    println!("Configuration loaded");
+    let config = crate::config::Config::load_with_logging(true);
 
     println!("Tomat daemon listening on {:?}", socket_path);
 
