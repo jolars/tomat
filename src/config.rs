@@ -624,9 +624,27 @@ mod tests {
 
     #[test]
     fn test_config_load_returns_default_when_no_file() {
-        // This should not panic and should return defaults
+        // Create a temporary directory that doesn't have a config file
+        let temp_dir = tempfile::tempdir().unwrap();
+        let non_existent = temp_dir.path().join("nonexistent.toml");
+
+        // Use TOMAT_CONFIG to point to non-existent file
+        // SAFETY: This is safe in a single-threaded test context
+        unsafe {
+            std::env::set_var("TOMAT_CONFIG", non_existent.to_str().unwrap());
+        }
+
         let config = Config::load();
         assert_eq!(config.timer.work, 25.0);
+        assert_eq!(config.timer.break_time, 5.0);
+        assert_eq!(config.timer.long_break, 15.0);
+        assert_eq!(config.timer.sessions, 4);
+
+        // Clean up
+        // SAFETY: This is safe in a single-threaded test context
+        unsafe {
+            std::env::remove_var("TOMAT_CONFIG");
+        }
     }
 
     #[test]

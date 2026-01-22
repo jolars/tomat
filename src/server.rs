@@ -123,6 +123,22 @@ fn validate_timer_params(
     Ok(())
 }
 
+fn sync_idle_timer_defaults(state: &mut TimerState, config: &crate::config::Config) {
+    if state.is_paused
+        && state.start_time == 0
+        && matches!(state.phase, crate::timer::Phase::Work)
+        && state.paused_elapsed_seconds.is_none()
+        && state.current_session_count == 0
+    {
+        state.work_duration = config.timer.work;
+        state.break_duration = config.timer.break_time;
+        state.long_break_duration = config.timer.long_break;
+        state.sessions_until_long_break = config.timer.sessions;
+        state.auto_advance = config.timer.auto_advance.clone();
+        state.duration_minutes = state.work_duration;
+    }
+}
+
 pub async fn send_command(
     command: &str,
     args: serde_json::Value,
@@ -289,6 +305,10 @@ async fn handle_client(
 
             match format_str.parse::<crate::timer::Format>() {
                 Ok(_format) => {
+                    // Keep idle (not-started) timer defaults in sync with config.
+                    // This makes `status` reflect config changes without requiring `tomat start`.
+                    sync_idle_timer_defaults(state, config);
+
                     // Return raw timer status for client-side formatting
                     let timer_status = state.get_timer_status();
                     let data = serde_json::to_value(timer_status)?;
@@ -325,6 +345,8 @@ async fn handle_client(
         }
         "toggle" => {
             if state.is_paused {
+                sync_idle_timer_defaults(state, config);
+
                 // Resume if paused
                 let pending_hook = state.resume();
 
@@ -392,6 +414,7 @@ async fn handle_client(
                     message: "Timer is already running".to_string(),
                 }
             } else {
+                sync_idle_timer_defaults(state, config);
                 let pending_hook = state.resume();
 
                 // Execute resume hook
@@ -464,15 +487,22 @@ pub async fn run_daemon() -> Result<(), Box<dyn std::error::Error>> {
 
     let listener = UnixListener::bind(&socket_path)?;
 
-    // Try to load existing state, fallback to default if not found
-    let mut state = load_state().unwrap_or_else(|| {
-        println!("No existing state found, starting with defaults");
-        TimerState::new(25.0, 5.0, 15.0, 4)
-    });
-
     // Load configuration
     let config = crate::config::Config::load();
     println!("Configuration loaded");
+
+    // Try to load existing state, fallback to config defaults if not found
+    let mut state = load_state().unwrap_or_else(|| {
+        println!("No existing state found, starting with config defaults");
+        TimerState::new(
+            config.timer.work,
+            config.timer.break_time,
+            config.timer.long_break,
+            config.timer.sessions,
+        )
+    });
+
+    sync_idle_timer_defaults(&mut state, &config);
 
     println!("Tomat daemon listening on {:?}", socket_path);
 
