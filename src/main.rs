@@ -57,6 +57,7 @@ async fn fetch_and_format_status(
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
+    let config = Config::load();
 
     match cli.command {
         Commands::Daemon { action } => match action {
@@ -81,36 +82,46 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
 
         Commands::Start { timer } => {
-            // Only send values that were explicitly provided
-            // Daemon will use config defaults for missing values
-            let mut args = serde_json::json!({});
+            let work = timer.get_work(config.timer.work);
+            let break_time = timer.get_break_time(config.timer.break_time);
+            let long_break = timer.get_long_break(config.timer.long_break);
+            let sessions = timer.get_sessions(config.timer.sessions);
 
-            if let Some(work) = timer.work {
-                args["work"] = serde_json::json!(work);
-            }
-            if let Some(break_time) = timer.break_time {
-                args["break"] = serde_json::json!(break_time);
-            }
-            if let Some(long_break) = timer.long_break {
-                args["long_break"] = serde_json::json!(long_break);
-            }
-            if let Some(sessions) = timer.sessions {
-                args["sessions"] = serde_json::json!(sessions);
-            }
-            if let Some(auto_advance) = &timer.auto_advance {
-                args["auto_advance"] = serde_json::json!(auto_advance);
-            }
-            if let Some(sound_mode) = &timer.sound_mode {
-                args["sound_mode"] = serde_json::json!(sound_mode);
-            }
-            if let Some(volume) = timer.volume {
-                args["volume"] = serde_json::json!(volume);
-            }
+            // Get auto_advance mode as string
+            let default_mode_str = match config.timer.auto_advance {
+                config::AutoAdvanceMode::None => "none",
+                config::AutoAdvanceMode::All => "all",
+                config::AutoAdvanceMode::ToBreak => "to-break",
+                config::AutoAdvanceMode::ToWork => "to-work",
+            };
+            let auto_advance_str = timer.get_auto_advance_str(default_mode_str);
+
+            // Get sound mode as string
+            let default_sound_mode = match config.sound.effective_mode() {
+                config::SoundMode::Embedded => "embedded",
+                config::SoundMode::SystemBeep => "system-beep",
+                config::SoundMode::None => "none",
+            };
+            let sound_mode = timer.get_sound_mode(default_sound_mode);
+            let volume = timer.get_volume(config.sound.volume);
+
+            let args = serde_json::json!({
+                "work": work,
+                "break": break_time,
+                "long_break": long_break,
+                "sessions": sessions,
+                "auto_advance": auto_advance_str,
+                "sound_mode": sound_mode,
+                "volume": volume
+            });
 
             match send_command("start", args).await {
                 Ok(response) => {
                     if response.success {
-                        println!("{}", response.message);
+                        println!(
+                            "Pomodoro started: {}min work, {}min break, {}min long break every {} sessions",
+                            work, break_time, long_break, sessions
+                        );
                     } else {
                         eprintln!("Error: {}", response.message);
                     }
@@ -131,8 +142,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
 
         Commands::Status { output, format } => {
-            // Load config only for display format default
-            let text_template = format.unwrap_or_else(|| Config::load().display.text_format);
+            let text_template = format.unwrap_or(config.display.text_format);
 
             match fetch_and_format_status(&output, &text_template).await {
                 Ok(output) => println!("{}", output),
@@ -145,8 +155,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             format,
             interval,
         } => {
-            // Load config only for display format default
-            let text_template = format.unwrap_or_else(|| Config::load().display.text_format);
+            let text_template = format.unwrap_or(config.display.text_format);
             let interval_duration = std::time::Duration::from_secs_f64(interval);
 
             loop {

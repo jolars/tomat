@@ -153,6 +153,68 @@ pub struct TimerArgs {
     pub volume: Option<f32>,
 }
 
+impl TimerArgs {
+    /// Get work duration with fallback
+    pub fn get_work(&self, default: f32) -> f32 {
+        self.work.unwrap_or(default)
+    }
+
+    /// Get break duration with fallback
+    pub fn get_break_time(&self, default: f32) -> f32 {
+        self.break_time.unwrap_or(default)
+    }
+
+    /// Get long break duration with fallback
+    pub fn get_long_break(&self, default: f32) -> f32 {
+        self.long_break.unwrap_or(default)
+    }
+
+    /// Get sessions with fallback
+    pub fn get_sessions(&self, default: u32) -> u32 {
+        self.sessions.unwrap_or(default)
+    }
+
+    /// Get auto_advance with fallback - returns string to avoid circular dependency
+    pub fn get_auto_advance_str(&self, default_str: &str) -> String {
+        self.auto_advance
+            .clone()
+            .unwrap_or_else(|| default_str.to_string())
+    }
+
+    /// Get sound mode with fallback, considering deprecated fields
+    pub fn get_sound_mode(&self, default_str: &str) -> String {
+        // Check for new sound_mode first
+        if let Some(ref mode) = self.sound_mode {
+            return mode.clone();
+        }
+
+        // Handle deprecated flags for backwards compatibility
+        if self.beep {
+            return "system-beep".to_string();
+        }
+        if self.sound {
+            return "embedded".to_string();
+        }
+
+        default_str.to_string()
+    }
+
+    /// Get volume with fallback
+    pub fn get_volume(&self, default: f32) -> f32 {
+        match self.volume {
+            Some(v) if (0.0..=1.0).contains(&v) => v,
+            Some(v) => {
+                eprintln!(
+                    "Warning: Volume {} out of range (0.0-1.0), using {}",
+                    v, default
+                );
+                default
+            }
+            None => default,
+        }
+    }
+}
+
 #[derive(Subcommand)]
 pub enum Commands {
     /// Manage the background daemon

@@ -190,22 +190,22 @@ async fn handle_client(
                 .args
                 .get("work")
                 .and_then(|v| v.as_f64())
-                .unwrap_or(config.timer.work as f64) as f32;
+                .unwrap_or(25.0) as f32;
             let break_time = message
                 .args
                 .get("break")
                 .and_then(|v| v.as_f64())
-                .unwrap_or(config.timer.break_time as f64) as f32;
+                .unwrap_or(5.0) as f32;
             let long_break = message
                 .args
                 .get("long_break")
                 .and_then(|v| v.as_f64())
-                .unwrap_or(config.timer.long_break as f64) as f32;
+                .unwrap_or(15.0) as f32;
             let sessions = message
                 .args
                 .get("sessions")
                 .and_then(|v| v.as_u64())
-                .unwrap_or(config.timer.sessions as u64) as u32;
+                .unwrap_or(4) as u32;
             let auto_advance = message
                 .args
                 .get("auto_advance")
@@ -223,7 +223,7 @@ async fn handle_client(
                         })
                     }
                 })
-                .unwrap_or_else(|| config.timer.auto_advance.clone());
+                .unwrap_or(crate::config::AutoAdvanceMode::None);
 
             // Parse sound_mode (ignore for now, not stored in state)
             let _sound_mode = message
@@ -472,26 +472,15 @@ pub async fn run_daemon() -> Result<(), Box<dyn std::error::Error>> {
 
     let listener = UnixListener::bind(&socket_path)?;
 
-    // Load configuration first
-    let config = crate::config::Config::load_with_logging(true);
-
-    // Try to load existing state, fallback to config defaults if not found
+    // Try to load existing state, fallback to default if not found
     let mut state = load_state().unwrap_or_else(|| {
-        println!("No existing state found, starting with config defaults");
-        println!(
-            "  Using: work={}min, break={}min, long_break={}min, sessions={}",
-            config.timer.work,
-            config.timer.break_time,
-            config.timer.long_break,
-            config.timer.sessions
-        );
-        TimerState::new(
-            config.timer.work,
-            config.timer.break_time,
-            config.timer.long_break,
-            config.timer.sessions,
-        )
+        println!("No existing state found, starting with default state");
+        println!("  Using: work=25min, break=5min, long_break=15min, sessions=4");
+        TimerState::new(25.0, 5.0, 15.0, 4)
     });
+
+    // Load configuration
+    let config = crate::config::Config::load_with_logging(true);
 
     println!("Tomat daemon listening on {:?}", socket_path);
 
