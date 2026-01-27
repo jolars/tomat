@@ -300,3 +300,41 @@ fn test_manual_skip_respects_auto_advance_setting() -> Result<(), Box<dyn std::e
 
     Ok(())
 }
+
+#[test]
+fn test_daemon_uses_config_for_defaults() -> Result<(), Box<dyn std::error::Error>> {
+    use std::io::Write;
+
+    // Create a config file with custom durations
+    let temp_dir = tempfile::tempdir()?;
+    let config_path = temp_dir.path().join("config.toml");
+    let mut config_file = std::fs::File::create(&config_path)?;
+    writeln!(
+        config_file,
+        r#"
+[timer]
+work = 42.0
+break = 8.0
+long_break = 20.0
+sessions = 3
+"#
+    )?;
+
+    // Start daemon with this config
+    let daemon = TestDaemon::start_with_config(Some(&config_path))?;
+
+    // Start timer without any arguments - should use config values
+    daemon.send_command(&["start"])?;
+
+    let status = daemon.get_status()?;
+    let text = status.get("text").and_then(|v| v.as_str()).unwrap();
+
+    // Should show 42:00 from config, not 25:00 from hardcoded defaults
+    assert!(
+        text.contains("42:00"),
+        "Timer should use config work duration (42 min) when no args provided. Got: {}",
+        text
+    );
+
+    Ok(())
+}
