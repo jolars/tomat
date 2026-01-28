@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.9.0](https://github.com/jolars/tomat/compare/v2.8.1...v2.9.0) (2026-01-28)
+
+### Features
+
+* add more logging for the server ([c0aaa5b](https://github.com/jolars/tomat/commit/c0aaa5b3587551ab590767ff29b83ebd2ebac0cd))
+
 ## [2.8.1](https://github.com/jolars/tomat/compare/v2.8.0...v2.8.1) (2026-01-19)
 
 ### Bug Fixes
