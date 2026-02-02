@@ -18,7 +18,7 @@ tokio = { version = "1.49", features = ["full"] }
 chrono = { version = "0.4", features = ["serde"] }
 dirs = "6.0"
 libc = "0.2"
-notify-rust = "4.11"
+notify-rust = "4.12"
 toml = "0.9"
 fs2 = "0.4"
 rodio = { version = "0.21", optional = true }
