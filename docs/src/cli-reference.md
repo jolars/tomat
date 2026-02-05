@@ -101,12 +101,16 @@ Check if the tomat daemon is currently running and report its process ID.
 
 Install and enable the tomat systemd user service. This allows the daemon to start automatically on login and restart if it crashes. The service file is installed to ~/.config/systemd/user/tomat.service.
 
-**Usage:** `tomat daemon install`
+**Usage:** `tomat daemon install [OPTIONS]`
 
 After installation, manage the service with systemctl:
     systemctl --user start tomat.service
     systemctl --user status tomat.service
     systemctl --user stop tomat.service
+
+###### **Options:**
+
+* `-f`, `--force` — Force overwrite existing service file without prompting
 
 
 

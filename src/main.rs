@@ -69,8 +69,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             DaemonAction::Status => {
                 crate::server::daemon_status().await?;
             }
-            DaemonAction::Install => {
-                install_systemd_service()?;
+            DaemonAction::Install { force } => {
+                install_systemd_service(force)?;
             }
             DaemonAction::Uninstall => {
                 uninstall_systemd_service()?;
@@ -224,7 +224,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 /// Install systemd user service for tomat daemon
-fn install_systemd_service() -> Result<(), Box<dyn std::error::Error>> {
+fn install_systemd_service(force: bool) -> Result<(), Box<dyn std::error::Error>> {
     use std::fs;
 
     // Get the current executable path
@@ -267,8 +267,8 @@ PartOf=graphical-session.target
     // Write service file
     let service_path = systemd_dir.join("tomat.service");
 
-    // Check if service file already exists
-    if service_path.exists() {
+    // Check if service file already exists (unless --force is used)
+    if service_path.exists() && !force {
         use std::io::{self, Write};
 
         print!(

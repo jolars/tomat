@@ -33,7 +33,11 @@ pub enum DaemonAction {
         systemctl --user status tomat.service\n    \
         systemctl --user stop tomat.service"
     )]
-    Install,
+    Install {
+        /// Force overwrite existing service file without prompting
+        #[arg(short, long)]
+        force: bool,
+    },
     /// Uninstall systemd user service
     #[command(
         long_about = "Stop and remove the tomat systemd user service. This removes \
