@@ -247,20 +247,19 @@ fn install_systemd_service() -> Result<(), Box<dyn std::error::Error>> {
 
     // Generate service file content
     let service_content = format!(
-        r#"[Unit]
-Description=Tomat Pomodoro Timer Daemon
-After=graphical-session.target
+        r#"[Install]
+WantedBy=graphical-session.target
 
 [Service]
-Type=simple
+Environment="PATH=%h/.local/bin:%h/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ExecStart={} daemon run
 Restart=always
 RestartSec=5
-# Inherit user's PATH for hooks to find system commands (e.g., notify-send)
-Environment="PATH=/run/current-system/sw/bin:/etc/profiles/per-user/%u/bin:%h/.nix-profile/bin:%h/.cargo/bin:/usr/local/bin:/usr/bin:/bin"
 
-[Install]
-WantedBy=default.target
+[Unit]
+After=graphical-session.target
+Description=Tomat Pomodoro server
+PartOf=graphical-session.target
 "#,
         exe_path_str
     );
