@@ -266,6 +266,27 @@ PartOf=graphical-session.target
 
     // Write service file
     let service_path = systemd_dir.join("tomat.service");
+
+    // Check if service file already exists
+    if service_path.exists() {
+        use std::io::{self, Write};
+
+        print!(
+            "⚠ Service file already exists at: {}\nOverwrite? [y/N]: ",
+            service_path.display()
+        );
+        io::stdout().flush()?;
+
+        let mut input = String::new();
+        io::stdin().read_line(&mut input)?;
+
+        let response = input.trim().to_lowercase();
+        if response != "y" && response != "yes" {
+            println!("Installation cancelled.");
+            return Ok(());
+        }
+    }
+
     fs::write(&service_path, service_content)?;
 
     println!(
