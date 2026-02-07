@@ -338,6 +338,21 @@ async fn handle_client(
         }
         "toggle" => {
             if state.is_paused {
+                // Check if this is the first toggle on an uninitialized timer
+                // (start_time == 0 means timer has never been started)
+                if state.start_time == 0 {
+                    // Load fresh config to get user's configured defaults
+                    let fresh_config = crate::config::Config::load();
+
+                    // Initialize timer state with config defaults if not already set via CLI
+                    state.work_duration = fresh_config.timer.work;
+                    state.break_duration = fresh_config.timer.break_time;
+                    state.long_break_duration = fresh_config.timer.long_break;
+                    state.sessions_until_long_break = fresh_config.timer.sessions;
+                    state.auto_advance = fresh_config.timer.auto_advance;
+                    state.duration_minutes = state.work_duration;
+                }
+
                 // Resume if paused
                 let pending_hook = state.resume();
 

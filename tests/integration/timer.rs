@@ -338,3 +338,43 @@ sessions = 3
 
     Ok(())
 }
+
+#[test]
+fn test_toggle_uses_config_auto_advance() -> Result<(), Box<dyn std::error::Error>> {
+    use std::io::Write;
+
+    // Create a config file with auto_advance = "all"
+    let temp_dir = tempfile::tempdir()?;
+    let config_path = temp_dir.path().join("config.toml");
+    let mut config_file = std::fs::File::create(&config_path)?;
+    writeln!(
+        config_file,
+        r#"
+[timer]
+work = 0.05
+break = 0.05
+auto_advance = "all"
+"#
+    )?;
+
+    // Start daemon with this config
+    let daemon = TestDaemon::start_with_config(Some(&config_path))?;
+
+    // User clicks waybar to start timer (which uses toggle, not start)
+    daemon.send_command(&["toggle"])?;
+
+    // Wait for work phase to complete
+    daemon.wait_for_completion(10)?;
+
+    // With auto_advance="all", should automatically continue to break
+    let status = daemon.get_status()?;
+    let class = status.get("class").and_then(|v| v.as_str()).unwrap();
+
+    assert_eq!(
+        class, "break",
+        "Timer should auto-advance from work to break when auto_advance='all' in config. Got class: {}",
+        class
+    );
+
+    Ok(())
+}
