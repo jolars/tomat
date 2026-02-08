@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.10.0](https://github.com/jolars/tomat/compare/v2.9.0...v2.10.0) (2026-02-08)
+
+### Features
+
+* add `--force` argument to `tomat daemon install` ([f66cdc5](https://github.com/jolars/tomat/commit/f66cdc56ee1851222bb4b61adf88694c9b50dfc6))
+* add overwrite prompt for `tomat daemon install` ([8fad194](https://github.com/jolars/tomat/commit/8fad1945f48bd2137df89c7e8ae8c77badfdc971))
+
+### Bug Fixes
+
+* load config when `tomat toggle` initializes timer ([07a931d](https://github.com/jolars/tomat/commit/07a931d5bbfd1614207dcad4b3367b1ce958083b)), closes [#36](https://github.com/jolars/tomat/issues/36)
+* modify systemd unit to enable hooks ([b170bdd](https://github.com/jolars/tomat/commit/b170bddc6d74478cebef982ac8a18bbf4cd4d31e))
+
 ## [2.9.0](https://github.com/jolars/tomat/compare/v2.8.1...v2.9.0) (2026-01-28)
 
 ### Features
