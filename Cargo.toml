@@ -4,6 +4,7 @@ version = "2.10.0"
 edition = "2024"
 description = "A Pomodoro timer with daemon support for waybar and other status bars"
 license = "MIT"
+homepage = "https://jolars.github.io/tomat"
 repository = "https://github.com/jolars/tomat"
 readme = "README.md"
 keywords = ["pomodoro", "timer", "waybar", "productivity", "daemon"]
