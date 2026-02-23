@@ -22,7 +22,7 @@ libc = "0.2"
 notify-rust = "4.12"
 toml = "1.0"
 fs2 = "0.4"
-rodio = { version = "0.21", optional = true }
+rodio = { version = "0.22", optional = true }
 
 [features]
 default = ["audio"]
