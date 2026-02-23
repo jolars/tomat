@@ -21,7 +21,7 @@
 
         tomat = pkgs.rustPlatform.buildRustPackage {
           pname = "tomat";
-          version = "2.10.0";
+          version = "2.11.0";
 
           src = pkgs.lib.cleanSourceWith {
             src = ./.;

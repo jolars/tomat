@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.0](https://github.com/jolars/tomat/compare/v2.10.0...v2.11.0) (2026-02-23)
+
+### Features
+
+* add `text_format_idle` for formatting output in idle ([63c045b](https://github.com/jolars/tomat/commit/63c045b7c72e0d2d9e8b33838a04497372cd5962))
+* allow customizing icons in status text output ([7db1fd3](https://github.com/jolars/tomat/commit/7db1fd3007fa1e3467928ec375d8e6e27f4af00d))
+
 ## [2.10.0](https://github.com/jolars/tomat/compare/v2.9.0...v2.10.0) (2026-02-08)
 
 ### Features
