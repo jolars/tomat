@@ -30,6 +30,7 @@
           };
 
           nativeBuildInputs = with pkgs; [
+            pkg-config
             installShellFiles
             mdbook
           ];
@@ -37,6 +38,18 @@
           # Audio support requires ALSA on Linux
           buildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux [
             pkgs.alsa-lib
+          ];
+
+          nativeCheckInputs = [
+            pkgs.writableTmpDirAsHomeHook
+          ];
+
+          # Skip tests that require access to file system locations not available during Nix builds
+          checkFlags = [
+            # Skip tests that require access to file system locations not available during Nix builds
+            "--skip=timer::tests::test_icon_path_creation"
+            "--skip=timer::tests::test_notification_icon_config"
+            "--skip=integration::"
           ];
 
           postInstall = ''
