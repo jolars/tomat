@@ -250,6 +250,8 @@ text_format = "{icon} {time} {state}"  # Text display format
 #   "{time}"                    -> "25:00"
 #   "{phase}: {time} {state}"   -> "Work: 25:00 ▶"
 #   "[{session}] {icon} {time}" -> "[1/4] 🍅 25:00"
+#
+# text_format_idle = "" # Optional: format for idle state (defaults to text_format)
 
 [hooks]
 # Execute custom commands on timer events (optional)
