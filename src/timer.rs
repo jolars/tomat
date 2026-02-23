@@ -162,6 +162,7 @@ pub enum StatusOutput {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum Phase {
+    Idle,
     Work,
     Break,
     LongBreak,
@@ -170,6 +171,7 @@ pub enum Phase {
 impl std::fmt::Display for Phase {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Phase::Idle => write!(f, "idle"),
             Phase::Work => write!(f, "work"),
             Phase::Break => write!(f, "break"),
             Phase::LongBreak => write!(f, "long_break"),
@@ -180,16 +182,16 @@ impl std::fmt::Display for Phase {
 impl TimerState {
     pub fn new(work: f32, break_time: f32, long_break: f32, sessions: u32) -> Self {
         Self {
-            phase: Phase::Work,
+            phase: Phase::Idle,
             start_time: 0,
-            duration_minutes: work,
+            duration_minutes: 0.0,
             work_duration: work,
             break_duration: break_time,
             long_break_duration: long_break,
             sessions_until_long_break: sessions,
             current_session_count: 0,
             auto_advance: AutoAdvanceMode::None,
-            is_paused: true, // Start in paused state
+            is_paused: false,
             paused_elapsed_seconds: None,
             pending_hook: None,
         }
@@ -217,6 +219,11 @@ impl TimerState {
     }
 
     pub fn get_remaining_seconds(&self) -> u64 {
+        // Idle phase shows upcoming work duration
+        if matches!(self.phase, Phase::Idle) {
+            return (self.work_duration * 60.0) as u64;
+        }
+
         if self.is_paused {
             // If we have stored elapsed time, calculate remaining from that
             if let Some(elapsed) = self.paused_elapsed_seconds {
@@ -235,11 +242,19 @@ impl TimerState {
     }
 
     pub fn is_finished(&self) -> bool {
+        // Idle phase is never "finished" - it's a stopped state
+        if matches!(self.phase, Phase::Idle) {
+            return false;
+        }
         !self.is_paused && self.get_remaining_seconds() == 0
     }
 
     /// Get the exact timestamp when the timer will finish, or None if paused
     pub fn get_finish_time(&self) -> Option<u64> {
+        // Idle phase has no finish time
+        if matches!(self.phase, Phase::Idle) {
+            return None;
+        }
         if self.is_paused {
             None
         } else {
@@ -254,8 +269,14 @@ impl TimerState {
         notification_config: &NotificationConfig,
         hooks_config: &crate::config::HooksConfig,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        // Cannot transition from Idle - must use start command
+        if matches!(self.phase, Phase::Idle) {
+            return Err("Cannot transition from Idle phase. Use 'tomat start' first.".into());
+        }
+
         // Execute "end" hook for the current phase BEFORE transitioning
         let end_hook_event = match self.phase {
+            Phase::Idle => unreachable!("Idle phase handled above"),
             Phase::Work => "work_end",
             Phase::Break => "break_end",
             Phase::LongBreak => "long_break_end",
@@ -279,6 +300,7 @@ impl TimerState {
 
         // Now handle the phase transition
         let (message, sound_type, start_hook_event) = match self.phase {
+            Phase::Idle => unreachable!("Idle phase handled above"),
             Phase::Work => {
                 self.current_session_count += 1;
 
@@ -503,11 +525,11 @@ impl TimerState {
     }
 
     pub fn stop(&mut self) {
-        self.phase = Phase::Work;
+        self.phase = Phase::Idle;
         self.start_time = 0;
-        self.duration_minutes = self.work_duration;
+        self.duration_minutes = 0.0;
         self.current_session_count = 0;
-        self.is_paused = true;
+        self.is_paused = false;
         self.paused_elapsed_seconds = None;
         self.pending_hook = None;
     }
@@ -518,7 +540,11 @@ impl TimerState {
             phase: self.phase.clone(),
             is_paused: self.is_paused,
             remaining_seconds: self.get_remaining_seconds(),
-            duration_minutes: self.duration_minutes,
+            duration_minutes: if matches!(self.phase, Phase::Idle) {
+                self.work_duration
+            } else {
+                self.duration_minutes
+            },
             current_session: self.current_session_count + 1,
             sessions_until_long_break: self.sessions_until_long_break,
         }
@@ -533,6 +559,7 @@ impl TimerState {
     ) -> StatusOutput {
         // Derive presentation data from raw state
         let (icon, phase_name, class) = match status.phase {
+            Phase::Idle => ("🍅", "Idle", "idle"),
             Phase::Work => (
                 "🍅",
                 "Work",
@@ -562,7 +589,13 @@ impl TimerState {
             ),
         };
 
-        let state_symbol = if status.is_paused { "⏸" } else { "▶" };
+        let state_symbol = if matches!(status.phase, Phase::Idle) {
+            "⏹"
+        } else if status.is_paused {
+            "⏸"
+        } else {
+            "▶"
+        };
 
         let time_str = format!(
             "{:02}:{:02}",
@@ -591,7 +624,7 @@ impl TimerState {
         // Calculate percentage for progress bars
         let total_duration = (status.duration_minutes * 60.0) as u64;
         let elapsed = total_duration.saturating_sub(status.remaining_seconds);
-        let percentage = if status.is_paused {
+        let percentage = if matches!(status.phase, Phase::Idle) || status.is_paused {
             0.0
         } else if total_duration > 0 {
             (elapsed as f64 / total_duration as f64) * 100.0
@@ -600,7 +633,12 @@ impl TimerState {
         };
 
         // Build tooltip
-        let tooltip = if status.is_paused {
+        let tooltip = if matches!(status.phase, Phase::Idle) {
+            format!(
+                "Ready to start - {:.1}min work session",
+                status.duration_minutes
+            )
+        } else if status.is_paused {
             format!(
                 "{}{} - {:.1}min (Paused)",
                 phase_name, sessions_info, status.duration_minutes
@@ -633,6 +671,7 @@ impl TimerState {
                     "Info"
                 } else {
                     match status.phase {
+                        Phase::Idle => "Info",
                         Phase::Work => "Critical",
                         _ => "Good",
                     }
@@ -674,11 +713,11 @@ mod tests {
     }
 
     #[test]
-    fn test_new_timer_starts_in_paused_work_state() {
+    fn test_new_timer_starts_in_idle_state() {
         let timer = TimerState::new(25.0, 5.0, 15.0, 4);
 
-        assert!(matches!(timer.phase, Phase::Work));
-        assert!(timer.is_paused);
+        assert!(matches!(timer.phase, Phase::Idle));
+        assert!(!timer.is_paused);
         assert_eq!(timer.work_duration, 25.0);
         assert_eq!(timer.break_duration, 5.0);
         assert_eq!(timer.long_break_duration, 15.0);
@@ -700,12 +739,12 @@ mod tests {
     }
 
     #[test]
-    fn test_paused_timer_shows_full_duration() {
+    fn test_idle_timer_shows_work_duration() {
         let timer = TimerState::new(25.0, 5.0, 15.0, 4);
 
         let remaining = timer.get_remaining_seconds();
 
-        assert_eq!(remaining, 25 * 60); // 25 minutes in seconds
+        assert_eq!(remaining, 25 * 60); // Idle phase shows upcoming work duration
     }
 
     #[test]
@@ -734,18 +773,21 @@ mod tests {
     }
 
     #[test]
-    fn test_resume_unpauses_timer() {
+    fn test_resume_from_idle_does_nothing() {
         let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
-        assert!(timer.is_paused);
+        assert!(matches!(timer.phase, Phase::Idle));
+        assert!(!timer.is_paused);
 
         timer.resume();
 
+        // Resume does nothing when timer is in Idle (not paused)
         assert!(!timer.is_paused);
-        assert!(timer.start_time > 0);
+        assert_eq!(timer.start_time, 0);
+        assert!(matches!(timer.phase, Phase::Idle));
     }
 
     #[test]
-    fn test_stop_resets_to_paused_work() {
+    fn test_stop_resets_to_idle() {
         let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
         timer.auto_advance = AutoAdvanceMode::All;
         timer.current_session_count = 2;
@@ -753,10 +795,10 @@ mod tests {
 
         timer.stop();
 
-        assert!(matches!(timer.phase, Phase::Work));
-        assert!(timer.is_paused);
+        assert!(matches!(timer.phase, Phase::Idle));
+        assert!(!timer.is_paused);
         assert_eq!(timer.current_session_count, 0);
-        assert_eq!(timer.duration_minutes, timer.work_duration);
+        assert_eq!(timer.duration_minutes, 0.0);
     }
 
     #[test]
@@ -867,7 +909,7 @@ mod tests {
     }
 
     #[test]
-    fn test_get_status_output_paused_work() {
+    fn test_get_status_output_idle() {
         let timer = TimerState::new(25.0, 5.0, 15.0, 4);
 
         let timer_status = timer.get_timer_status();
@@ -881,10 +923,9 @@ mod tests {
                 tooltip,
                 percentage,
             } => {
-                assert_eq!(text, "🍅 25:00 ⏸");
-                assert_eq!(class, "work-paused");
-                assert!(tooltip.contains("Work (1/4)"));
-                assert!(tooltip.contains("Paused"));
+                assert_eq!(text, "🍅 25:00 ⏹");
+                assert_eq!(class, "idle");
+                assert_eq!(tooltip, "Ready to start - 25.0min work session");
                 assert_eq!(percentage, 0.0);
             }
             _ => panic!("Expected Waybar format for default"),
@@ -1016,12 +1057,17 @@ mod tests {
 
     #[test]
     fn test_fractional_minutes() {
-        let timer = TimerState::new(0.5, 0.1, 0.2, 4);
+        let mut timer = TimerState::new(0.5, 0.1, 0.2, 4);
 
         assert_eq!(timer.work_duration, 0.5);
         assert_eq!(timer.break_duration, 0.1);
         assert_eq!(timer.long_break_duration, 0.2);
 
+        // Timer starts in Idle, showing upcoming work duration
+        assert_eq!(timer.get_remaining_seconds(), 30); // 0.5 minutes = 30 seconds
+
+        // Start work to test fractional minutes
+        timer.start_work();
         let remaining = timer.get_remaining_seconds();
         assert_eq!(remaining, 30); // 0.5 minutes = 30 seconds
     }

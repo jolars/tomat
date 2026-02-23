@@ -22,6 +22,7 @@ struct ServerResponse {
 async fn fetch_and_format_status(
     output_format: &str,
     text_template: &str,
+    text_template_idle: &str,
 ) -> Result<String, Box<dyn std::error::Error>> {
     let args = serde_json::json!({
         "output": output_format,
@@ -41,9 +42,15 @@ async fn fetch_and_format_status(
         .parse::<timer::Format>()
         .unwrap_or(timer::Format::Waybar);
 
+    // Choose template based on phase
+    let template = if matches!(timer_status.phase, timer::Phase::Idle) {
+        text_template_idle
+    } else {
+        text_template
+    };
+
     // Format with client-side template
-    let status_output =
-        timer::TimerState::format_status(&timer_status, &format_enum, text_template);
+    let status_output = timer::TimerState::format_status(&timer_status, &format_enum, template);
 
     // Convert to string based on format type
     let output = match status_output {
@@ -143,10 +150,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
 
         Commands::Status { output, format } => {
-            // Load config only for display format default
-            let text_template = format.unwrap_or_else(|| Config::load().display.text_format);
+            // Load config for display format defaults
+            let config = Config::load();
+            let text_template = format.unwrap_or_else(|| config.display.text_format.clone());
+            let text_template_idle = config
+                .display
+                .text_format_idle
+                .unwrap_or_else(|| config.display.text_format.clone());
 
-            match fetch_and_format_status(&output, &text_template).await {
+            match fetch_and_format_status(&output, &text_template, &text_template_idle).await {
                 Ok(output) => println!("{}", output),
                 Err(e) => eprintln!("Failed to connect to daemon: {}", e),
             }
@@ -157,12 +169,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             format,
             interval,
         } => {
-            // Load config only for display format default
-            let text_template = format.unwrap_or_else(|| Config::load().display.text_format);
+            // Load config for display format defaults
+            let config = Config::load();
+            let text_template = format.unwrap_or_else(|| config.display.text_format.clone());
+            let text_template_idle = config
+                .display
+                .text_format_idle
+                .unwrap_or_else(|| config.display.text_format.clone());
             let interval_duration = std::time::Duration::from_secs_f64(interval);
 
             loop {
-                match fetch_and_format_status(&output, &text_template).await {
+                match fetch_and_format_status(&output, &text_template, &text_template_idle).await {
                     Ok(output) => println!("{}", output),
                     Err(e) => {
                         eprintln!("Failed to connect to daemon: {}", e);

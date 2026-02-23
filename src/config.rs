@@ -222,10 +222,15 @@ fn default_long_break_message() -> String {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DisplayConfig {
-    /// Text format template (default: "{icon} {time} {state}")
+    /// Text format template for active phases (default: "{icon} {time} {state}")
     /// Available placeholders: {icon}, {time}, {state}, {phase}, {session}
     #[serde(default = "default_text_format")]
     pub text_format: String,
+    /// Text format template for idle phase (default: same as text_format)
+    /// Set to empty string "" to hide widget when idle
+    /// Available placeholders: {icon}, {time}, {state}, {phase}, {session}
+    #[serde(default)]
+    pub text_format_idle: Option<String>,
 }
 
 fn default_text_format() -> String {
@@ -352,6 +357,7 @@ impl Default for DisplayConfig {
     fn default() -> Self {
         Self {
             text_format: default_text_format(),
+            text_format_idle: None,
         }
     }
 }

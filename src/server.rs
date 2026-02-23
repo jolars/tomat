@@ -320,24 +320,64 @@ async fn handle_client(
             }
         }
         "skip" => {
-            // Execute skip hook BEFORE phase transition
-            execute_hook(&config.hooks, "skip", state);
+            // Cannot skip when in Idle phase
+            if matches!(state.phase, crate::timer::Phase::Idle) {
+                ServerResponse {
+                    success: false,
+                    data: serde_json::Value::Null,
+                    message: "Cannot skip when timer is idle. Use 'tomat start' first.".to_string(),
+                }
+            } else {
+                // Execute skip hook BEFORE phase transition
+                execute_hook(&config.hooks, "skip", state);
 
-            if let Err(e) = state.next_phase(&config.sound, &config.notification, &config.hooks) {
-                eprintln!("Error during phase transition: {}", e);
-            }
+                if let Err(e) = state.next_phase(&config.sound, &config.notification, &config.hooks)
+                {
+                    eprintln!("Error during phase transition: {}", e);
+                }
 
-            // Save state after phase transition
-            save_state(state);
+                // Save state after phase transition
+                save_state(state);
 
-            ServerResponse {
-                success: true,
-                data: serde_json::Value::Null,
-                message: "Skipped to next phase".to_string(),
+                ServerResponse {
+                    success: true,
+                    data: serde_json::Value::Null,
+                    message: "Skipped to next phase".to_string(),
+                }
             }
         }
         "toggle" => {
-            if state.is_paused {
+            // Handle Idle phase - start timer with config defaults
+            if matches!(state.phase, crate::timer::Phase::Idle) {
+                // Load fresh config to get user's configured defaults
+                let fresh_config = crate::config::Config::load();
+
+                // Initialize timer state with config defaults
+                state.work_duration = fresh_config.timer.work;
+                state.break_duration = fresh_config.timer.break_time;
+                state.long_break_duration = fresh_config.timer.long_break;
+                state.sessions_until_long_break = fresh_config.timer.sessions;
+                state.auto_advance = fresh_config.timer.auto_advance;
+                state.current_session_count = 0;
+
+                // Start work phase
+                state.start_work();
+
+                // Execute work_start hook
+                execute_hook(&config.hooks, "work_start", state);
+
+                // Save state after starting
+                save_state(state);
+
+                ServerResponse {
+                    success: true,
+                    data: serde_json::Value::Null,
+                    message: format!(
+                        "Timer started: {:.1}min work, {:.1}min break",
+                        state.work_duration, state.break_duration
+                    ),
+                }
+            } else if state.is_paused {
                 // Check if this is the first toggle on an uninitialized timer
                 // (start_time == 0 means timer has never been started)
                 if state.start_time == 0 {
@@ -390,7 +430,15 @@ async fn handle_client(
             }
         }
         "pause" => {
-            if state.is_paused {
+            // Cannot pause when in Idle phase
+            if matches!(state.phase, crate::timer::Phase::Idle) {
+                ServerResponse {
+                    success: false,
+                    data: serde_json::Value::Null,
+                    message: "Cannot pause when timer is idle. Use 'tomat start' first."
+                        .to_string(),
+                }
+            } else if state.is_paused {
                 ServerResponse {
                     success: true,
                     data: serde_json::Value::Null,
@@ -413,7 +461,15 @@ async fn handle_client(
             }
         }
         "resume" => {
-            if !state.is_paused {
+            // Cannot resume when in Idle phase
+            if matches!(state.phase, crate::timer::Phase::Idle) {
+                ServerResponse {
+                    success: false,
+                    data: serde_json::Value::Null,
+                    message: "Cannot resume when timer is idle. Use 'tomat start' first."
+                        .to_string(),
+                }
+            } else if !state.is_paused {
                 ServerResponse {
                     success: true,
                     data: serde_json::Value::Null,
