@@ -23,7 +23,16 @@
           pname = "tomat";
           version = "2.10.0";
 
-          src = ./.;
+          src = pkgs.lib.cleanSourceWith {
+            src = ./.;
+            filter =
+              path: type:
+              let
+                baseName = baseNameOf path;
+              in
+              # Exclude docs directory to avoid mdbook build issues
+              !(type == "directory" && baseName == "docs");
+          };
 
           cargoLock = {
             lockFile = ./Cargo.lock;
@@ -32,7 +41,6 @@
           nativeBuildInputs = with pkgs; [
             pkg-config
             installShellFiles
-            mdbook
           ];
 
           # Audio support requires ALSA on Linux
