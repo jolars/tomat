@@ -15,7 +15,7 @@ text_format = "{icon} {time} {state}"
   The field supports the following placeholders enclosed in curly braces `{}`:
 
   `{icon}`
-  : Phase icon (`🍅` work, `☕` break, `🏖️` long break, `⏹` idle)
+  : Phase icon (`🍅` work/idle, `☕` break, `🏖️` long break)
 
   `{time}`
   : Remaining time (e.g., `25:00`). When idle, shows upcoming work duration.
