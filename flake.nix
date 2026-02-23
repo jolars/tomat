@@ -104,5 +104,10 @@
           ];
         };
       }
-    );
+    )
+    // {
+      overlays.default = final: prev: {
+        tomat = self.packages.${prev.system}.tomat;
+      };
+    };
 }
