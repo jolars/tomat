@@ -23,6 +23,7 @@ async fn fetch_and_format_status(
     output_format: &str,
     text_template: &str,
     text_template_idle: &str,
+    icons: &config::DisplayIcons,
 ) -> Result<String, Box<dyn std::error::Error>> {
     let args = serde_json::json!({
         "output": output_format,
@@ -50,7 +51,8 @@ async fn fetch_and_format_status(
     };
 
     // Format with client-side template
-    let status_output = timer::TimerState::format_status(&timer_status, &format_enum, template);
+    let status_output =
+        timer::TimerState::format_status(&timer_status, &format_enum, template, icons);
 
     // Convert to string based on format type
     let output = match status_output {
@@ -158,7 +160,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .text_format_idle
                 .unwrap_or_else(|| config.display.text_format.clone());
 
-            match fetch_and_format_status(&output, &text_template, &text_template_idle).await {
+            match fetch_and_format_status(
+                &output,
+                &text_template,
+                &text_template_idle,
+                &config.display.icons,
+            )
+            .await
+            {
                 Ok(output) => println!("{}", output),
                 Err(e) => eprintln!("Failed to connect to daemon: {}", e),
             }
@@ -179,7 +188,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let interval_duration = std::time::Duration::from_secs_f64(interval);
 
             loop {
-                match fetch_and_format_status(&output, &text_template, &text_template_idle).await {
+                match fetch_and_format_status(
+                    &output,
+                    &text_template,
+                    &text_template_idle,
+                    &config.display.icons,
+                )
+                .await
+                {
                     Ok(output) => println!("{}", output),
                     Err(e) => {
                         eprintln!("Failed to connect to daemon: {}", e);

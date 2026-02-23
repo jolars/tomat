@@ -63,6 +63,25 @@ text_format = "{icon} {time} {state}" # Text display format (default: "{icon} {t
 # text_format = "[{session}] {icon} {time}" # "[1/4] 🍅 25:00"
 # text_format = "{time} {state}"            # "25:00 ▶"
 
+# Icon customization (optional)
+# Customize the emoji/text symbols used for different phases and states
+# [display.icons]
+# work = "🍅"          # Work/Idle phase icon (default: 🍅)
+# break = "☕"         # Break phase icon (default: ☕)
+# long_break = "🏖️"   # Long break phase icon (default: 🏖️)
+# play = "▶"          # Playing state symbol (default: ▶)
+# pause = "⏸"         # Paused state symbol (default: ⏸)
+# stop = "⏹"          # Stopped/Idle state symbol (default: ⏹)
+#
+# ASCII-only example:
+# [display.icons]
+# work = "W"
+# break = "B"
+# long_break = "L"
+# play = ">"
+# pause = "||"
+# stop = "X"
+
 [hooks]
 # Execute custom commands on timer events (all optional)
 #

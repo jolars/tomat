@@ -556,12 +556,13 @@ impl TimerState {
         status: &TimerStatus,
         format: &Format,
         text_template: &str,
+        icons: &crate::config::DisplayIcons,
     ) -> StatusOutput {
         // Derive presentation data from raw state
         let (icon, phase_name, class) = match status.phase {
-            Phase::Idle => ("🍅", "Idle", "idle"),
+            Phase::Idle => (icons.work.as_str(), "Idle", "idle"),
             Phase::Work => (
-                "🍅",
+                icons.work.as_str(),
                 "Work",
                 if status.is_paused {
                     "work-paused"
@@ -570,7 +571,7 @@ impl TimerState {
                 },
             ),
             Phase::Break => (
-                "☕",
+                icons.break_icon.as_str(),
                 "Break",
                 if status.is_paused {
                     "break-paused"
@@ -579,7 +580,7 @@ impl TimerState {
                 },
             ),
             Phase::LongBreak => (
-                "🏖️",
+                icons.long_break.as_str(),
                 "Long Break",
                 if status.is_paused {
                     "long-break-paused"
@@ -590,11 +591,11 @@ impl TimerState {
         };
 
         let state_symbol = if matches!(status.phase, Phase::Idle) {
-            "⏹"
+            icons.stop.as_str()
         } else if status.is_paused {
-            "⏸"
+            icons.pause.as_str()
         } else {
-            "▶"
+            icons.play.as_str()
         };
 
         let time_str = format!(
@@ -913,8 +914,12 @@ mod tests {
         let timer = TimerState::new(25.0, 5.0, 15.0, 4);
 
         let timer_status = timer.get_timer_status();
-        let status =
-            TimerState::format_status(&timer_status, &Format::default(), "{icon} {time} {state}");
+        let status = TimerState::format_status(
+            &timer_status,
+            &Format::default(),
+            "{icon} {time} {state}",
+            &crate::config::DisplayIcons::default(),
+        );
 
         match status {
             StatusOutput::Waybar {
@@ -938,8 +943,12 @@ mod tests {
         timer.start_work();
 
         let timer_status = timer.get_timer_status();
-        let status =
-            TimerState::format_status(&timer_status, &Format::default(), "{icon} {time} {state}");
+        let status = TimerState::format_status(
+            &timer_status,
+            &Format::default(),
+            "{icon} {time} {state}",
+            &crate::config::DisplayIcons::default(),
+        );
 
         match status {
             StatusOutput::Waybar {
@@ -967,8 +976,12 @@ mod tests {
         timer.is_paused = true;
 
         let timer_status = timer.get_timer_status();
-        let status =
-            TimerState::format_status(&timer_status, &Format::default(), "{icon} {time} {state}");
+        let status = TimerState::format_status(
+            &timer_status,
+            &Format::default(),
+            "{icon} {time} {state}",
+            &crate::config::DisplayIcons::default(),
+        );
 
         match status {
             StatusOutput::Waybar {
@@ -995,8 +1008,12 @@ mod tests {
         timer.is_paused = true;
 
         let timer_status = timer.get_timer_status();
-        let status =
-            TimerState::format_status(&timer_status, &Format::default(), "{icon} {time} {state}");
+        let status = TimerState::format_status(
+            &timer_status,
+            &Format::default(),
+            "{icon} {time} {state}",
+            &crate::config::DisplayIcons::default(),
+        );
 
         match status {
             StatusOutput::Waybar {
@@ -1081,8 +1098,12 @@ mod tests {
         let timer_status = timer.get_timer_status();
 
         // Test with custom format
-        let status =
-            TimerState::format_status(&timer_status, &Format::default(), "{time} - {phase}");
+        let status = TimerState::format_status(
+            &timer_status,
+            &Format::default(),
+            "{time} - {phase}",
+            &crate::config::DisplayIcons::default(),
+        );
 
         match status {
             StatusOutput::Waybar { text, .. } => {
@@ -1094,8 +1115,12 @@ mod tests {
         }
 
         // Test with another custom format
-        let status =
-            TimerState::format_status(&timer_status, &Format::default(), "[{session}] {icon}");
+        let status = TimerState::format_status(
+            &timer_status,
+            &Format::default(),
+            "[{session}] {icon}",
+            &crate::config::DisplayIcons::default(),
+        );
 
         match status {
             StatusOutput::Waybar { text, .. } => {

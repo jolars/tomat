@@ -88,3 +88,84 @@ text_format = "{icon} {time} {state}"
 text_format_idle = "{icon}"
 ```
 
+## Icon Customization
+
+The `[display.icons]` subsection allows you to customize the emoji/text symbols used for different phases and states.
+
+```toml
+[display.icons]
+work = "🍅"          # Work/Idle phase icon (default: 🍅)
+break = "☕"         # Break phase icon (default: ☕)
+long_break = "🏖️"   # Long break phase icon (default: 🏖️)
+play = "▶"          # Playing state symbol (default: ▶)
+pause = "⏸"         # Paused state symbol (default: ⏸)
+stop = "⏹"          # Stopped/Idle state symbol (default: ⏹)
+```
+
+### Options
+
+`work`
+: Icon shown during work sessions and idle phase (when using `{icon}` placeholder).
+  
+  Default: `"🍅"`
+
+`break`
+: Icon shown during short break sessions.
+  
+  Default: `"☕"`
+
+`long_break`
+: Icon shown during long break sessions.
+  
+  Default: `"🏖️"`
+
+`play`
+: Symbol shown when timer is running (when using `{state}` placeholder).
+  
+  Default: `"▶"`
+
+`pause`
+: Symbol shown when timer is paused.
+  
+  Default: `"⏸"`
+
+`stop`
+: Symbol shown when timer is in idle state.
+  
+  Default: `"⏹"`
+
+### Examples
+
+ASCII-only symbols:
+
+```toml
+[display.icons]
+work = "W"
+break = "B"
+long_break = "L"
+play = ">"
+pause = "||"
+stop = "X"
+```
+
+Alternative emoji set:
+
+```toml
+[display.icons]
+work = "💼"
+break = "🎮"
+long_break = "🌴"
+```
+
+Minimal text symbols:
+
+```toml
+[display.icons]
+work = "[W]"
+break = "[B]"
+long_break = "[LB]"
+play = "▸"
+pause = "❙❙"
+stop = "■"
+```
+

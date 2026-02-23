@@ -253,6 +253,15 @@ text_format = "{icon} {time} {state}"  # Text display format
 #
 # text_format_idle = "" # Optional: format for idle state (defaults to text_format)
 
+# Customize icons/symbols (optional)
+# [display.icons]
+# work = "🍅"          # Work/Idle phase icon
+# break = "☕"         # Break phase icon
+# long_break = "🏖️"   # Long break phase icon
+# play = "▶"          # Playing state symbol
+# pause = "⏸"         # Paused state symbol
+# stop = "⏹"          # Stopped/Idle state symbol
+
 [hooks]
 # Execute custom commands on timer events (optional)
 # All hooks support these fields:

@@ -221,6 +221,65 @@ fn default_long_break_message() -> String {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DisplayIcons {
+    /// Icon for work phase (default: "🍅")
+    #[serde(default = "default_work_icon")]
+    pub work: String,
+    /// Icon for break phase (default: "☕")
+    #[serde(default = "default_break_icon", rename = "break")]
+    pub break_icon: String,
+    /// Icon for long break phase (default: "🏖️")
+    #[serde(default = "default_long_break_icon")]
+    pub long_break: String,
+    /// Symbol for playing state (default: "▶")
+    #[serde(default = "default_play_symbol")]
+    pub play: String,
+    /// Symbol for paused state (default: "⏸")
+    #[serde(default = "default_pause_symbol")]
+    pub pause: String,
+    /// Symbol for stopped/idle state (default: "⏹")
+    #[serde(default = "default_stop_symbol")]
+    pub stop: String,
+}
+
+fn default_work_icon() -> String {
+    "🍅".to_string()
+}
+
+fn default_break_icon() -> String {
+    "☕".to_string()
+}
+
+fn default_long_break_icon() -> String {
+    "🏖️".to_string()
+}
+
+fn default_play_symbol() -> String {
+    "▶".to_string()
+}
+
+fn default_pause_symbol() -> String {
+    "⏸".to_string()
+}
+
+fn default_stop_symbol() -> String {
+    "⏹".to_string()
+}
+
+impl Default for DisplayIcons {
+    fn default() -> Self {
+        Self {
+            work: default_work_icon(),
+            break_icon: default_break_icon(),
+            long_break: default_long_break_icon(),
+            play: default_play_symbol(),
+            pause: default_pause_symbol(),
+            stop: default_stop_symbol(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DisplayConfig {
     /// Text format template for active phases (default: "{icon} {time} {state}")
     /// Available placeholders: {icon}, {time}, {state}, {phase}, {session}
@@ -231,6 +290,9 @@ pub struct DisplayConfig {
     /// Available placeholders: {icon}, {time}, {state}, {phase}, {session}
     #[serde(default)]
     pub text_format_idle: Option<String>,
+    /// Icon configuration for phases and states
+    #[serde(default)]
+    pub icons: DisplayIcons,
 }
 
 fn default_text_format() -> String {
@@ -358,6 +420,7 @@ impl Default for DisplayConfig {
         Self {
             text_format: default_text_format(),
             text_format_idle: None,
+            icons: DisplayIcons::default(),
         }
     }
 }
@@ -1124,5 +1187,54 @@ mod tests {
 
         // Test invalid input
         assert!(NotificationUrgency::from_str("invalid").is_err());
+    }
+
+    #[test]
+    fn test_display_icons_defaults() {
+        let config = Config::default();
+        assert_eq!(config.display.icons.work, "🍅");
+        assert_eq!(config.display.icons.break_icon, "☕");
+        assert_eq!(config.display.icons.long_break, "🏖️");
+        assert_eq!(config.display.icons.play, "▶");
+        assert_eq!(config.display.icons.pause, "⏸");
+        assert_eq!(config.display.icons.stop, "⏹");
+    }
+
+    #[test]
+    fn test_display_icons_custom() {
+        let toml_str = r#"
+            [display.icons]
+            work = "💼"
+            break = "🎮"
+            long_break = "🌴"
+            play = ">"
+            pause = "||"
+            stop = "X"
+        "#;
+
+        let config: Config = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.display.icons.work, "💼");
+        assert_eq!(config.display.icons.break_icon, "🎮");
+        assert_eq!(config.display.icons.long_break, "🌴");
+        assert_eq!(config.display.icons.play, ">");
+        assert_eq!(config.display.icons.pause, "||");
+        assert_eq!(config.display.icons.stop, "X");
+    }
+
+    #[test]
+    fn test_display_icons_partial() {
+        let toml_str = r#"
+            [display.icons]
+            work = "📝"
+        "#;
+
+        let config: Config = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.display.icons.work, "📝");
+        // Others should use defaults
+        assert_eq!(config.display.icons.break_icon, "☕");
+        assert_eq!(config.display.icons.long_break, "🏖️");
+        assert_eq!(config.display.icons.play, "▶");
+        assert_eq!(config.display.icons.pause, "⏸");
+        assert_eq!(config.display.icons.stop, "⏹");
     }
 }
