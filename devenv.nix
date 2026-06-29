@@ -10,6 +10,8 @@
     pkgs.llvmPackages.bintools
     pkgs.alsa-lib
     pkgs.cargo-llvm-cov
+    pkgs.cargo-audit
+    pkgs.cargo-deny
     pkgs.ffmpeg
     # pkgs.mdbook installed via cargo for latest version
     pkgs.mdbook-mermaid
