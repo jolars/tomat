@@ -3,7 +3,7 @@
 ## Repository Overview
 
 **tomat** is a Pomodoro timer with daemon support designed for waybar and other
-status bars. It's a Rust project (~4,300 lines across multiple modules) that
+status bars. It's a Rust project (\~4,300 lines across multiple modules) that
 implements a server/client architecture using Unix sockets for inter-process
 communication.
 
@@ -162,16 +162,16 @@ clippy and rustfmt automatically if using the Nix devenv.
 
 The project is organized into six main modules:
 
-- **`main.rs`**: Entry point, command dispatching to server/client functions, and
-  client-side formatting logic (applies text templates to timer status)
+- **`main.rs`**: Entry point, command dispatching to server/client functions,
+  and client-side formatting logic (applies text templates to timer status)
 - **`cli.rs`**: CLI argument parsing with clap, defines all commands and their
   arguments using derive macros
-- **`config.rs`**: Configuration system with timer, sound, notification, and display
-  settings loaded from TOML
+- **`config.rs`**: Configuration system with timer, sound, notification, and
+  display settings loaded from TOML
 - **`server.rs`**: Unix socket server implementation, client communication
   handling, daemon process management (PID files, graceful shutdown), timer
   event loop, and configuration loading. Returns raw `TimerStatus` data.
-- **`timer.rs`**: Timer state management (`TimerState`), phase transitions, 
+- **`timer.rs`**: Timer state management (`TimerState`), phase transitions,
   notification system, and client-side formatting. Contains `TimerStatus` struct
   (pure state) and `format_status()` method (presentation logic).
 - **`audio.rs`**: Sound playback system with embedded audio files (compiled with
@@ -194,11 +194,12 @@ The project is organized into six main modules:
 - **Client mode:** All other commands send requests to daemon via socket
 - **Timer state:** Manages work/break/long-break phases with configurable
   auto-advance behavior
-- **Data flow:** Server returns `TimerStatus` (pure state: phase, remaining_seconds, 
-  is_paused, etc.) → Client applies formatting (icons, state symbols, tooltips) → 
-  Output in requested format (waybar JSON, plain text, i3status-rs JSON)
-- **Separation of concerns:** Server has no knowledge of presentation; all icons,
-  symbols, CSS classes, and tooltips are generated client-side
+- **Data flow:** Server returns `TimerStatus` (pure state: phase,
+  remaining_seconds, is_paused, etc.) → Client applies formatting (icons, state
+  symbols, tooltips) → Output in requested format (waybar JSON, plain text,
+  i3status-rs JSON)
+- **Separation of concerns:** Server has no knowledge of presentation; all
+  icons, symbols, CSS classes, and tooltips are generated client-side
 
 ### Key Dependencies
 
@@ -215,12 +216,12 @@ The project is organized into six main modules:
 
 ### Documentation Architecture
 
-The project uses a **single source of truth** approach with automatic generation:
+The project uses a **single source of truth** approach with automatic
+generation:
 
-**Source:**
-1. **`src/cli.rs`** - Clap command definitions (separated from main.rs)
-   - Auto-generates → Section 1 man pages via `clap_mangen` (17 command pages)
-   - Auto-generates → `docs/src/cli-reference.md` via `clap-markdown`
+**Source:** 1. **`src/cli.rs`** - Clap command definitions (separated from
+main.rs) - Auto-generates → Section 1 man pages via `clap_mangen` (17 command
+pages) - Auto-generates → `docs/src/cli-reference.md` via `clap-markdown`
 
 2. **`docs/src/*.md`** - Hand-written guides in clean markdown
    - `overview.md` - Architecture, quick start, examples
@@ -229,20 +230,17 @@ The project uses a **single source of truth** approach with automatic generation
    - `troubleshooting.md` - Common issues
    - `cli-reference.md` - **DO NOT EDIT** (auto-generated)
 
-**Output:**
-- **Man pages**: `target/man/*.1` - CLI command reference
-- **HTML docs**: `docs/book/html/` - mdbook with sidebar, search, themes
+**Output:** - **Man pages**: `target/man/*.1` - CLI command reference - **HTML
+docs**: `docs/book/html/` - mdbook with sidebar, search, themes
 
-**Build process:** `cargo build` runs:
-1. `clap_mangen` - Generates man pages from clap definitions
-2. `clap-markdown` - Generates CLI reference markdown
-3. `mdbook` - Builds HTML documentation
+**Build process:** `cargo build` runs: 1. `clap_mangen` - Generates man pages
+from clap definitions 2. `clap-markdown` - Generates CLI reference markdown 3.
+`mdbook` - Builds HTML documentation
 
-**Important:**
-- Never edit `docs/src/cli-reference.md` - it's regenerated on every build
-- To update CLI docs, modify the clap definitions in `src/cli.rs`
-- Write guides in normal markdown (no man page YAML frontmatter)
-- Only section 1 man pages are generated (commands), not sections 5/7
+**Important:** - Never edit `docs/src/cli-reference.md` - it's regenerated on
+every build - To update CLI docs, modify the clap definitions in `src/cli.rs` -
+Write guides in normal markdown (no man page YAML frontmatter) - Only section 1
+man pages are generated (commands), not sections 5/7
 
 ## Continuous Integration
 
@@ -317,7 +315,7 @@ Your changes will be validated against:
   management
 - **Daemon cleanup:** Automatic cleanup of socket and PID files on graceful
   shutdown
-- **Dependencies:** Clean build downloads ~60 crates, takes ~10 seconds
+- **Dependencies:** Clean build downloads \~60 crates, takes \~10 seconds
 - **Testing:** 19 integration tests validate all functionality including daemon
   management
 - **Systemd:** Service expects `tomat daemon run` command (updated from plain
@@ -327,9 +325,9 @@ Your changes will be validated against:
 
 ### Build Timing
 
-- **Incremental build:** ~0.3s
-- **Clean build:** ~10s (dependency compilation)
-- **Release build:** ~1.2s (optimized compilation)
+- **Incremental build:** \~0.3s
+- **Clean build:** \~10s (dependency compilation)
+- **Release build:** \~1.2s (optimized compilation)
 
 ## Key Implementation Notes
 
@@ -339,8 +337,7 @@ Your changes will be validated against:
 - **Auto-advance:** Configurable via `--auto-advance` flag (default: false)
   - `false`: Timer transitions to next phase but pauses (requires manual resume)
   - `true`: Timer continues automatically through all phases
-- **Visual indicators:** Play symbol ▶ when running, pause symbol ⏸ when
-  paused
+- **Visual indicators:** Play symbol ▶ when running, pause symbol ⏸ when paused
 - **Phase transitions:** Work → Break → Work → ... → Long Break (after N
   sessions)
 
@@ -371,7 +368,7 @@ Your changes will be validated against:
 
 - **Manual control:** `tomat daemon start|stop|status` for development and user
   convenience
-- **Systemd integration:** `tomat daemon run` for production deployment  
+- **Systemd integration:** `tomat daemon run` for production deployment\
   (Note: systemd service file updated from `tomat daemon` to `tomat daemon run`)
 - **Process safety:** PID file tracking with exclusive file locking, duplicate
   instance prevention, stale file cleanup
@@ -381,27 +378,28 @@ Your changes will be validated against:
 
 ### Status Output Format and Text Formatting
 
-The timer supports multiple output formats via `--output` and customizable text templates via `--format`.
+The timer supports multiple output formats via `--output` and customizable text
+templates via `--format`.
 
-**Architecture:**
-- **Server returns pure state:** `TimerStatus` contains only timer data (phase, remaining_seconds, is_paused, etc.)
-- **Client handles presentation:** Icons, state symbols, tooltips, and CSS classes are generated client-side
-- **Separation of concerns:** Server manages timer logic, client handles formatting/display
+**Architecture:** - **Server returns pure state:** `TimerStatus` contains only
+timer data (phase, remaining_seconds, is_paused, etc.) - **Client handles
+presentation:** Icons, state symbols, tooltips, and CSS classes are generated
+client-side - **Separation of concerns:** Server manages timer logic, client
+handles formatting/display
 
 **Output Formats (--output flag):**
 
-- `waybar` (default) - JSON output for waybar with text, tooltip, class, percentage
+- `waybar` (default) - JSON output for waybar with text, tooltip, class,
+  percentage
 - `plain` - Plain text output
 - `i3status-rs` - JSON output for i3status-rs
 
 **Text Templates (--format flag or display.text_format config):**
 
-Available placeholders:
-- `{icon}` - Phase icon (🍅 work, ☕ break, 🏖️ long break)
-- `{time}` - Remaining time in MM:SS format
-- `{state}` - Play/pause symbol (▶ or ⏸)
-- `{phase}` - Phase name ("Work", "Break", "Long Break")
-- `{session}` - Session progress ("1/4", empty for breaks)
+Available placeholders: - `{icon}` - Phase icon (🍅 work, ☕ break, 🏖️ long
+break) - `{time}` - Remaining time in MM:SS format - `{state}` - Play/pause
+symbol (▶ or ⏸) - `{phase}` - Phase name ("Work", "Break", "Long Break") -
+`{session}` - Session progress ("1/4", empty for breaks)
 
 **Usage:**
 
