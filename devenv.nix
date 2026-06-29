@@ -13,7 +13,7 @@
     pkgs.ffmpeg
     # pkgs.mdbook installed via cargo for latest version
     pkgs.mdbook-mermaid
-    pkgs.mdbook-linkcheck
+    pkgs.mdbook-linkcheck2
   ];
 
   languages.rust = {
