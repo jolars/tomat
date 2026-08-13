@@ -307,11 +307,11 @@ fn generate_cli_markdown() -> Result<()> {
     }
 
     // Generate markdown documentation
-    let markdown = clapdown::Options::new()
+    let options = clapdown::Options::new()
         .title("Command-Line Help for `tomat`")
         .footer(false)
-        .table_of_contents(false)
-        .render(&cmd);
+        .table_of_contents(false);
+    let markdown = clapdown::render(&cmd, &options);
 
     // Write to docs/src/cli-reference.md
     let output_path = docs_src.join("cli-reference.md");
