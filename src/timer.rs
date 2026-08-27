@@ -2,7 +2,7 @@ use notify_rust::Notification;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::audio::SoundType;
@@ -95,15 +95,49 @@ fn get_cached_icon_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
 
     // Write icon file if it doesn't exist or if it's outdated
     if !icon_path.exists() || is_icon_outdated(&icon_path)? {
-        let mut file = fs::File::create(&icon_path)?;
-        file.write_all(ICON_DATA)?;
+        write_cached_icon(&icon_path)?;
     }
 
     Ok(icon_path)
 }
 
+/// Replace the cached icon in a single step, so a concurrent reader (another
+/// tomat process, or the notification daemon) never sees a truncated file.
+fn write_cached_icon(icon_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    use std::sync::atomic::{AtomicU64, Ordering};
+
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
+
+    let cache_dir = icon_path
+        .parent()
+        .ok_or("Cached icon path has no parent directory")?;
+    let temp_path = cache_dir.join(format!(
+        "icon.png.{}.{}.tmp",
+        std::process::id(),
+        COUNTER.fetch_add(1, Ordering::Relaxed)
+    ));
+
+    let write_result = (|| -> std::io::Result<()> {
+        let mut file = fs::File::create(&temp_path)?;
+        file.write_all(ICON_DATA)?;
+        file.sync_all()
+    })();
+
+    if let Err(error) = write_result {
+        let _ = fs::remove_file(&temp_path);
+        return Err(error.into());
+    }
+
+    if let Err(error) = fs::rename(&temp_path, icon_path) {
+        let _ = fs::remove_file(&temp_path);
+        return Err(error.into());
+    }
+
+    Ok(())
+}
+
 /// Check if the cached icon file is outdated compared to the embedded data
-fn is_icon_outdated(icon_path: &PathBuf) -> Result<bool, Box<dyn std::error::Error>> {
+fn is_icon_outdated(icon_path: &Path) -> Result<bool, Box<dyn std::error::Error>> {
     let existing_data = fs::read(icon_path)?;
     Ok(existing_data != ICON_DATA)
 }
@@ -1236,6 +1270,35 @@ mod tests {
         // Calling get_cached_icon_path again should not change the file
         let icon_path2 = get_cached_icon_path().expect("Should be able to get icon path again");
         assert_eq!(icon_path, icon_path2, "Icon path should be consistent");
+    }
+
+    #[test]
+    fn test_cached_icon_writes_are_atomic() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let icon_path = temp_dir.path().join("icon.png");
+        write_cached_icon(&icon_path).expect("Should write the initial icon");
+
+        let writers = (0..4).map(|_| {
+            let icon_path = icon_path.clone();
+            std::thread::spawn(move || {
+                for _ in 0..50 {
+                    write_cached_icon(&icon_path).expect("Should rewrite the icon");
+                }
+            })
+        });
+        let readers = (0..4).map(|_| {
+            let icon_path = icon_path.clone();
+            std::thread::spawn(move || {
+                for _ in 0..50 {
+                    let data = std::fs::read(&icon_path).expect("Should read the icon");
+                    assert_eq!(data, ICON_DATA, "Cached icon should never be partial");
+                }
+            })
+        });
+
+        for thread in writers.chain(readers).collect::<Vec<_>>() {
+            thread.join().expect("Icon caching thread should not panic");
+        }
     }
 
     #[test]
