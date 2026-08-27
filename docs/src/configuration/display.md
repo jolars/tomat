@@ -11,60 +11,64 @@ text_format = "{icon} {time} {state}"
 ## Options
 
 `text_format`
-: Template string for formatting timer display when timer is active (work/break phases).
-  The field supports the following placeholders enclosed in curly braces `{}`:
 
-  `{icon}`
-  : Phase icon (`🍅` work/idle, `☕` break, `🏖️` long break)
+:   Template string for formatting timer display when timer is active
+    (work/break phases). The field supports the following placeholders enclosed
+    in curly braces `{}`:
 
-  `{time}`
-  : Remaining time (e.g., `25:00`). When idle, shows upcoming work duration.
+    `{icon}`
+    :   Phase icon (`🍅` work/idle, `☕` break, `🏖️` long break)
 
-  `{state}`
-  : Play/pause/stop symbol (`▶` running, `⏸` paused, `⏹` idle)
+    `{time}`https://github.com/jolars/dprint-plugin-badness/actions/runs/33058798128
+    :   Remaining time (e.g., `25:00`). When idle, shows upcoming work duration.
 
-  `{phase}`
-  : Phase name (`Work`, `Break`, `Long Break`, `Idle`)
+    `{state}`
+    :   Play/pause/stop symbol (`▶` running, `⏸` paused, `⏹` idle)
 
-  `{session}`
-  : Session progress (e.g., `1/4`; empty for breaks and idle)
+    `{phase}`
+    :   Phase name (`Work`, `Break`, `Long Break`, `Idle`)
 
-  Default
-  : `"{icon} {time} {state}"`
+    `{session}`
+    :   Session progress (e.g., `1/4`; empty for breaks and idle)
 
-  Example
-  : `"{phase}: {time} {state}"`
+    Default
+    :   `"{icon} {time} {state}"`
+
+    Example
+    :   `"{phase}: {time} {state}"`
 
 `text_format_idle`
-: Template string for formatting timer display when timer is idle (stopped).
-  Uses the same placeholders as `text_format`.
 
-  If not specified, defaults to the value of `text_format`.
-  Set to empty string `""` to hide the widget when timer is idle.
+:   Template string for formatting timer display when timer is idle (stopped).
+    Uses the same placeholders as `text_format`.
 
-  Default
-  : Same as `text_format` (omit this option to use default)
+    If not specified, defaults to the value of `text_format`. Set to empty string
+    `""` to hide the widget when timer is idle.
 
-  Examples
-  : ```toml
-    # Hide widget when idle
-    text_format_idle = ""
+    Default
+    :   Same as `text_format` (omit this option to use default)
 
-    # Show custom idle message
-    text_format_idle = "⏹ Ready to start"
+    Examples
 
-    # Use default (same as text_format) - simply omit the option:
-    # text_format_idle = ...
-    ```
+    :   ````toml
+        # Hide widget when idle
+        text_format_idle = ""
 
-## Examples
+        # Show custom idle message
+        text_format_idle = "⏹ Ready to start"
 
-Minimal format (time only):
+        # Use default (same as text_format) - simply omit the option:
+        # text_format_idle = ...
+        ```
 
-```toml
-[display]
-text_format = "{time}"
-```
+        ## Examples
+
+        Minimal format (time only):
+
+        ```toml
+        [display]
+        text_format = "{time}"
+        ````
 
 With session counter:
 
@@ -90,7 +94,8 @@ text_format_idle = "{icon}"
 
 ## Icon Customization
 
-The `[display.icons]` subsection allows you to customize the emoji/text symbols used for different phases and states.
+The `[display.icons]` subsection allows you to customize the emoji/text symbols
+used for different phases and states.
 
 ```toml
 [display.icons]
@@ -105,34 +110,41 @@ stop = "⏹"          # Stopped/Idle state symbol (default: ⏹)
 ### Options
 
 `work`
-: Icon shown during work sessions and idle phase (when using `{icon}` placeholder).
-  
-  Default: `"🍅"`
+
+:   Icon shown during work sessions and idle phase (when using `{icon}`
+    placeholder).
+
+    Default: `"🍅"`
 
 `break`
-: Icon shown during short break sessions.
-  
-  Default: `"☕"`
+
+:   Icon shown during short break sessions.
+
+    Default: `"☕"`
 
 `long_break`
-: Icon shown during long break sessions.
-  
-  Default: `"🏖️"`
+
+:   Icon shown during long break sessions.
+
+    Default: `"🏖️"`
 
 `play`
-: Symbol shown when timer is running (when using `{state}` placeholder).
-  
-  Default: `"▶"`
+
+:   Symbol shown when timer is running (when using `{state}` placeholder).
+
+    Default: `"▶"`
 
 `pause`
-: Symbol shown when timer is paused.
-  
-  Default: `"⏸"`
+
+:   Symbol shown when timer is paused.
+
+    Default: `"⏸"`
 
 `stop`
-: Symbol shown when timer is in idle state.
-  
-  Default: `"⏹"`
+
+:   Symbol shown when timer is in idle state.
+
+    Default: `"⏹"`
 
 ### Examples
 
@@ -168,4 +180,3 @@ play = "▸"
 pause = "❙❙"
 stop = "■"
 ```
-
