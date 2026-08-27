@@ -3,11 +3,25 @@
 This section provides instructions on how to install Tomat, a customizable
 Pomodoro timer.
 
+## Install Script
+
+The installer selects the appropriate release binary for Linux or macOS and
+installs it to `~/.local/bin`. If you prefer, download and inspect the script
+before running it.
+
+```sh
+curl --proto '=https' --tlsv1.2 -sSf https://jolars.github.io/tomat/install | sh
+```
+
+Set `TOMAT_INSTALL_DIR` to change the destination, `TOMAT_TAG` to pin a
+version, `TOMAT_LIBC` (`gnu` or `musl`) to override Linux libc detection, and
+`TOMAT_VERIFY_CHECKSUM=false` to skip checksum verification.
+
 ## Pre-built Binaries
 
-The easiest way to install Tomat is to download a pre-built binary from the
-[releases page](https://github.com/jolars/tomat/releases/latest). Binaries are
-available for multiple architectures and distributions:
+You can also download a pre-built binary directly from the [releases
+page](https://github.com/jolars/tomat/releases/latest). Binaries are available
+for multiple architectures and distributions:
 
 - **Generic Linux** (x86_64, aarch64): glibc and static musl `.tar.gz` archives
 - **macOS** (Intel and Apple Silicon): `.tar.gz` archives

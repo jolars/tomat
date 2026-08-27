@@ -23,8 +23,8 @@ The easiest way to get started is to download a pre-built binary from the
 package manager if available.
 
 ```bash
-# Install from crates.io
-cargo install tomat
+# Install the latest release
+curl --proto '=https' --tlsv1.2 -sSf https://jolars.github.io/tomat/install | sh
 
 # Start daemon and begin working
 tomat daemon start
@@ -39,6 +39,19 @@ tomat status
 The full documentation is available at <https://jolars.github.io/tomat/>.
 
 ## Installation
+
+### Install Script
+
+The installer selects the appropriate release binary for Linux or macOS and
+installs it to `~/.local/bin`:
+
+```sh
+curl --proto '=https' --tlsv1.2 -sSf https://jolars.github.io/tomat/install | sh
+```
+
+Set `TOMAT_INSTALL_DIR` to change the destination, `TOMAT_TAG` to pin a
+version, `TOMAT_LIBC` (`gnu` or `musl`) to override Linux libc detection, and
+`TOMAT_VERIFY_CHECKSUM=false` to skip checksum verification.
 
 ### Pre-built Binaries
 

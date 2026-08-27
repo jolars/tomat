@@ -32,22 +32,18 @@ graph TD
 
 ## Installation
 
-The easiest way to install Tomat is to download a pre-built binary from the
-[releases page](https://github.com/jolars/tomat/releases/latest), or use your
-package manager if available:
+The easiest way to install Tomat on Linux or macOS is with the install script:
+
+```sh
+curl --proto '=https' --tlsv1.2 -sSf https://jolars.github.io/tomat/install | sh
+```
+
+You can also use Cargo or a package manager:
 
 ```bash
-# Download pre-built binary (Linux x86_64)
-curl -L https://github.com/jolars/tomat/releases/latest/download/tomat-x86_64-unknown-linux-gnu.tar.gz | tar xz
-sudo mv tomat /usr/local/bin/
-
-# On Apple Silicon, use tomat-aarch64-apple-darwin.tar.gz.
-# On an Intel Mac, use tomat-x86_64-apple-darwin.tar.gz.
-
-# Or install via Cargo
 cargo install tomat
 
-# Or on Arch Linux (AUR)
+# Arch Linux (AUR)
 paru -S tomat-bin
 ```
 

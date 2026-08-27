@@ -38,6 +38,12 @@ jobs:
       - name: Build documentation
         run: mdbook build docs
 
+      - name: Publish installer
+        run: |
+          install -m 0644 scripts/tomat-installer.sh docs/book/install
+          cmp scripts/tomat-installer.sh docs/book/install
+          sh -n docs/book/install
+
       - name: Setup Pages
         uses: actions/configure-pages@v6
 
