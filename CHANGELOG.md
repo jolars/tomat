@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.13.0](https://github.com/jolars/tomat/compare/v2.12.0...v2.13.0) (2026-08-27)
+
+### Features
+- add one-line installer script ([`48765b7`](https://github.com/jolars/tomat/commit/48765b7801058815a08a9d0ac54c2cf04f041b66))
+- add macOS support ([`4771ade`](https://github.com/jolars/tomat/commit/4771adeaf53c4824c0dfbf8243276898969b75ee))
+
 ## [2.12.0](https://github.com/jolars/tomat/compare/v2.11.0...v2.12.0) (2026-08-27)
 
 ### Features
