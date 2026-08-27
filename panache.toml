@@ -1,0 +1,6 @@
+flavor = "gfm"
+
+extend-exclude = ["CHANGELOG.md"]
+
+[extensions]
+definition-lists = true

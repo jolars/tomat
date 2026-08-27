@@ -1,6 +1,7 @@
 # Tomat <img src='https://raw.githubusercontent.com/jolars/tomat/refs/heads/main/images/logo.svg' align="right" width="139" />
 
-[![Build Status](https://github.com/jolars/tomat/actions/workflows/build-and-test.yml/badge.svg?branch=main)](https://github.com/jolars/tomat/actions/workflows/build-and-test.yml)
+[![Build
+Status](https://github.com/jolars/tomat/actions/workflows/build-and-test.yml/badge.svg?branch=main)](https://github.com/jolars/tomat/actions/workflows/build-and-test.yml)
 [![codecov](https://codecov.io/gh/jolars/tomat/graph/badge.svg?token=21Kx0unk2A)](https://codecov.io/gh/jolars/tomat)
 [![Crates.io](https://img.shields.io/crates/v/tomat.svg)](https://crates.io/crates/tomat)
 
@@ -45,7 +46,8 @@ The full documentation is available at <https://jolars.github.io/tomat/>.
 
 ### Pre-built Binaries
 
-Download pre-built binaries from the [releases page](https://github.com/jolars/tomat/releases/latest):
+Download pre-built binaries from the [releases
+page](https://github.com/jolars/tomat/releases/latest):
 
 - **Generic Linux** (x86_64, aarch64): `.tar.gz` archives
 - **Debian/Ubuntu**: `.deb` packages

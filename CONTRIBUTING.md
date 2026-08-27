@@ -95,9 +95,9 @@ All code changes MUST pass these checks before commit:
   complex logic
 - **Dependencies**: Use existing libraries when possible, avoid adding new
   dependencies unless absolutely necessary
-- **Commit style**: Use
-  [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`,
-  `docs:`, `test:`, `refactor:`)
+- **Commit style**: Use [Conventional
+  Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`,
+  `test:`, `refactor:`)
 
 ## Architecture Overview
 
