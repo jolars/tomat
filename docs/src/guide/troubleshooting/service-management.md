@@ -1,6 +1,6 @@
 # Service Management Troubleshooting
 
-## Service Fails to Start
+## systemd Service Fails to Start
 
 ### Problem
 
@@ -58,6 +58,28 @@ Service is running but `tomat status` fails.
    ```bash
    journalctl --user -u tomat.service --no-pager
    ```
+
+## LaunchAgent Fails to Start
+
+On macOS, inspect the loaded service and its error log:
+
+```bash
+launchctl print gui/$UID/io.github.jolars.tomat
+tail -n 100 ~/Library/Logs/tomat.log
+```
+
+If the plist points to a binary that was moved or removed, reinstall it from
+the binary's new location:
+
+```bash
+tomat daemon install --force
+```
+
+The macOS socket is beneath the per-user temporary directory:
+
+```bash
+ls -la "${TMPDIR}tomat-$(id -u)/tomat.sock"
+```
 
 ## Enable Debug Output
 

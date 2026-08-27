@@ -105,6 +105,53 @@ fn test_daemon_status_with_stale_socket() -> Result<(), Box<dyn std::error::Erro
 }
 
 #[test]
+fn test_daemon_stop_removes_orphaned_socket() -> Result<(), Box<dyn std::error::Error>> {
+    let binary_path = TestDaemon::get_binary_path();
+    let temp_dir = tempfile::tempdir()?;
+    let socket_path = temp_dir.path().join("tomat.sock");
+    let listener = std::os::unix::net::UnixListener::bind(&socket_path)?;
+    drop(listener);
+
+    let output = Command::new(&binary_path)
+        .args(["--quiet", "daemon", "stop"])
+        .env("XDG_RUNTIME_DIR", temp_dir.path())
+        .output()?;
+
+    assert!(output.status.success());
+    assert!(!socket_path.exists());
+
+    Ok(())
+}
+
+#[test]
+fn test_daemon_stop_keeps_the_socket_of_a_live_daemon() -> Result<(), Box<dyn std::error::Error>> {
+    let daemon = TestDaemon::start()?;
+    let runtime_dir = daemon._temp_dir.path();
+    let socket_path = runtime_dir.join("tomat.sock");
+    std::fs::remove_file(runtime_dir.join("tomat.pid"))?;
+
+    let output = Command::new(TestDaemon::get_binary_path())
+        .args(["--quiet", "daemon", "stop"])
+        .env("XDG_RUNTIME_DIR", runtime_dir)
+        .output()?;
+
+    assert!(
+        !output.status.success(),
+        "Stopping without a PID file must not report success while a daemon is listening"
+    );
+    assert!(
+        socket_path.exists(),
+        "The socket of a running daemon must survive a failed stop"
+    );
+    assert!(
+        daemon.get_status()?.is_object(),
+        "Daemon should still serve"
+    );
+
+    Ok(())
+}
+
+#[test]
 fn test_daemon_start_when_already_running() -> Result<(), Box<dyn std::error::Error>> {
     let daemon = TestDaemon::start()?;
 

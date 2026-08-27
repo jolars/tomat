@@ -21,6 +21,9 @@ Timer works but no notifications appear.
    notify-send "Test" "Notification test"
    ```
 
+   On macOS, check **System Settings → Notifications** and allow notifications
+   for the application macOS associates with Tomat.
+
 2. **Check tomat notification config**:
 
    ```toml

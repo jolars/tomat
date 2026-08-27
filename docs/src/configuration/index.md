@@ -1,9 +1,10 @@
 # Configuration Guide
 
-Tomat supports comprehensive configuration via a TOML file located at
-`$XDG_CONFIG_HOME/tomat/config.toml` (typically `~/.config/tomat/config.toml`).
-This allows you to set default values for timer durations and behaviors without
-specifying them on every command.
+Tomat supports comprehensive configuration via a TOML file. On Linux, the path
+is `$XDG_CONFIG_HOME/tomat/config.toml` (typically
+`~/.config/tomat/config.toml`); on macOS, it is
+`~/Library/Application Support/tomat/config.toml`. Set `TOMAT_CONFIG` to
+override the platform default.
 
 The configuration file is organized into five main sections: 
 
@@ -21,5 +22,4 @@ The configuration file is organized into five main sections:
 
 [`[hooks]`](hooks.md)
 : for custom commands triggered by timer events
-
 

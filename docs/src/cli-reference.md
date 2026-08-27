@@ -1,6 +1,6 @@
 # Command-Line Help for `tomat`
 
-Tomat is a Pomodoro timer with a daemon-based architecture, designed for seamless integration with waybar and other status bars. It uses a Unix socket for client-server communication, ensuring your timer state persists across waybar restarts and system suspend/resume.
+Tomat is a cross-platform Pomodoro timer with a daemon-based architecture, designed for command-line use and seamless integration with status bars. It uses a Unix socket for client-server communication, ensuring your timer state persists across client restarts and system suspend/resume.
 
 **Usage:** `tomat [OPTIONS] <COMMAND>`
 
@@ -17,7 +17,7 @@ Manage the tomat daemon, which runs in the background and maintains timer state.
 
 ### `tomat daemon start`
 
-Start the tomat daemon as a background process. The daemon manages timer state and handles client requests via a Unix socket at $XDG_RUNTIME_DIR/tomat.sock. Only one daemon instance can run at a time.
+Start the tomat daemon as a background process. The daemon manages timer state and handles client requests via a Unix socket in the platform's per-user runtime directory. Only one daemon instance can run at a time.
 
 **Usage:** `tomat daemon start`
 
@@ -35,7 +35,7 @@ Check if the tomat daemon is currently running and report its process ID.
 
 ### `tomat daemon install`
 
-Install and enable the tomat systemd user service. This allows the daemon to start automatically on login and restart if it crashes. The service file is installed to ~/.config/systemd/user/tomat.service.
+Install and enable the native tomat user service: a systemd user service on Linux or a LaunchAgent on macOS. This allows the daemon to start automatically on login and restart if it crashes.
 
 **Usage:** `tomat daemon install [OPTIONS]`
 
@@ -46,29 +46,29 @@ Install and enable the tomat systemd user service. This allows the daemon to sta
 
 ### `tomat daemon uninstall`
 
-Stop and remove the tomat systemd user service. This removes the service file and disables automatic startup.
+Stop and remove the native tomat user service. This removes the systemd service on Linux or LaunchAgent on macOS and disables automatic startup.
 
 **Usage:** `tomat daemon uninstall`
 
 ## `tomat start`
 
-Start a new Pomodoro timer session with the specified durations. If no options are provided, uses defaults from ~/.config/tomat/config.toml or built-in defaults (25min work, 5min break, 15min long break, 4 sessions). Custom durations only apply to the current session.
+Start a new Pomodoro timer session with the specified durations. If no options are provided, uses defaults from the platform config file or built-in defaults (25min work, 5min break, 15min long break, 4 sessions). Custom durations only apply to the current session.
 
 **Usage:** `tomat start [OPTIONS]`
 
 ### Options
 
 `-w`, `--work <WORK>`
-:   Duration of work sessions in minutes. If not specified, uses the value from ~/.config/tomat/config.toml or the built-in default of 25 minutes.
+:   Duration of work sessions in minutes. If not specified, uses the value from the platform config file or the built-in default of 25 minutes.
 
 `-b`, `--break <BREAK_TIME>`
-:   Duration of short breaks in minutes. If not specified, uses the value from ~/.config/tomat/config.toml or the built-in default of 5 minutes.
+:   Duration of short breaks in minutes. If not specified, uses the value from the platform config file or the built-in default of 5 minutes.
 
 `-l`, `--long-break <LONG_BREAK>`
-:   Duration of long breaks in minutes. Long breaks occur after completing the configured number of work sessions. If not specified, uses the value from ~/.config/tomat/config.toml or the built-in default of 15 minutes.
+:   Duration of long breaks in minutes. Long breaks occur after completing the configured number of work sessions. If not specified, uses the value from the platform config file or the built-in default of 15 minutes.
 
 `-s`, `--sessions <SESSIONS>`
-:   Number of work/break cycles before taking a long break. If not specified, uses the value from ~/.config/tomat/config.toml or the built-in default of 4 sessions.
+:   Number of work/break cycles before taking a long break. If not specified, uses the value from the platform config file or the built-in default of 4 sessions.
 
 `-a`, `--auto-advance <AUTO_ADVANCE>`
 :   Control automatic phase transitions:
@@ -77,7 +77,7 @@ Start a new Pomodoro timer session with the specified durations. If no options a
       to-break - Auto-advance from work to break only
       to-work  - Auto-advance from break to work only
 
-    If not specified, uses the value from ~/.config/tomat/config.toml or the built-in default of 'none'.
+    If not specified, uses the value from the platform config file or the built-in default of 'none'.
 
 `--sound-mode <SOUND_MODE>`
 :   Control sound notifications:
@@ -85,10 +85,10 @@ Start a new Pomodoro timer session with the specified durations. If no options a
       system-beep - Use system beep (terminal bell)
       none        - No sound notifications
 
-    If not specified, uses the value from ~/.config/tomat/config.toml or the built-in default of 'embedded'.
+    If not specified, uses the value from the platform config file or the built-in default of 'embedded'.
 
 `--volume <VOLUME>`
-:   Set the audio volume for sound notifications, from 0.0 (silent) to 1.0 (maximum). Values outside this range will be clamped. If not specified, uses the value from ~/.config/tomat/config.toml or the built-in default of 0.5.
+:   Set the audio volume for sound notifications, from 0.0 (silent) to 1.0 (maximum). Values outside this range will be clamped. If not specified, uses the value from the platform config file or the built-in default of 0.5.
 
 ## `tomat stop`
 

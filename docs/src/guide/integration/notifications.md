@@ -1,8 +1,10 @@
 # Notification Systems
 
 Tomat uses the `notify-rust` crate to send desktop notifications, which
-supports a variety of notification daemons on Linux systems. Below are
-instructions for integrating Tomat with popular notification systems.
+supports native macOS notifications and a variety of notification daemons on
+Linux. On macOS, allow notifications for Tomat when the operating system asks.
+Below are instructions for integrating Tomat with popular Linux notification
+systems.
 
 ## Mako (Wayland)
 
@@ -51,4 +53,3 @@ To use a custom notification icon:
 [notification]
 icon = "/path/to/your/custom-icon.png"
 ```
-

@@ -1,9 +1,10 @@
 # Configuration Guide
 
-Tomat supports comprehensive configuration via a TOML file located at
-`$XDG_CONFIG_HOME/tomat/config.toml` (typically `~/.config/tomat/config.toml`).
-This allows you to set default values for timer durations and behaviors without
-specifying them on every command.
+Tomat supports comprehensive configuration via a TOML file. On Linux, the path
+is `$XDG_CONFIG_HOME/tomat/config.toml` (typically
+`~/.config/tomat/config.toml`); on macOS, it is
+`~/Library/Application Support/tomat/config.toml`. The `TOMAT_CONFIG`
+environment variable can override either location.
 
 The configuration file is organized into five main sections, which
 are documented in detail in [the configuration reference](../configuration/index.md).
@@ -29,8 +30,8 @@ sessions = 4
 > to get started quickly.
 > 
 > ```bash
-> mkdir -p $XDG_CONFIG_HOME/tomat  # or: mkdir -p ~/.config/tomat
-> cp examples/config.toml $XDG_CONFIG_HOME/tomat/config.toml
+> mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/tomat"
+> cp examples/config.toml "${XDG_CONFIG_HOME:-$HOME/.config}/tomat/config.toml"
 > # Then edit the config file as needed
 > ```
 
@@ -54,6 +55,25 @@ earlier ones:
 
 This means you can set your preferred defaults in the config file and still
 override them on a per-session basis using command-line flags.
+
+## Environment Variables
+
+`TOMAT_CONFIG`
+: Path to the configuration file, overriding the platform default.
+
+`TOMAT_RUNTIME_DIR`
+: Directory holding the daemon's socket, PID, and state files. It takes
+  precedence over `XDG_RUNTIME_DIR`, which in turn takes precedence over the
+  platform default (`/run/user/$UID` on Linux, a Tomat directory beneath the
+  per-user `$TMPDIR` on macOS). The directory must be owned by you and must not
+  be writable by anyone else; Tomat creates it with mode `700` when it does not
+  exist yet, and refuses to modify a directory it did not create.
+
+The daemon and its clients each resolve the runtime directory on their own, so
+they have to agree. If you export `TOMAT_RUNTIME_DIR` from your shell profile,
+run `tomat daemon install` from a shell where it is set: the generated service
+file records the value so the service-managed daemon uses the same socket. See
+[Service Management](integration/service-management.md).
 
 ## Complete Configuration Example
 

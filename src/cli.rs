@@ -5,8 +5,8 @@ pub enum DaemonAction {
     /// Start the daemon in the background
     #[command(
         long_about = "Start the tomat daemon as a background process. The daemon \
-        manages timer state and handles client requests via a Unix socket at \
-        $XDG_RUNTIME_DIR/tomat.sock. Only one daemon instance can run at a time."
+        manages timer state and handles client requests via a Unix socket in the \
+        platform's per-user runtime directory. Only one daemon instance can run at a time."
     )]
     Start,
     /// Stop the running daemon
@@ -21,27 +21,27 @@ pub enum DaemonAction {
         process ID."
     )]
     Status,
-    /// Install systemd user service
+    /// Install the native user service
     #[command(
-        long_about = "Install and enable the tomat systemd user service. This allows \
-        the daemon to start automatically on login and restart if it crashes. The service \
-        file is installed to ~/.config/systemd/user/tomat.service."
+        long_about = "Install and enable the native tomat user service: a systemd user \
+        service on Linux or a LaunchAgent on macOS. This allows the daemon to start \
+        automatically on login and restart if it crashes."
     )]
-    #[command(
-        after_help = "After installation, manage the service with systemctl:\n    \
+    #[command(after_help = "On Linux, manage the service with systemctl:\n    \
         systemctl --user start tomat.service\n    \
         systemctl --user status tomat.service\n    \
-        systemctl --user stop tomat.service"
-    )]
+        systemctl --user stop tomat.service\n\n\
+        On macOS, inspect the service with:\n    \
+        launchctl print gui/$UID/io.github.jolars.tomat")]
     Install {
         /// Force overwrite existing service file without prompting
         #[arg(short, long)]
         force: bool,
     },
-    /// Uninstall systemd user service
+    /// Uninstall the native user service
     #[command(
-        long_about = "Stop and remove the tomat systemd user service. This removes \
-        the service file and disables automatic startup."
+        long_about = "Stop and remove the native tomat user service. This removes \
+        the systemd service on Linux or LaunchAgent on macOS and disables automatic startup."
     )]
     Uninstall,
     /// Run the daemon in the foreground (internal use)
@@ -54,13 +54,13 @@ pub enum DaemonAction {
 #[command(
     author,
     version,
-    about = "A Pomodoro timer with daemon support for waybar"
+    about = "A cross-platform Pomodoro timer with daemon support"
 )]
 #[command(
-    long_about = "Tomat is a Pomodoro timer with a daemon-based architecture, designed for \
-    seamless integration with waybar and other status bars. It uses a Unix socket for \
-    client-server communication, ensuring your timer state persists across waybar restarts \
-    and system suspend/resume."
+    long_about = "Tomat is a cross-platform Pomodoro timer with a daemon-based architecture, \
+    designed for command-line use and seamless integration with status bars. It uses a Unix \
+    socket for client-server communication, ensuring your timer state persists across client \
+    restarts and system suspend/resume."
 )]
 #[command(after_help = "\
 EXAMPLES:
@@ -94,7 +94,7 @@ pub struct TimerArgs {
     #[arg(help = "Work duration in minutes (default: from config or 25)")]
     #[arg(
         long_help = "Duration of work sessions in minutes. If not specified, uses the value \
-        from ~/.config/tomat/config.toml or the built-in default of 25 minutes."
+        from the platform config file or the built-in default of 25 minutes."
     )]
     pub work: Option<f32>,
     /// Break duration in minutes
@@ -102,7 +102,7 @@ pub struct TimerArgs {
     #[arg(help = "Break duration in minutes (default: from config or 5)")]
     #[arg(
         long_help = "Duration of short breaks in minutes. If not specified, uses the value \
-        from ~/.config/tomat/config.toml or the built-in default of 5 minutes."
+        from the platform config file or the built-in default of 5 minutes."
     )]
     pub break_time: Option<f32>,
     /// Long break duration in minutes
@@ -110,8 +110,8 @@ pub struct TimerArgs {
     #[arg(help = "Long break duration in minutes (default: from config or 15)")]
     #[arg(
         long_help = "Duration of long breaks in minutes. Long breaks occur after completing \
-        the configured number of work sessions. If not specified, uses the value from \
-        ~/.config/tomat/config.toml or the built-in default of 15 minutes."
+        the configured number of work sessions. If not specified, uses the value from the \
+        platform config file or the built-in default of 15 minutes."
     )]
     pub long_break: Option<f32>,
     /// Number of work sessions before a long break
@@ -119,7 +119,7 @@ pub struct TimerArgs {
     #[arg(help = "Sessions until long break (default: from config or 4)")]
     #[arg(
         long_help = "Number of work/break cycles before taking a long break. If not specified, \
-        uses the value from ~/.config/tomat/config.toml or the built-in default of 4 sessions."
+        uses the value from the platform config file or the built-in default of 4 sessions."
     )]
     pub sessions: Option<u32>,
     /// Automatically advance to the next phase
@@ -130,8 +130,8 @@ pub struct TimerArgs {
         none     - Never auto-advance (pause at transitions)\n  \
         to-break - Auto-advance from work to break only\n  \
         to-work  - Auto-advance from break to work only\n\n\
-        If not specified, uses the value from ~/.config/tomat/config.toml or the \
-        built-in default of 'none'.")]
+        If not specified, uses the value from the platform config file or the built-in \
+        default of 'none'.")]
     pub auto_advance: Option<String>,
     /// Sound notification mode
     #[arg(long)]
@@ -140,8 +140,8 @@ pub struct TimerArgs {
         embedded    - Use built-in audio files (default)\n  \
         system-beep - Use system beep (terminal bell)\n  \
         none        - No sound notifications\n\n\
-        If not specified, uses the value from ~/.config/tomat/config.toml or the \
-        built-in default of 'embedded'.")]
+        If not specified, uses the value from the platform config file or the built-in \
+        default of 'embedded'.")]
     pub sound_mode: Option<String>,
     /// DEPRECATED: Enable sound notifications for this session
     #[arg(long, action = ArgAction::SetTrue, hide = true)]
@@ -155,7 +155,7 @@ pub struct TimerArgs {
     #[arg(
         long_help = "Set the audio volume for sound notifications, from 0.0 (silent) to 1.0 \
         (maximum). Values outside this range will be clamped. If not specified, uses the \
-        value from ~/.config/tomat/config.toml or the built-in default of 0.5."
+        value from the platform config file or the built-in default of 0.5."
     )]
     pub volume: Option<f32>,
 }
@@ -174,8 +174,8 @@ pub enum Commands {
     /// Start a new Pomodoro session
     #[command(
         long_about = "Start a new Pomodoro timer session with the specified durations. \
-        If no options are provided, uses defaults from ~/.config/tomat/config.toml or \
-        built-in defaults (25min work, 5min break, 15min long break, 4 sessions). \
+        If no options are provided, uses defaults from the platform config file or built-in \
+        defaults (25min work, 5min break, 15min long break, 4 sessions). \
         Custom durations only apply to the current session."
     )]
     #[command(after_help = "\

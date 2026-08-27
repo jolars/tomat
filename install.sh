@@ -17,9 +17,9 @@ if [ -f "target/man/tomat.1" ]; then
     echo "Man page installed to $MAN_DIR/tomat.1"
 fi
 
-# Install systemd service using tomat's built-in command
+# Install the native user service using tomat's built-in command
 echo ""
-echo "Installing systemd service..."
+echo "Installing background service..."
 tomat daemon install
 
 echo ""

@@ -1,9 +1,8 @@
 # Getting Started
 
-Tomat ("tomato" in Swedish 🇸🇪) is a Pomodoro timer designed for seamless
-integration with Waybar and other status bars. It consists of a background
-service (daemon) that manages the timer state and a command-line client to
-control the timer and query its status.
+Tomat ("tomato" in Swedish 🇸🇪) is a Pomodoro timer for Linux and macOS. It
+consists of a background service (daemon) that manages the timer state and a
+command-line client to control the timer and query its status.
 
 If you are new to the Pomodoro technique, it is a time management method that
 breaks work into intervals (typically 25 minutes) separated by short breaks.
@@ -38,9 +37,12 @@ The easiest way to install Tomat is to download a pre-built binary from the
 package manager if available:
 
 ```bash
-# Download pre-built binary (x86_64)
+# Download pre-built binary (Linux x86_64)
 curl -L https://github.com/jolars/tomat/releases/latest/download/tomat-x86_64-unknown-linux-gnu.tar.gz | tar xz
 sudo mv tomat /usr/local/bin/
+
+# On Apple Silicon, use tomat-aarch64-apple-darwin.tar.gz.
+# On an Intel Mac, use tomat-x86_64-apple-darwin.tar.gz.
 
 # Or install via Cargo
 cargo install tomat
@@ -86,17 +88,17 @@ Which by default returns a JSON object suitable for Waybar integration:
 See the [CLI Reference](../cli-reference.md) for a full list of commands and
 options.
 
-## Systemd Service Setup
+## Background Service Setup
 
-Most users will want to run the Tomat daemon as a systemd user service so that
-it starts automatically on login. Tomat provides a convenience command to
-install the service:
+Most users will want Tomat to start automatically on login. This command
+installs a systemd user service on Linux or a LaunchAgent on macOS:
 
 ```bash
 tomat daemon install
 ```
 
-After that, you can enable and start the service with:
+On macOS, installation loads and starts the service immediately. On Linux,
+enable and start it with:
 
 ```bash
 systemctl --user enable tomat.service --now
@@ -128,9 +130,9 @@ status bars, including Waybar, Polybar, and others.
 
 ## Configuration
 
-Tomat can be configured via a configuration file located at
-`$XDG_CONFIG_HOME/tomat/config.toml` (usually `~/.config/tomat/config.toml`).
-Here is a basic example to get you started:
+Tomat can be configured via `$XDG_CONFIG_HOME/tomat/config.toml` on Linux or
+`~/Library/Application Support/tomat/config.toml` on macOS. Here is a basic
+example to get you started:
 
 ```toml
 [timer]
@@ -146,9 +148,10 @@ explanation of all available configuration options
 
 ## Architecture
 
-Tomat uses as a client--server architecture consisting of a daemon that runs in
-the background and a command-line client that sends commands to the daemon via a
-Unix socket located at `$XDG_RUNTIME_DIR/tomat.sock`.
+Tomat uses a client--server architecture consisting of a daemon that runs in the
+background and a command-line client that sends commands to the daemon via a
+Unix socket. On Linux, this is normally `$XDG_RUNTIME_DIR/tomat.sock`; on macOS,
+it is stored beneath the per-user temporary directory.
 
 <figure>
 

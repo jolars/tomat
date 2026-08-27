@@ -48,6 +48,14 @@ jobs:
             os: ubuntu-24.04-arm
             no_audio: true
 
+          # macOS x86_64
+          - target: x86_64-apple-darwin
+            os: macos-15-intel
+
+          # macOS Apple Silicon
+          - target: aarch64-apple-darwin
+            os: macos-15
+
     steps:
       - uses: actions/checkout@v7
         with:
@@ -59,7 +67,7 @@ jobs:
           targets: ${{ matrix.target }}
 
       - name: Install system dependencies
-        if: matrix.no_audio != true
+        if: matrix.no_audio != true && runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y libasound2-dev
@@ -105,7 +113,10 @@ jobs:
             exit 1
           fi
 
+      # strip(1) invalidates the ad-hoc signature the linker attaches on
+      # Apple Silicon, which makes the binary unexecutable.
       - name: Strip binary
+        if: runner.os == 'Linux'
         run: strip target/${{ matrix.target }}/release/tomat
 
       - name: Create archive
@@ -114,7 +125,9 @@ jobs:
           cp target/${{ matrix.target }}/release/tomat dist/
           cp -r target/man dist/
           cp -r target/completions dist/
-          cp assets/tomat.service dist/
+          if [[ "${{ matrix.target }}" == *-linux-* ]]; then
+            cp assets/tomat.service dist/
+          fi
           cp LICENSE dist/
           tar czf tomat-${{ matrix.target }}.tar.gz -C dist .
           rm -rf dist

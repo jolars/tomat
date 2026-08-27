@@ -1,8 +1,9 @@
 use fs2::FileExt;
 use serde::{Deserialize, Serialize};
-use std::fs::File;
-use std::io::Write;
-use std::path::PathBuf;
+use std::fs::{DirBuilder, File, OpenOptions};
+use std::io::{Read, Write};
+use std::os::unix::fs::{DirBuilderExt, MetadataExt, OpenOptionsExt, PermissionsExt};
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::Duration;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -17,22 +18,158 @@ struct ClientMessage {
     args: serde_json::Value,
 }
 
+fn fallback_runtime_dir(temp_dir: &Path, uid: u32) -> PathBuf {
+    temp_dir.join(format!("tomat-{uid}"))
+}
+
+fn get_runtime_dir() -> PathBuf {
+    ["TOMAT_RUNTIME_DIR", "XDG_RUNTIME_DIR"]
+        .into_iter()
+        .filter_map(std::env::var_os)
+        .map(PathBuf::from)
+        .find(|path| path.is_absolute())
+        .or_else(dirs::runtime_dir)
+        .unwrap_or_else(|| fallback_runtime_dir(&std::env::temp_dir(), unsafe { libc::getuid() }))
+}
+
+fn ensure_runtime_dir() -> std::io::Result<PathBuf> {
+    let runtime_dir = get_runtime_dir();
+    ensure_runtime_dir_at(&runtime_dir, unsafe { libc::getuid() })?;
+    Ok(runtime_dir)
+}
+
+fn ensure_runtime_dir_at(runtime_dir: &Path, uid: u32) -> std::io::Result<()> {
+    // Only the leaf directory belongs to tomat, so any parent it has to create
+    // keeps the system default mode rather than being locked down to 0700.
+    if let Some(parent) = runtime_dir.parent()
+        && !parent.as_os_str().is_empty()
+    {
+        std::fs::create_dir_all(parent)?;
+    }
+
+    let mut builder = DirBuilder::new();
+    builder.mode(0o700);
+    let created = match builder.create(runtime_dir) {
+        Ok(()) => true,
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => false,
+        Err(error) => return Err(error),
+    };
+
+    let metadata = std::fs::symlink_metadata(runtime_dir)?;
+    if metadata.file_type().is_symlink() || !metadata.is_dir() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            format!(
+                "Runtime path must be a directory, not a symlink or file: {}",
+                runtime_dir.display()
+            ),
+        ));
+    }
+    if metadata.uid() != uid {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::PermissionDenied,
+            format!(
+                "Runtime directory {} is owned by UID {}, expected UID {uid}",
+                runtime_dir.display(),
+                metadata.uid()
+            ),
+        ));
+    }
+
+    // Only write access matters: anyone who can add entries here can plant a
+    // socket or PID file for tomat to trip over.
+    let mode = metadata.permissions().mode() & 0o777;
+    if mode & 0o022 == 0 {
+        return Ok(());
+    }
+
+    // A directory tomat did not create belongs to the user, so report it
+    // instead of silently changing the permissions of, say, $HOME or /tmp.
+    if !created {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::PermissionDenied,
+            format!(
+                "Runtime directory {} is writable by other users (mode {mode:o}). \
+                 Restrict it to the owner or point TOMAT_RUNTIME_DIR at a private directory",
+                runtime_dir.display()
+            ),
+        ));
+    }
+
+    // mkdir masks the requested mode, so reaching here means the filesystem
+    // cannot represent it. Try once more, then give up rather than pretend.
+    std::fs::set_permissions(runtime_dir, std::fs::Permissions::from_mode(0o700))?;
+    let mode = std::fs::symlink_metadata(runtime_dir)?.permissions().mode() & 0o777;
+    if mode & 0o022 != 0 {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::PermissionDenied,
+            format!(
+                "Could not make runtime directory {} private (mode is {mode:o}). \
+                 Point TOMAT_RUNTIME_DIR at a directory on a filesystem that supports Unix permissions",
+                runtime_dir.display()
+            ),
+        ));
+    }
+
+    Ok(())
+}
+
+fn read_runtime_file(path: &Path) -> std::io::Result<String> {
+    let mut file = OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_NOFOLLOW)
+        .open(path)?;
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)?;
+    Ok(contents)
+}
+
+fn write_runtime_file(path: &Path, contents: &[u8]) -> std::io::Result<()> {
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .mode(0o600)
+        .custom_flags(libc::O_NOFOLLOW)
+        .open(path)?;
+    file.write_all(contents)
+}
+
+fn open_pid_file(path: &Path) -> std::io::Result<File> {
+    OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .mode(0o600)
+        .custom_flags(libc::O_NOFOLLOW)
+        .open(path)
+}
+
 fn get_socket_path() -> PathBuf {
-    dirs::runtime_dir()
-        .unwrap_or_else(|| PathBuf::from(format!("/run/user/{}", unsafe { libc::getuid() })))
-        .join("tomat.sock")
+    get_runtime_dir().join("tomat.sock")
 }
 
 fn get_pid_file_path() -> PathBuf {
-    dirs::runtime_dir()
-        .unwrap_or_else(|| PathBuf::from(format!("/run/user/{}", unsafe { libc::getuid() })))
-        .join("tomat.pid")
+    get_runtime_dir().join("tomat.pid")
+}
+
+/// Report whether a socket file is left over from a daemon that is gone.
+async fn socket_is_stale(socket_path: &Path) -> bool {
+    if !socket_path.exists() {
+        return false;
+    }
+
+    match UnixStream::connect(socket_path).await {
+        Ok(_) => false,
+        Err(error) => matches!(
+            error.kind(),
+            std::io::ErrorKind::ConnectionRefused | std::io::ErrorKind::NotFound
+        ),
+    }
 }
 
 fn get_state_file_path() -> PathBuf {
-    dirs::runtime_dir()
-        .unwrap_or_else(|| PathBuf::from(format!("/run/user/{}", unsafe { libc::getuid() })))
-        .join("tomat.state")
+    get_runtime_dir().join("tomat.state")
 }
 
 /// Save timer state to disk
@@ -40,7 +177,7 @@ fn save_state(state: &TimerState) {
     let state_path = get_state_file_path();
     match serde_json::to_string_pretty(state) {
         Ok(json) => {
-            if let Err(e) = std::fs::write(&state_path, json) {
+            if let Err(e) = write_runtime_file(&state_path, json.as_bytes()) {
                 eprintln!("Failed to save timer state: {}", e);
             }
         }
@@ -54,11 +191,7 @@ fn save_state(state: &TimerState) {
 fn load_state(quiet: bool) -> Option<TimerState> {
     let state_path = get_state_file_path();
 
-    if !state_path.exists() {
-        return None;
-    }
-
-    match std::fs::read_to_string(&state_path) {
+    match read_runtime_file(&state_path) {
         Ok(contents) => match serde_json::from_str::<TimerState>(&contents) {
             Ok(state) => {
                 if !quiet {
@@ -84,6 +217,7 @@ fn load_state(quiet: bool) -> Option<TimerState> {
                 None
             }
         },
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
         Err(e) => {
             eprintln!("Failed to read state file: {}", e);
             None
@@ -525,11 +659,12 @@ async fn handle_client(
 }
 
 pub async fn run_daemon(quiet: bool) -> Result<(), Box<dyn std::error::Error>> {
+    ensure_runtime_dir()?;
     let socket_path = get_socket_path();
     let pid_file_path = get_pid_file_path();
 
     // Create and lock PID file to prevent multiple daemon instances
-    let mut pid_file = File::create(&pid_file_path)?;
+    let mut pid_file = open_pid_file(&pid_file_path)?;
     pid_file.try_lock_exclusive().map_err(|_| {
         format!(
             "Another daemon instance is already running. PID file locked: {:?}",
@@ -538,6 +673,7 @@ pub async fn run_daemon(quiet: bool) -> Result<(), Box<dyn std::error::Error>> {
     })?;
 
     // Write current PID to the locked file
+    pid_file.set_len(0)?;
     let pid = std::process::id();
     write!(pid_file, "{}", pid)?;
     pid_file.flush()?;
@@ -584,11 +720,18 @@ pub async fn run_daemon(quiet: bool) -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // Set up signal handler for graceful shutdown
+    let mut terminate = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
     let result = tokio::select! {
         result = daemon_loop(listener, &mut state, &config, quiet) => result,
         _ = tokio::signal::ctrl_c() => {
             if !quiet {
                 println!("Received interrupt signal, shutting down...");
+            }
+            Ok(())
+        },
+        _ = terminate.recv() => {
+            if !quiet {
+                println!("Received termination signal, shutting down...");
             }
             Ok(())
         }
@@ -658,11 +801,12 @@ async fn daemon_loop(
 
 /// Start the daemon in the background
 pub async fn start_daemon(quiet: bool) -> Result<(), Box<dyn std::error::Error>> {
+    ensure_runtime_dir()?;
     let pid_file_path = get_pid_file_path();
     let socket_path = get_socket_path();
 
     // Check if daemon is already running by trying to read and verify PID file
-    if let Ok(pid_str) = std::fs::read_to_string(&pid_file_path)
+    if let Ok(pid_str) = read_runtime_file(&pid_file_path)
         && let Ok(pid) = pid_str.trim().parse::<u32>()
     {
         if is_process_running(pid) {
@@ -688,7 +832,7 @@ pub async fn start_daemon(quiet: bool) -> Result<(), Box<dyn std::error::Error>>
 
     // Try to lock the PID file to prevent race conditions with concurrent start attempts
     // We keep this lock until the spawned daemon creates its own lock
-    let lock_file = File::create(&pid_file_path)?;
+    let lock_file = open_pid_file(&pid_file_path)?;
     lock_file
         .try_lock_exclusive()
         .map_err(|_| "Another daemon is starting up right now. Please wait and try again.")?;
@@ -724,7 +868,7 @@ pub async fn start_daemon(quiet: bool) -> Result<(), Box<dyn std::error::Error>>
         // Check if socket and PID file exist
         if socket_path.exists() && pid_file_path.exists() {
             // Verify this is OUR daemon by checking the PID
-            if let Ok(pid_str) = std::fs::read_to_string(&pid_file_path)
+            if let Ok(pid_str) = read_runtime_file(&pid_file_path)
                 && let Ok(pid) = pid_str.trim().parse::<u32>()
             {
                 if pid == child_pid {
@@ -772,14 +916,26 @@ pub async fn stop_daemon(quiet: bool) -> Result<(), Box<dyn std::error::Error>> 
     let socket_path = get_socket_path();
 
     // Read PID from file
-    let pid_str = match std::fs::read_to_string(&pid_file_path) {
+    let pid_str = match read_runtime_file(&pid_file_path) {
         Ok(content) => content,
-        Err(_) => {
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
             if !quiet {
                 println!("No daemon PID file found");
             }
+            // A daemon can outlive its PID file, and unlinking the socket it is
+            // bound to would strand it, so only reclaim an unattended socket.
+            if socket_is_stale(&socket_path).await {
+                let _ = std::fs::remove_file(&socket_path);
+            } else if socket_path.exists() {
+                return Err(format!(
+                    "A daemon is still listening on {}. Stop it with 'kill' or reinstate its PID file",
+                    socket_path.display()
+                )
+                .into());
+            }
             return Ok(());
         }
+        Err(error) => return Err(format!("Failed to read daemon PID file: {error}").into()),
     };
 
     let pid = match pid_str.trim().parse::<u32>() {
@@ -877,7 +1033,7 @@ pub async fn daemon_status() -> Result<(), Box<dyn std::error::Error>> {
     let socket_path = get_socket_path();
 
     // Check if PID file exists
-    let pid = match std::fs::read_to_string(&pid_file_path) {
+    let pid = match read_runtime_file(&pid_file_path) {
         Ok(content) => match content.trim().parse::<u32>() {
             Ok(pid) => pid,
             Err(_) => {
@@ -932,6 +1088,116 @@ mod tests {
             path_str.contains("tomat.sock"),
             "Socket path should end with tomat.sock"
         );
+    }
+
+    #[test]
+    fn test_runtime_dir_falls_back_to_a_user_specific_temp_directory() {
+        assert_eq!(
+            fallback_runtime_dir(Path::new("/tmp"), 1234),
+            Path::new("/tmp/tomat-1234")
+        );
+    }
+
+    #[test]
+    fn test_runtime_dir_rejects_symlinks() {
+        use std::os::unix::fs::symlink;
+
+        let temp_dir = tempfile::tempdir().unwrap();
+        let target = temp_dir.path().join("target");
+        let runtime_dir = temp_dir.path().join("runtime");
+        std::fs::create_dir(&target).unwrap();
+        symlink(&target, &runtime_dir).unwrap();
+
+        let error = ensure_runtime_dir_at(&runtime_dir, unsafe { libc::getuid() }).unwrap_err();
+
+        assert_eq!(error.kind(), std::io::ErrorKind::InvalidInput);
+    }
+
+    #[test]
+    fn test_runtime_dir_rejects_an_unexpected_owner() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let unexpected_uid = unsafe { libc::getuid() }.wrapping_add(1);
+
+        let error = ensure_runtime_dir_at(temp_dir.path(), unexpected_uid).unwrap_err();
+
+        assert_eq!(error.kind(), std::io::ErrorKind::PermissionDenied);
+    }
+
+    #[test]
+    fn test_runtime_dir_rejects_a_world_writable_directory() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let temp_dir = tempfile::tempdir().unwrap();
+        std::fs::set_permissions(temp_dir.path(), std::fs::Permissions::from_mode(0o1777)).unwrap();
+
+        let error = ensure_runtime_dir_at(temp_dir.path(), unsafe { libc::getuid() }).unwrap_err();
+
+        assert_eq!(error.kind(), std::io::ErrorKind::PermissionDenied);
+        let mode = std::fs::symlink_metadata(temp_dir.path())
+            .unwrap()
+            .permissions()
+            .mode()
+            & 0o7777;
+        assert_eq!(mode, 0o1777, "an existing directory must not be modified");
+    }
+
+    #[test]
+    fn test_runtime_dir_accepts_a_readable_but_unwritable_directory() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let temp_dir = tempfile::tempdir().unwrap();
+        std::fs::set_permissions(temp_dir.path(), std::fs::Permissions::from_mode(0o755)).unwrap();
+
+        ensure_runtime_dir_at(temp_dir.path(), unsafe { libc::getuid() }).unwrap();
+
+        let mode = std::fs::symlink_metadata(temp_dir.path())
+            .unwrap()
+            .permissions()
+            .mode()
+            & 0o777;
+        assert_eq!(mode, 0o755, "an existing directory must not be modified");
+    }
+
+    #[test]
+    fn test_runtime_dir_is_created_private_without_restricting_parents() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let temp_dir = tempfile::tempdir().unwrap();
+        let parent = temp_dir.path().join("parent");
+        let runtime_dir = parent.join("tomat-runtime");
+
+        ensure_runtime_dir_at(&runtime_dir, unsafe { libc::getuid() }).unwrap();
+
+        let mode = |path: &Path| {
+            std::fs::symlink_metadata(path)
+                .unwrap()
+                .permissions()
+                .mode()
+                & 0o777
+        };
+        let reference = temp_dir.path().join("reference");
+        std::fs::create_dir(&reference).unwrap();
+
+        assert_eq!(mode(&runtime_dir), 0o700);
+        assert_eq!(
+            mode(&parent),
+            mode(&reference),
+            "parents keep the default mode"
+        );
+    }
+
+    #[test]
+    fn test_runtime_file_writes_do_not_follow_symlinks() {
+        use std::os::unix::fs::symlink;
+
+        let temp_dir = tempfile::tempdir().unwrap();
+        let target = temp_dir.path().join("target");
+        let link = temp_dir.path().join("tomat.state");
+        std::fs::write(&target, "unchanged").unwrap();
+        symlink(&target, &link).unwrap();
+
+        assert!(write_runtime_file(&link, b"replacement").is_err());
+        assert_eq!(std::fs::read_to_string(target).unwrap(), "unchanged");
     }
 
     #[test]

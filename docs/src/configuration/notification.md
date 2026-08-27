@@ -1,8 +1,8 @@
 # Notification Settings
 
 The `[notification]` section controls desktop notifications shown during phase
-transitions. Notifications are displayed by your system's notification daemon
-(such as dunst or mako).
+transitions. Notifications are displayed by the native notification system on
+macOS or by a notification daemon such as dunst or mako on Linux.
 
 ```toml
 [notification]
@@ -43,6 +43,11 @@ urgency = "normal"
 
     `"critical"`
     : High priority, may bypass do-not-disturb settings
+
+> [!NOTE]
+>
+> macOS controls notification icons and display duration. The current macOS
+> backend also ignores `urgency`; these options continue to apply on Linux.
 
 `work_message`
   : The message shown when transitioning from work to break. 

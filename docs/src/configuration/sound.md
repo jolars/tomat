@@ -2,9 +2,9 @@
 
 The `[sound]` section controls audio notifications when transitioning between
 work/break phases. By default, tomat plays high-quality WAV files built into the
-application. On Linux, this requires ALSA (Advanced Linux Sound Architecture).
-If the audio system is unavailable, it will automatically fall back to the
-system beep or disable audio.
+application. On Linux, this requires ALSA (Advanced Linux Sound Architecture);
+on macOS, Tomat uses Core Audio without additional dependencies. If the audio
+system is unavailable, Tomat falls back to the system beep or disables audio.
 
 ```toml
 [sound]
@@ -88,4 +88,3 @@ To use system beep only:
 [sound]
 mode = "system-beep"
 ```
-

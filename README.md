@@ -5,8 +5,8 @@ Status](https://github.com/jolars/tomat/actions/workflows/build-and-test.yml/bad
 [![codecov](https://codecov.io/gh/jolars/tomat/graph/badge.svg?token=21Kx0unk2A)](https://codecov.io/gh/jolars/tomat)
 [![Crates.io](https://img.shields.io/crates/v/tomat.svg)](https://crates.io/crates/tomat)
 
-Tomat ("tomato" in Swedish 🇸🇪) is a Pomodoro timer for Linux, designed for
-seamless integration with waybar and other status bars.
+Tomat ("tomato" in Swedish 🇸🇪) is a Pomodoro timer for Linux and macOS,
+designed for command-line use and seamless integration with status bars.
 
 ## Features
 
@@ -23,11 +23,7 @@ The easiest way to get started is to download a pre-built binary from the
 package manager if available.
 
 ```bash
-# Download and install binary (Linux x86_64)
-curl -L https://github.com/jolars/tomat/releases/latest/download/tomat-x86_64-unknown-linux-gnu.tar.gz | tar xz
-sudo mv tomat /usr/local/bin/
-
-# Or install from crates.io
+# Install from crates.io
 cargo install tomat
 
 # Start daemon and begin working
@@ -50,6 +46,7 @@ Download pre-built binaries from the [releases
 page](https://github.com/jolars/tomat/releases/latest):
 
 - **Generic Linux** (x86_64, aarch64): glibc and static musl `.tar.gz` archives
+- **macOS** (Intel and Apple Silicon): `.tar.gz` archives
 - **Debian/Ubuntu**: `.deb` packages
 - **Fedora/RHEL**: `.rpm` packages
 
@@ -61,6 +58,12 @@ audio alerts.
 # Example: Install generic binary for x86_64
 curl -L https://github.com/jolars/tomat/releases/latest/download/tomat-x86_64-unknown-linux-gnu.tar.gz | tar xz
 sudo mv tomat /usr/local/bin/
+
+# Example: Install on Apple Silicon
+curl -L https://github.com/jolars/tomat/releases/latest/download/tomat-aarch64-apple-darwin.tar.gz | tar xz
+sudo mv tomat /usr/local/bin/
+
+# For an Intel Mac, use tomat-x86_64-apple-darwin.tar.gz instead.
 
 # Or install DEB package
 curl -LO https://github.com/jolars/tomat/releases/latest/download/tomat_amd64.deb
@@ -120,7 +123,8 @@ cargo install tomat
 
 ### Prerequisites for Building
 
-On Linux systems, audio notifications require ALSA development libraries:
+On Linux systems, audio notifications require ALSA development libraries.
+macOS uses Core Audio and needs no additional system package.
 
 ```bash
 # Ubuntu/Debian
@@ -136,23 +140,23 @@ sudo pacman -S alsa-lib
 **Note**: Audio will be automatically disabled if ALSA is not available. The
 timer will still work normally with desktop notifications only.
 
-## Systemd Service Setup
+## Background Service Setup
 
-Most users will want to run the Tomat daemon as a systemd user service so that
-it starts automatically on login. Tomat provides a convenience command to
-install the service:
+Tomat can install the platform's native user service—systemd on Linux or a
+LaunchAgent on macOS—so that the daemon starts automatically on login:
 
 ```bash
 tomat daemon install
 ```
 
-After that, you can enable and start the service with:
+On macOS, this command loads and starts the LaunchAgent immediately. On Linux,
+enable and start the installed service with:
 
 ```bash
 systemctl --user enable tomat.service --now
 ```
 
-### Alternative Manual Setup
+### Alternative Manual Systemd Setup
 
 If you prefer to set up the systemd service manually, you can copy the service
 file from the examples directory:
@@ -207,8 +211,8 @@ The server (daemon) can be managed with `tomat daemon <subcommand>`:
 tomat daemon start     # Start background daemon
 tomat daemon stop      # Stop daemon
 tomat daemon status    # Check daemon status
-tomat daemon install   # Install systemd user service
-tomat daemon uninstall # Remove systemd user service
+tomat daemon install   # Install the native user service
+tomat daemon uninstall # Remove the native user service
 ```
 
 ## Uninstall
@@ -216,7 +220,7 @@ tomat daemon uninstall # Remove systemd user service
 To completely remove tomat, follow these steps:
 
 ```bash
-# Stop and remove systemd service
+# Stop and remove the native user service
 tomat daemon uninstall
 
 # Remove the binary
@@ -228,9 +232,10 @@ rm -rf ~/.config/tomat
 
 ## Configuration
 
-Tomat follows XDG Base Directory standards. Create
-`$XDG_CONFIG_HOME/tomat/config.toml` (typically `~/.config/tomat/config.toml`)
-to customize defaults:
+On Linux, create `$XDG_CONFIG_HOME/tomat/config.toml` (typically
+`~/.config/tomat/config.toml`) to customize defaults. On macOS, use
+`~/Library/Application Support/tomat/config.toml`. You can override either path
+with `TOMAT_CONFIG`:
 
 ```toml
 [timer]

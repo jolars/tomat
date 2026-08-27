@@ -1,8 +1,8 @@
 # Introduction <img src="./images/logo.svg" alt="Tomat logo" class="right" style="width: 192px;" />
 
-Welcome to the documentation for **Tomat {{ tomat-version }}**, a customizable
-and lightweight Pomodoro timer designed for seamless integration with waybar and
-other status bars.
+Welcome to the documentation for **Tomat {{ tomat-version }}**, a customizable,
+lightweight Pomodoro timer for Linux and macOS. It works from the command line
+and integrates with status bars.
 
 To get started, have a look at [Getting Started](guide/getting_started.md) for a
 quick guide to install and setup Tomat.

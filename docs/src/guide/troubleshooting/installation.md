@@ -1,6 +1,6 @@
 # Installation Issues
 
-## ALSA Library Missing
+## ALSA Library Missing on Linux
 
 ### Problem
 
@@ -34,5 +34,6 @@ Try the following steps:
 
 1. **Update Rust**: `rustup update stable`
 2. **Check toolchain**: Ensure you're using Rust stable
-3. **Install ALSA**: See ALSA section above
+3. **Install ALSA on Linux**: See the ALSA section above. macOS uses Core Audio
+   and does not need an extra audio package.
 4. **Clear cache**: `cargo clean` if building from source

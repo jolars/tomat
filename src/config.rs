@@ -27,6 +27,7 @@ impl std::str::FromStr for NotificationUrgency {
     }
 }
 
+#[cfg(not(target_os = "macos"))]
 impl From<NotificationUrgency> for notify_rust::Urgency {
     fn from(urgency: NotificationUrgency) -> Self {
         match urgency {

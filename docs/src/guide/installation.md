@@ -10,6 +10,7 @@ The easiest way to install Tomat is to download a pre-built binary from the
 available for multiple architectures and distributions:
 
 - **Generic Linux** (x86_64, aarch64): glibc and static musl `.tar.gz` archives
+- **macOS** (Intel and Apple Silicon): `.tar.gz` archives
 - **Debian/Ubuntu**: `.deb` packages
 - **Fedora/RHEL/openSUSE**: `.rpm` packages
 
@@ -26,6 +27,18 @@ sudo mv tomat /usr/local/bin/
 
 # Or for ARM64
 curl -L https://github.com/jolars/tomat/releases/latest/download/tomat-aarch64-unknown-linux-gnu.tar.gz | tar xz
+sudo mv tomat /usr/local/bin/
+```
+
+### macOS
+
+```bash
+# Apple Silicon
+curl -L https://github.com/jolars/tomat/releases/latest/download/tomat-aarch64-apple-darwin.tar.gz | tar xz
+sudo mv tomat /usr/local/bin/
+
+# Intel
+curl -L https://github.com/jolars/tomat/releases/latest/download/tomat-x86_64-apple-darwin.tar.gz | tar xz
 sudo mv tomat /usr/local/bin/
 ```
 
@@ -118,7 +131,8 @@ cd tomat
 
 ### Prerequisites
 
-On Linux systems, audio notifications require ALSA development libraries:
+On Linux systems, audio notifications require ALSA development libraries.
+macOS uses Core Audio and needs no additional system package.
 
 ```bash
 # Ubuntu/Debian
@@ -144,23 +158,29 @@ cargo install --path .
 > Audio will be automatically disabled if ALSA is not available. The timer will
 > still work normally, but with desktop notifications only.
 
-## Systemd Service Setup
+## Background Service Setup
 
-Most users will want to run the Tomat daemon as a systemd user service so that
-it starts automatically on login. Tomat provides a convenience command to
-install the service:
+Tomat can install the native user service—systemd on Linux or a LaunchAgent on
+macOS—so that the daemon starts automatically on login:
 
 ```bash
 tomat daemon install
 ```
 
-After that, you can enable and start the service with:
+On macOS, this command loads and starts the LaunchAgent immediately. You can
+inspect it with:
+
+```bash
+launchctl print gui/$UID/io.github.jolars.tomat
+```
+
+On Linux, enable and start the installed systemd service with:
 
 ```bash
 systemctl --user enable tomat.service --now
 ```
 
-### Alternative Manual Setup
+### Alternative Manual Systemd Setup
 
 If you prefer to set up the systemd service manually, you can copy the service
 file from the examples directory:
