@@ -83,13 +83,17 @@ Waybar shows parsing errors for tomat output.
    tomat daemon run  # Run in foreground to see errors
    ```
 
-3. **Update waybar config**:
+3. **Check the disconnected status**:
+
+   When the daemon is not running, `tomat status` returns valid JSON with the
+   `disconnected` class. It does not write a connection error to the Waybar log.
+
    ```json
    {
-     "custom/tomat": {
-       "exec": "tomat status 2>/dev/null || echo '{\"text\":\"🍅 Error\"}'",
-       "return-type": "json"
-     }
+     "text": "",
+     "tooltip": "Tomat daemon is not running",
+     "class": "disconnected",
+     "percentage": 0.0
    }
    ```
 

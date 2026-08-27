@@ -160,6 +160,28 @@ pub enum StatusOutput {
     Plain(String),
 }
 
+impl StatusOutput {
+    pub fn disconnected(format: &Format) -> Self {
+        const MESSAGE: &str = "Tomat daemon is not running";
+
+        match format {
+            Format::Waybar => Self::Waybar {
+                text: String::new(),
+                tooltip: MESSAGE.to_string(),
+                class: "disconnected".to_string(),
+                percentage: 0.0,
+            },
+            Format::I3statusRs => Self::I3statusRs {
+                text: MESSAGE.to_string(),
+                short_text: Some("Tomat disconnected".to_string()),
+                icon: None,
+                state: Some("Warning".to_string()),
+            },
+            Format::Plain => Self::Plain(MESSAGE.to_string()),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum Phase {
     Idle,

@@ -18,6 +18,39 @@ struct ServerResponse {
     message: String,
 }
 
+fn serialize_status_output(
+    status_output: timer::StatusOutput,
+) -> Result<String, Box<dyn std::error::Error>> {
+    match status_output {
+        timer::StatusOutput::Plain(text) => Ok(text),
+        _ => Ok(serde_json::to_string(&status_output)?),
+    }
+}
+
+fn format_disconnected_status(output_format: &str) -> Result<String, Box<dyn std::error::Error>> {
+    let format = output_format.parse::<timer::Format>()?;
+    serialize_status_output(timer::StatusOutput::disconnected(&format))
+}
+
+fn is_daemon_unavailable(error: &(dyn std::error::Error + 'static)) -> bool {
+    let mut current = Some(error);
+
+    while let Some(error) = current {
+        if let Some(error) = error.downcast_ref::<std::io::Error>()
+            && matches!(
+                error.kind(),
+                std::io::ErrorKind::NotFound | std::io::ErrorKind::ConnectionRefused
+            )
+        {
+            return true;
+        }
+
+        current = error.source();
+    }
+
+    false
+}
+
 /// Fetch and format timer status from daemon
 async fn fetch_and_format_status(
     output_format: &str,
@@ -54,13 +87,7 @@ async fn fetch_and_format_status(
     let status_output =
         timer::TimerState::format_status(&timer_status, &format_enum, template, icons);
 
-    // Convert to string based on format type
-    let output = match status_output {
-        timer::StatusOutput::Plain(text) => text,
-        _ => serde_json::to_string(&status_output)?,
-    };
-
-    Ok(output)
+    serialize_status_output(status_output)
 }
 
 #[tokio::main]
@@ -169,6 +196,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .await
             {
                 Ok(output) => println!("{}", output),
+                Err(e) if is_daemon_unavailable(e.as_ref()) => {
+                    println!("{}", format_disconnected_status(&output)?);
+                }
                 Err(e) => eprintln!("Failed to connect to daemon: {}", e),
             }
         }

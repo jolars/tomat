@@ -27,7 +27,6 @@ fn test_daemon_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn test_daemon_status_when_not_running() -> Result<(), Box<dyn std::error::Error>> {
-    // Don't start a daemon, just try to connect
     let binary_path = TestDaemon::get_binary_path();
     let temp_dir = tempfile::tempdir()?;
 
@@ -36,28 +35,71 @@ fn test_daemon_status_when_not_running() -> Result<(), Box<dyn std::error::Error
         .env("XDG_RUNTIME_DIR", temp_dir.path())
         .output()?;
 
-    // Should fail to connect
-    if output.status.success() {
-        // If status command succeeded, it might be connecting to a different daemon
-        // Let's check if we get an actual status response
-        let stdout = String::from_utf8_lossy(&output.stdout);
-
-        // If we get JSON status, then there's a daemon running elsewhere - that's actually OK
-        if serde_json::from_str::<serde_json::Value>(&stdout).is_ok() {
-            // There's a daemon running somewhere else, which is fine for this test
-            return Ok(());
-        }
-    }
-
+    assert!(output.status.success());
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(
-        !output.status.success()
-            || stderr.contains("Failed to connect")
-            || stderr.contains("Connection refused"),
-        "Should get connection error when no daemon is running. status: {}, stderr: {}",
-        output.status.success(),
-        stderr
+        stderr.is_empty(),
+        "Status should not write to stderr: {stderr}"
     );
+
+    let status: serde_json::Value = serde_json::from_slice(&output.stdout)?;
+    assert_eq!(status["text"], "");
+    assert_eq!(status["tooltip"], "Tomat daemon is not running");
+    assert_eq!(status["class"], "disconnected");
+    assert_eq!(status["percentage"], 0.0);
+
+    Ok(())
+}
+
+#[test]
+fn test_disconnected_status_respects_output_format() -> Result<(), Box<dyn std::error::Error>> {
+    let binary_path = TestDaemon::get_binary_path();
+    let temp_dir = tempfile::tempdir()?;
+
+    let i3status_output = Command::new(&binary_path)
+        .args(["status", "--output", "i3status-rs"])
+        .env("XDG_RUNTIME_DIR", temp_dir.path())
+        .output()?;
+    assert!(i3status_output.status.success());
+    assert!(i3status_output.stderr.is_empty());
+
+    let status: serde_json::Value = serde_json::from_slice(&i3status_output.stdout)?;
+    assert_eq!(status["text"], "Tomat daemon is not running");
+    assert_eq!(status["short_text"], "Tomat disconnected");
+    assert_eq!(status["state"], "Warning");
+
+    let plain_output = Command::new(&binary_path)
+        .args(["status", "--output", "plain"])
+        .env("XDG_RUNTIME_DIR", temp_dir.path())
+        .output()?;
+    assert!(plain_output.status.success());
+    assert!(plain_output.stderr.is_empty());
+    assert_eq!(
+        String::from_utf8(plain_output.stdout)?.trim(),
+        "Tomat daemon is not running"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_daemon_status_with_stale_socket() -> Result<(), Box<dyn std::error::Error>> {
+    let binary_path = TestDaemon::get_binary_path();
+    let temp_dir = tempfile::tempdir()?;
+    let socket_path = temp_dir.path().join("tomat.sock");
+    let listener = std::os::unix::net::UnixListener::bind(&socket_path)?;
+    drop(listener);
+
+    let output = Command::new(&binary_path)
+        .args(["status"])
+        .env("XDG_RUNTIME_DIR", temp_dir.path())
+        .output()?;
+
+    assert!(output.status.success());
+    assert!(output.stderr.is_empty());
+
+    let status: serde_json::Value = serde_json::from_slice(&output.stdout)?;
+    assert_eq!(status["class"], "disconnected");
 
     Ok(())
 }
