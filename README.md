@@ -49,9 +49,13 @@ The full documentation is available at <https://jolars.github.io/tomat/>.
 Download pre-built binaries from the [releases
 page](https://github.com/jolars/tomat/releases/latest):
 
-- **Generic Linux** (x86_64, aarch64): `.tar.gz` archives
+- **Generic Linux** (x86_64, aarch64): glibc and static musl `.tar.gz` archives
 - **Debian/Ubuntu**: `.deb` packages
 - **Fedora/RHEL**: `.rpm` packages
+
+The musl archives run without a system C library dependency. Because ALSA is
+not available in the static build, they support desktop notifications but not
+audio alerts.
 
 ```bash
 # Example: Install generic binary for x86_64

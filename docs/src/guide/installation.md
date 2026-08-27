@@ -9,9 +9,13 @@ The easiest way to install Tomat is to download a pre-built binary from the
 [releases page](https://github.com/jolars/tomat/releases/latest). Binaries are
 available for multiple architectures and distributions:
 
-- **Generic Linux** (x86_64, aarch64): `.tar.gz` archives
+- **Generic Linux** (x86_64, aarch64): glibc and static musl `.tar.gz` archives
 - **Debian/Ubuntu**: `.deb` packages
 - **Fedora/RHEL/openSUSE**: `.rpm` packages
+
+The musl archives run without a system C library dependency. Because ALSA is
+not available in the static build, they support desktop notifications but not
+audio alerts.
 
 ### Generic Binary
 
