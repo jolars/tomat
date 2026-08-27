@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.12.0](https://github.com/jolars/tomat/compare/v2.11.0...v2.12.0) (2026-08-27)
+
+### Features
+- add global quiet flag ([`90ee92a`](https://github.com/jolars/tomat/commit/90ee92ad18f9ae2972f94864085e5e5c64537c08))
+
+### Bug Fixes
+- return status when daemon is unavailable ([`5ff2c6e`](https://github.com/jolars/tomat/commit/5ff2c6ee07388223dc5d4a9883b889251e2c28c2)), fixes [#100](https://github.com/jolars/tomat/issues/100)
+- resolve cargo audit vulnerabilities ([`fa7d8f8`](https://github.com/jolars/tomat/commit/fa7d8f85b19d6ea0f3b18175a90ad7dc0daa258e))
+- bump memmap2 to 0.9.11 to resolve RUSTSEC-2026-0186 ([`a5214c6`](https://github.com/jolars/tomat/commit/a5214c694bdbf3dc60371354d058e08ff41da7e9))
+
 ## [2.11.0](https://github.com/jolars/tomat/compare/v2.10.0...v2.11.0) (2026-02-23)
 
 ### Features
