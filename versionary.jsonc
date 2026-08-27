@@ -1,0 +1,19 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jolars/versionary/main/schemas/config.json",
+  "version": 1,
+  "release-type": "rust",
+  "bootstrap-sha": "3c614288e0fe716d8c8954ae7f0922f1fd0ed07f",
+  "include-commit-authors": true,
+  "release-reference-comments": "best-effort",
+  "packages": {
+    ".": {
+      "extra-files": [
+        {
+          "type": "regex",
+          "path": "flake.nix",
+          "pattern": "version = \"(?<version>\\d+\\.\\d+\\.\\d+)\""
+        }
+      ]
+    }
+  }
+}

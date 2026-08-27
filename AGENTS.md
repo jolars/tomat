@@ -151,10 +151,10 @@ clippy and rustfmt automatically if using the Nix devenv.
 ├── .github/
 │   ├── workflows/
 │   │   ├── build-and-test.yml    # CI: tests on Ubuntu/Windows/macOS + security audit
-│   │   └── release.yml           # Semantic release workflow
+│   │   └── release.yml           # crates.io publishing workflow
 │   └── dependabot.yml            # Dependency updates
 ├── .pre-commit-config.yaml  # Pre-commit hooks for formatting and linting
-├── .releaserc.json          # Semantic release configuration
+├── versionary.jsonc         # Versionary release configuration
 └── devenv.*                 # Nix development environment files
 ```
 
@@ -251,10 +251,11 @@ man pages are generated (commands), not sections 5/7
    - **Steps:** Build → Test → Clippy → Format check
    - **Security:** RustSec security audit
    - **Caching:** Cargo registry and target directory
+   - **Release:** Versionary release PRs, version bumps, changelogs, and GitHub
+     releases after successful pushes to main
 
-2. **release.yml** (manual trigger):
-   - **Semantic release** with conventional commits
-   - **Automated:** Version bumping, changelog, GitHub releases
+2. **release.yml** (published GitHub releases):
+   - Publishes the tagged crate to crates.io
 
 ### Validation Pipeline
 

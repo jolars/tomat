@@ -84,3 +84,25 @@ jobs:
       - uses: rustsec/audit-check@v2.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+
+  versionary:
+    name: Versionary
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [test, test-docs, security-audit]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          token: ${{ secrets.RELEASE_TOKEN }}
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: jolars/versionary@v1
+        with:
+          token: ${{ secrets.RELEASE_TOKEN }}
