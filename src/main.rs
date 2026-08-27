@@ -51,6 +51,26 @@ fn is_daemon_unavailable(error: &(dyn std::error::Error + 'static)) -> bool {
     false
 }
 
+fn handle_response(
+    response: ServerResponse,
+    quiet: bool,
+    success_message: Option<&str>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    if !response.success {
+        return Err(response.message.into());
+    }
+
+    if !quiet {
+        println!("{}", success_message.unwrap_or(&response.message));
+    }
+
+    Ok(())
+}
+
+fn connection_error(error: impl std::fmt::Display) -> Box<dyn std::error::Error> {
+    format!("Failed to connect to daemon: {error}").into()
+}
+
 /// Fetch and format timer status from daemon
 async fn fetch_and_format_status(
     output_format: &str,
@@ -93,26 +113,27 @@ async fn fetch_and_format_status(
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
+    let quiet = cli.quiet;
 
     match cli.command {
         Commands::Daemon { action } => match action {
             DaemonAction::Start => {
-                crate::server::start_daemon().await?;
+                crate::server::start_daemon(quiet).await?;
             }
             DaemonAction::Stop => {
-                crate::server::stop_daemon().await?;
+                crate::server::stop_daemon(quiet).await?;
             }
             DaemonAction::Status => {
                 crate::server::daemon_status().await?;
             }
             DaemonAction::Install { force } => {
-                install_systemd_service(force)?;
+                install_systemd_service(force, quiet)?;
             }
             DaemonAction::Uninstall => {
-                uninstall_systemd_service()?;
+                uninstall_systemd_service(quiet)?;
             }
             DaemonAction::Run => {
-                run_daemon().await?;
+                run_daemon(quiet).await?;
             }
         },
 
@@ -155,28 +176,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 args["volume"] = serde_json::json!(volume);
             }
 
-            match send_command("start", args).await {
-                Ok(response) => {
-                    if response.success {
-                        println!("{}", response.message);
-                    } else {
-                        eprintln!("Error: {}", response.message);
-                    }
-                }
-                Err(e) => eprintln!("Failed to connect to daemon: {}", e),
-            }
+            let response = send_command("start", args)
+                .await
+                .map_err(connection_error)?;
+            handle_response(response, quiet, None)?;
         }
 
-        Commands::Stop => match send_command("stop", serde_json::Value::Null).await {
-            Ok(response) => {
-                if response.success {
-                    println!("Timer stopped");
-                } else {
-                    eprintln!("Error: {}", response.message);
-                }
-            }
-            Err(e) => eprintln!("Failed to connect to daemon: {}", e),
-        },
+        Commands::Stop => {
+            let response = send_command("stop", serde_json::Value::Null)
+                .await
+                .map_err(connection_error)?;
+            handle_response(response, quiet, Some("Timer stopped"))?;
+        }
 
         Commands::Status { output, format } => {
             // Load config for display format defaults
@@ -199,7 +210,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Err(e) if is_daemon_unavailable(e.as_ref()) => {
                     println!("{}", format_disconnected_status(&output)?);
                 }
-                Err(e) => eprintln!("Failed to connect to daemon: {}", e),
+                Err(e) => return Err(connection_error(e)),
             }
         }
 
@@ -228,9 +239,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 {
                     Ok(output) => println!("{}", output),
                     Err(e) => {
-                        eprintln!("Failed to connect to daemon: {}", e);
-                        // Exit on error (daemon might be stopped)
-                        break;
+                        return Err(connection_error(e));
                     }
                 }
 
@@ -238,56 +247,40 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        Commands::Skip => match send_command("skip", serde_json::Value::Null).await {
-            Ok(response) => {
-                if response.success {
-                    println!("Skipped to next phase");
-                } else {
-                    eprintln!("Error: {}", response.message);
-                }
-            }
-            Err(e) => eprintln!("Failed to connect to daemon: {}", e),
-        },
+        Commands::Skip => {
+            let response = send_command("skip", serde_json::Value::Null)
+                .await
+                .map_err(connection_error)?;
+            handle_response(response, quiet, Some("Skipped to next phase"))?;
+        }
 
-        Commands::Pause => match send_command("pause", serde_json::Value::Null).await {
-            Ok(response) => {
-                if response.success {
-                    println!("{}", response.message);
-                } else {
-                    eprintln!("Error: {}", response.message);
-                }
-            }
-            Err(e) => eprintln!("Failed to connect to daemon: {}", e),
-        },
+        Commands::Pause => {
+            let response = send_command("pause", serde_json::Value::Null)
+                .await
+                .map_err(connection_error)?;
+            handle_response(response, quiet, None)?;
+        }
 
-        Commands::Resume => match send_command("resume", serde_json::Value::Null).await {
-            Ok(response) => {
-                if response.success {
-                    println!("{}", response.message);
-                } else {
-                    eprintln!("Error: {}", response.message);
-                }
-            }
-            Err(e) => eprintln!("Failed to connect to daemon: {}", e),
-        },
+        Commands::Resume => {
+            let response = send_command("resume", serde_json::Value::Null)
+                .await
+                .map_err(connection_error)?;
+            handle_response(response, quiet, None)?;
+        }
 
-        Commands::Toggle => match send_command("toggle", serde_json::Value::Null).await {
-            Ok(response) => {
-                if response.success {
-                    println!("{}", response.message);
-                } else {
-                    eprintln!("Error: {}", response.message);
-                }
-            }
-            Err(e) => eprintln!("Failed to connect to daemon: {}", e),
-        },
+        Commands::Toggle => {
+            let response = send_command("toggle", serde_json::Value::Null)
+                .await
+                .map_err(connection_error)?;
+            handle_response(response, quiet, None)?;
+        }
     }
 
     Ok(())
 }
 
 /// Install systemd user service for tomat daemon
-fn install_systemd_service(force: bool) -> Result<(), Box<dyn std::error::Error>> {
+fn install_systemd_service(force: bool, quiet: bool) -> Result<(), Box<dyn std::error::Error>> {
     use std::fs;
 
     // Get the current executable path
@@ -352,10 +345,12 @@ PartOf=graphical-session.target
 
     fs::write(&service_path, service_content)?;
 
-    println!(
-        "✓ Systemd service file installed to: {}",
-        service_path.display()
-    );
+    if !quiet {
+        println!(
+            "✓ Systemd service file installed to: {}",
+            service_path.display()
+        );
+    }
 
     // Reload systemd and enable service
     let reload_result = std::process::Command::new("systemctl")
@@ -364,7 +359,9 @@ PartOf=graphical-session.target
 
     match reload_result {
         Ok(status) if status.success() => {
-            println!("✓ Systemd daemon reloaded");
+            if !quiet {
+                println!("✓ Systemd daemon reloaded");
+            }
 
             let enable_result = std::process::Command::new("systemctl")
                 .args(["--user", "enable", "tomat.service"])
@@ -372,14 +369,16 @@ PartOf=graphical-session.target
 
             match enable_result {
                 Ok(status) if status.success() => {
-                    println!("✓ Tomat service enabled");
-                    println!("\nService installed successfully!");
-                    println!("\nTo start the daemon:");
-                    println!("  systemctl --user start tomat.service");
-                    println!("\nTo check status:");
-                    println!("  systemctl --user status tomat.service");
-                    println!("\nTo enable auto-start on login:");
-                    println!("  loginctl enable-linger $USER");
+                    if !quiet {
+                        println!("✓ Tomat service enabled");
+                        println!("\nService installed successfully!");
+                        println!("\nTo start the daemon:");
+                        println!("  systemctl --user start tomat.service");
+                        println!("\nTo check status:");
+                        println!("  systemctl --user status tomat.service");
+                        println!("\nTo enable auto-start on login:");
+                        println!("  loginctl enable-linger $USER");
+                    }
                 }
                 Ok(_) => {
                     eprintln!("⚠ Warning: Failed to enable tomat.service");
@@ -409,7 +408,7 @@ PartOf=graphical-session.target
 }
 
 /// Uninstall systemd user service for tomat daemon
-fn uninstall_systemd_service() -> Result<(), Box<dyn std::error::Error>> {
+fn uninstall_systemd_service(quiet: bool) -> Result<(), Box<dyn std::error::Error>> {
     use std::fs;
 
     // Use XDG config directory consistently
@@ -430,7 +429,9 @@ fn uninstall_systemd_service() -> Result<(), Box<dyn std::error::Error>> {
 
     // Check if service file exists
     if !service_path.exists() {
-        println!("Tomat service is not installed (service file not found)");
+        if !quiet {
+            println!("Tomat service is not installed (service file not found)");
+        }
         return Ok(());
     }
 
@@ -440,7 +441,11 @@ fn uninstall_systemd_service() -> Result<(), Box<dyn std::error::Error>> {
         .status();
 
     match stop_result {
-        Ok(status) if status.success() => println!("✓ Tomat service stopped"),
+        Ok(status) if status.success() => {
+            if !quiet {
+                println!("✓ Tomat service stopped");
+            }
+        }
         Ok(_) => eprintln!("⚠ Warning: Failed to stop tomat.service (might not be running)"),
         Err(e) => eprintln!("⚠ Warning: Failed to run systemctl stop: {}", e),
     }
@@ -450,7 +455,11 @@ fn uninstall_systemd_service() -> Result<(), Box<dyn std::error::Error>> {
         .status();
 
     match disable_result {
-        Ok(status) if status.success() => println!("✓ Tomat service disabled"),
+        Ok(status) if status.success() => {
+            if !quiet {
+                println!("✓ Tomat service disabled");
+            }
+        }
         Ok(_) => eprintln!("⚠ Warning: Failed to disable tomat.service"),
         Err(e) => eprintln!("⚠ Warning: Failed to run systemctl disable: {}", e),
     }
@@ -458,7 +467,9 @@ fn uninstall_systemd_service() -> Result<(), Box<dyn std::error::Error>> {
     // Remove service file
     match fs::remove_file(&service_path) {
         Ok(()) => {
-            println!("✓ Service file removed: {}", service_path.display());
+            if !quiet {
+                println!("✓ Service file removed: {}", service_path.display());
+            }
 
             // Reload systemd
             let reload_result = std::process::Command::new("systemctl")
@@ -466,12 +477,18 @@ fn uninstall_systemd_service() -> Result<(), Box<dyn std::error::Error>> {
                 .status();
 
             match reload_result {
-                Ok(status) if status.success() => println!("✓ Systemd daemon reloaded"),
+                Ok(status) if status.success() => {
+                    if !quiet {
+                        println!("✓ Systemd daemon reloaded");
+                    }
+                }
                 Ok(_) => eprintln!("⚠ Warning: Failed to reload systemd daemon"),
                 Err(e) => eprintln!("⚠ Warning: Failed to run systemctl daemon-reload: {}", e),
             }
 
-            println!("\nTomat service uninstalled successfully!");
+            if !quiet {
+                println!("\nTomat service uninstalled successfully!");
+            }
         }
         Err(e) => {
             eprintln!("Failed to remove service file: {}", e);

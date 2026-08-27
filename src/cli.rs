@@ -80,6 +80,9 @@ EXAMPLES:
 
 For more information, visit: https://github.com/jolars/tomat")]
 pub struct Cli {
+    /// Suppress routine output while preserving command results and errors
+    #[arg(short, long, global = true)]
+    pub quiet: bool,
     #[command(subcommand)]
     pub command: Commands,
 }

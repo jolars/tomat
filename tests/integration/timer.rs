@@ -1,4 +1,5 @@
 use super::common::TestDaemon;
+use std::process::Command;
 use std::thread;
 use std::time::Duration;
 
@@ -169,11 +170,16 @@ fn test_explicit_pause_resume_commands() -> Result<(), Box<dyn std::error::Error
 fn test_pause_resume_error_handling() -> Result<(), Box<dyn std::error::Error>> {
     let daemon = TestDaemon::start()?;
 
-    // Try to pause without starting timer - should work (paused state is valid)
-    daemon.send_command(&["pause"])?;
+    for command in ["pause", "resume"] {
+        let output = Command::new(TestDaemon::get_binary_path())
+            .arg(command)
+            .env("XDG_RUNTIME_DIR", daemon._temp_dir.path())
+            .output()?;
 
-    // Try to resume when already paused - should work
-    daemon.send_command(&["resume"])?;
+        assert!(!output.status.success());
+        assert!(output.stdout.is_empty());
+        assert!(String::from_utf8_lossy(&output.stderr).contains("timer is idle"));
+    }
 
     Ok(())
 }

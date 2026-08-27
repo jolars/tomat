@@ -2,7 +2,12 @@
 
 Tomat is a Pomodoro timer with a daemon-based architecture, designed for seamless integration with waybar and other status bars. It uses a Unix socket for client-server communication, ensuring your timer state persists across waybar restarts and system suspend/resume.
 
-**Usage:** `tomat <COMMAND>`
+**Usage:** `tomat [OPTIONS] <COMMAND>`
+
+## Options
+
+`-q`, `--quiet`
+:   Suppress routine output while preserving command results and errors
 
 ## `tomat daemon`
 

@@ -51,7 +51,7 @@ fn save_state(state: &TimerState) {
 }
 
 /// Load timer state from disk
-fn load_state() -> Option<TimerState> {
+fn load_state(quiet: bool) -> Option<TimerState> {
     let state_path = get_state_file_path();
 
     if !state_path.exists() {
@@ -61,15 +61,17 @@ fn load_state() -> Option<TimerState> {
     match std::fs::read_to_string(&state_path) {
         Ok(contents) => match serde_json::from_str::<TimerState>(&contents) {
             Ok(state) => {
-                println!("Restored timer state from {:?}", state_path);
-                println!(
-                    "  State: phase={:?}, paused={}, work={}min, break={}min, long_break={}min",
-                    state.phase,
-                    state.is_paused,
-                    state.work_duration,
-                    state.break_duration,
-                    state.long_break_duration
-                );
+                if !quiet {
+                    println!("Restored timer state from {:?}", state_path);
+                    println!(
+                        "  State: phase={:?}, paused={}, work={}min, break={}min, long_break={}min",
+                        state.phase,
+                        state.is_paused,
+                        state.work_duration,
+                        state.break_duration,
+                        state.long_break_duration
+                    );
+                }
                 Some(state)
             }
             Err(e) => {
@@ -522,7 +524,7 @@ async fn handle_client(
     Ok(should_shutdown)
 }
 
-pub async fn run_daemon() -> Result<(), Box<dyn std::error::Error>> {
+pub async fn run_daemon(quiet: bool) -> Result<(), Box<dyn std::error::Error>> {
     let socket_path = get_socket_path();
     let pid_file_path = get_pid_file_path();
 
@@ -549,18 +551,20 @@ pub async fn run_daemon() -> Result<(), Box<dyn std::error::Error>> {
     let listener = UnixListener::bind(&socket_path)?;
 
     // Load configuration first
-    let config = crate::config::Config::load_with_logging(true);
+    let config = crate::config::Config::load_with_logging(!quiet);
 
     // Try to load existing state, fallback to config defaults if not found
-    let mut state = load_state().unwrap_or_else(|| {
-        println!("No existing state found, starting with config defaults");
-        println!(
-            "  Using: work={}min, break={}min, long_break={}min, sessions={}",
-            config.timer.work,
-            config.timer.break_time,
-            config.timer.long_break,
-            config.timer.sessions
-        );
+    let mut state = load_state(quiet).unwrap_or_else(|| {
+        if !quiet {
+            println!("No existing state found, starting with config defaults");
+            println!(
+                "  Using: work={}min, break={}min, long_break={}min, sessions={}",
+                config.timer.work,
+                config.timer.break_time,
+                config.timer.long_break,
+                config.timer.sessions
+            );
+        }
         TimerState::new(
             config.timer.work,
             config.timer.break_time,
@@ -569,7 +573,9 @@ pub async fn run_daemon() -> Result<(), Box<dyn std::error::Error>> {
         )
     });
 
-    println!("Tomat daemon listening on {:?}", socket_path);
+    if !quiet {
+        println!("Tomat daemon listening on {:?}", socket_path);
+    }
 
     // Clean up socket and PID file on exit
     let cleanup = || {
@@ -579,9 +585,11 @@ pub async fn run_daemon() -> Result<(), Box<dyn std::error::Error>> {
 
     // Set up signal handler for graceful shutdown
     let result = tokio::select! {
-        result = daemon_loop(listener, &mut state, &config) => result,
+        result = daemon_loop(listener, &mut state, &config, quiet) => result,
         _ = tokio::signal::ctrl_c() => {
-            println!("Received interrupt signal, shutting down...");
+            if !quiet {
+                println!("Received interrupt signal, shutting down...");
+            }
             Ok(())
         }
     };
@@ -596,6 +604,7 @@ async fn daemon_loop(
     listener: UnixListener,
     state: &mut TimerState,
     config: &crate::config::Config,
+    quiet: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     loop {
         tokio::select! {
@@ -603,7 +612,9 @@ async fn daemon_loop(
             Ok((stream, _)) = listener.accept() => {
                 match handle_client(stream, state, config).await {
                     Ok(should_shutdown) if should_shutdown => {
-                        println!("Shutdown requested, exiting gracefully");
+                        if !quiet {
+                            println!("Shutdown requested, exiting gracefully");
+                        }
                         return Ok(());
                     }
                     Err(e) => {
@@ -646,7 +657,7 @@ async fn daemon_loop(
 }
 
 /// Start the daemon in the background
-pub async fn start_daemon() -> Result<(), Box<dyn std::error::Error>> {
+pub async fn start_daemon(quiet: bool) -> Result<(), Box<dyn std::error::Error>> {
     let pid_file_path = get_pid_file_path();
     let socket_path = get_socket_path();
 
@@ -655,17 +666,21 @@ pub async fn start_daemon() -> Result<(), Box<dyn std::error::Error>> {
         && let Ok(pid) = pid_str.trim().parse::<u32>()
     {
         if is_process_running(pid) {
-            println!(
-                "Daemon is already running (PID: {}). Use 'tomat daemon stop' to stop it first.",
-                pid
-            );
+            if !quiet {
+                println!(
+                    "Daemon is already running (PID: {}). Use 'tomat daemon stop' to stop it first.",
+                    pid
+                );
+            }
             return Ok(());
         } else {
             // Stale PID file found - try to clean it up
-            println!(
-                "Found stale PID file (PID {} no longer running), cleaning up...",
-                pid
-            );
+            if !quiet {
+                println!(
+                    "Found stale PID file (PID {} no longer running), cleaning up...",
+                    pid
+                );
+            }
             let _ = std::fs::remove_file(&pid_file_path);
             let _ = std::fs::remove_file(&socket_path);
         }
@@ -683,6 +698,7 @@ pub async fn start_daemon() -> Result<(), Box<dyn std::error::Error>> {
 
     // Start daemon in background
     let child = Command::new(&exe_path)
+        .arg("--quiet")
         .arg("daemon")
         .arg("run") // Internal command to actually run the daemon
         .stdin(Stdio::null())
@@ -691,7 +707,9 @@ pub async fn start_daemon() -> Result<(), Box<dyn std::error::Error>> {
         .spawn()?;
 
     let child_pid = child.id();
-    println!("Started daemon in background (PID: {})", child_pid);
+    if !quiet {
+        println!("Started daemon in background (PID: {})", child_pid);
+    }
 
     // Release the lock so the daemon can acquire it
     // The small time window here is acceptable because the daemon is already running
@@ -713,7 +731,9 @@ pub async fn start_daemon() -> Result<(), Box<dyn std::error::Error>> {
                     // Our daemon successfully wrote its PID - now verify it responds
                     match send_command("status", serde_json::Value::Null).await {
                         Ok(_) => {
-                            println!("Daemon started successfully");
+                            if !quiet {
+                                println!("Daemon started successfully");
+                            }
                             return Ok(());
                         }
                         Err(_) if start.elapsed() < timeout => {
@@ -747,7 +767,7 @@ pub async fn start_daemon() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 /// Stop the running daemon
-pub async fn stop_daemon() -> Result<(), Box<dyn std::error::Error>> {
+pub async fn stop_daemon(quiet: bool) -> Result<(), Box<dyn std::error::Error>> {
     let pid_file_path = get_pid_file_path();
     let socket_path = get_socket_path();
 
@@ -755,7 +775,9 @@ pub async fn stop_daemon() -> Result<(), Box<dyn std::error::Error>> {
     let pid_str = match std::fs::read_to_string(&pid_file_path) {
         Ok(content) => content,
         Err(_) => {
-            println!("No daemon PID file found");
+            if !quiet {
+                println!("No daemon PID file found");
+            }
             return Ok(());
         }
     };
@@ -763,7 +785,9 @@ pub async fn stop_daemon() -> Result<(), Box<dyn std::error::Error>> {
     let pid = match pid_str.trim().parse::<u32>() {
         Ok(pid) => pid,
         Err(_) => {
-            println!("Invalid PID in file, cleaning up");
+            if !quiet {
+                println!("Invalid PID in file, cleaning up");
+            }
             let _ = std::fs::remove_file(&pid_file_path);
             let _ = std::fs::remove_file(&socket_path);
             return Ok(());
@@ -772,7 +796,9 @@ pub async fn stop_daemon() -> Result<(), Box<dyn std::error::Error>> {
 
     // Check if process is running
     if !is_process_running(pid) {
-        println!("Daemon is not running, cleaning up stale files");
+        if !quiet {
+            println!("Daemon is not running, cleaning up stale files");
+        }
         let _ = std::fs::remove_file(&pid_file_path);
         let _ = std::fs::remove_file(&socket_path);
         return Ok(());
@@ -781,12 +807,16 @@ pub async fn stop_daemon() -> Result<(), Box<dyn std::error::Error>> {
     // Try graceful shutdown via socket command first
     match send_command("shutdown", serde_json::Value::Null).await {
         Ok(_) => {
-            println!("Sent shutdown command to daemon");
+            if !quiet {
+                println!("Sent shutdown command to daemon");
+            }
 
             // Wait up to 5 seconds for graceful shutdown
             for _ in 0..50 {
                 if !is_process_running(pid) {
-                    println!("Daemon stopped gracefully");
+                    if !quiet {
+                        println!("Daemon stopped gracefully");
+                    }
                     let _ = std::fs::remove_file(&pid_file_path);
                     let _ = std::fs::remove_file(&socket_path);
                     return Ok(());
@@ -794,10 +824,10 @@ pub async fn stop_daemon() -> Result<(), Box<dyn std::error::Error>> {
                 tokio::time::sleep(Duration::from_millis(100)).await;
             }
 
-            println!("Daemon did not respond to shutdown command, trying signal-based shutdown");
+            eprintln!("Daemon did not respond to shutdown command, trying signal-based shutdown");
         }
         Err(_) => {
-            println!(
+            eprintln!(
                 "Could not send shutdown command (daemon may be unresponsive), trying signal-based shutdown"
             );
         }
@@ -806,12 +836,16 @@ pub async fn stop_daemon() -> Result<(), Box<dyn std::error::Error>> {
     // Fallback to signal-based shutdown
     unsafe {
         if libc::kill(pid as i32, libc::SIGTERM) == 0 {
-            println!("Sent SIGTERM to daemon (PID: {})", pid);
+            if !quiet {
+                println!("Sent SIGTERM to daemon (PID: {})", pid);
+            }
 
             // Wait up to 5 seconds for graceful shutdown
             for _ in 0..50 {
                 if !is_process_running(pid) {
-                    println!("Daemon stopped gracefully");
+                    if !quiet {
+                        println!("Daemon stopped gracefully");
+                    }
                     break;
                 }
                 tokio::time::sleep(Duration::from_millis(100)).await;
@@ -820,7 +854,7 @@ pub async fn stop_daemon() -> Result<(), Box<dyn std::error::Error>> {
             // If still running, force kill
             if is_process_running(pid) {
                 if libc::kill(pid as i32, libc::SIGKILL) == 0 {
-                    println!("Force killed daemon (PID: {})", pid);
+                    eprintln!("Force killed daemon (PID: {})", pid);
                 } else {
                     return Err(format!("Failed to kill daemon process {}", pid).into());
                 }
@@ -1133,7 +1167,7 @@ mod tests {
         save_state(&state);
 
         // Load the state
-        let loaded_state = load_state().expect("Should load state");
+        let loaded_state = load_state(true).expect("Should load state");
 
         // Verify all fields match
         assert_eq!(loaded_state.work_duration, 30.0);
