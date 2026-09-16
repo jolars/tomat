@@ -103,7 +103,7 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
-          token: ${{ secrets.RELEASE_TOKEN }}
+          token: ${{ secrets.RELEASE_TOKEN || github.token }}
 
       - uses: dtolnay/rust-toolchain@stable
 
