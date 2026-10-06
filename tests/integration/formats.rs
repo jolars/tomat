@@ -169,8 +169,9 @@ fn test_status_invalid_format_returns_error() -> Result<(), Box<dyn std::error::
 fn test_status_formats_show_same_content() -> Result<(), Box<dyn std::error::Error>> {
     let daemon = TestDaemon::start()?;
 
-    // Start a timer
+    // Pause the timer so it cannot tick between the two status requests.
     daemon.send_command(&["start", "--work", "0.1"])?;
+    daemon.send_command(&["pause"])?;
 
     // Get status in both output formats
     let waybar_status = daemon.send_command(&["status", "--output", "waybar"])?;
