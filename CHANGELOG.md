@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.14.0](https://github.com/jolars/tomat/compare/v2.13.0...v2.14.0) (2026-10-13)
+
+### Features
+
+- host documentation on Cloudflare Workers (#109) ([`c3320b4`](https://github.com/jolars/tomat/commit/c3320b4c38f3f6b0c265ef2eb094a34c7c108483))
+
+### Bug Fixes
+
+- release startup lock before spawning daemon ([`afa3314`](https://github.com/jolars/tomat/commit/afa3314bd1564219bcc9cee398797bf2907fc281))
+
 ## [2.13.0](https://github.com/jolars/tomat/compare/v2.12.0...v2.13.0) (2026-08-27)
 
 ### Features
