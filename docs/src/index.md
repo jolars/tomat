@@ -1,4 +1,6 @@
-# Introduction <img src="./images/logo.svg" alt="Tomat logo" class="right" style="width: 192px;" />
+<img src="./images/logo.svg" alt="Tomat logo" class="right" style="width: 192px;" />
+
+# Introduction
 
 Welcome to the documentation for **Tomat {{ tomat-version }}**, a customizable,
 lightweight Pomodoro timer for Linux and macOS. It works from the command line
