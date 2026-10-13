@@ -43,6 +43,9 @@ You can also use Cargo or a package manager:
 ```bash
 cargo install tomat
 
+# Homebrew (macOS and Linux)
+brew install jolars/tap/tomat
+
 # Arch Linux (AUR)
 paru -S tomat-bin
 ```
@@ -86,8 +89,18 @@ options.
 
 ## Background Service Setup
 
-Most users will want Tomat to start automatically on login. This command
-installs a systemd user service on Linux or a LaunchAgent on macOS:
+If you installed Tomat through Homebrew, use its service manager to start the
+daemon automatically on login:
+
+```sh
+brew services start tomat
+```
+
+Use `brew services stop tomat` to stop it. For a Homebrew-managed installation,
+use these commands instead of `tomat daemon install`.
+
+For other installations, this command installs a systemd user service on Linux
+or a LaunchAgent on macOS:
 
 ```bash
 tomat daemon install

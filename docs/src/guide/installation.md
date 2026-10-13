@@ -76,6 +76,25 @@ The RPM package includes the systemd service and shell completions.
 
 ## Package Managers
 
+### Homebrew (macOS and Linux)
+
+Install Tomat from the [jolars tap](https://github.com/jolars/homebrew-tap):
+
+```sh
+brew install jolars/tap/tomat
+```
+
+The formula includes a pre-built binary, man pages, and shell completions for
+Bash, Fish, and Zsh. Manage the background daemon through Homebrew:
+
+```sh
+brew services start tomat
+brew services stop tomat
+```
+
+Use `brew services` instead of `tomat daemon install` for a Homebrew-managed
+installation.
+
 ### Arch Linux (AUR)
 
 Tomat is available in the AUR as `tomat-bin`:
@@ -174,8 +193,12 @@ cargo install --path .
 
 ## Background Service Setup
 
-Tomat can install the native user service—systemd on Linux or a LaunchAgent on
-macOS—so that the daemon starts automatically on login:
+For Homebrew installations, use `brew services start tomat` to start the daemon
+automatically on login.
+
+For other installations, Tomat can install the native user service—systemd on
+Linux or a LaunchAgent on macOS—so that the daemon starts automatically on
+login:
 
 ```bash
 tomat daemon install
