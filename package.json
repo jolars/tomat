@@ -5,8 +5,8 @@
   "scripts": {
     "docs:build": "node scripts/docs-build.mjs",
     "docs:preview": "wrangler dev",
-    "docs:deploy:check": "wrangler deploy --dry-run",
-    "docs:deploy": "wrangler deploy",
+    "docs:deploy:check": "node scripts/docs-installer-check.mjs && wrangler deploy --dry-run",
+    "docs:deploy": "node scripts/docs-installer-check.mjs && wrangler deploy",
     "docs:test": "node --test scripts/docs-hosting.test.mjs"
   },
   "devDependencies": {

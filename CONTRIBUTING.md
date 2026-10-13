@@ -103,7 +103,9 @@ the committed CLI reference generated from `src/cli.rs`; regenerate it with
 Cargo when changing the CLI.
 
 After building and checking the site, `pnpm docs:deploy` uploads the Worker and
-assets together. Authenticate locally with `pnpm exec wrangler login`, or set
+assets together. Both deployment commands verify the installer first, since a
+later Cargo build can regenerate mdBook's output without it. Authenticate
+locally with `pnpm exec wrangler login`, or set
 `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in your environment. Never
 commit credentials. `wrangler.jsonc` defines both custom domains, which
 Cloudflare connects to the Worker with managed DNS and HTTPS certificates.
