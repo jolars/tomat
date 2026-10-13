@@ -1,0 +1,15 @@
+{
+  "name": "tomat-website",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "docs:build": "node scripts/docs-build.mjs",
+    "docs:preview": "wrangler dev",
+    "docs:deploy:check": "node scripts/docs-installer-check.mjs && wrangler deploy --dry-run",
+    "docs:deploy": "node scripts/docs-installer-check.mjs && wrangler deploy",
+    "docs:test": "node --test scripts/docs-hosting.test.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "4.149.0"
+  }
+}

@@ -46,3 +46,11 @@ result-*
 
 # mdBook build output
 docs/book/
+
+# Website tooling and local Wrangler state
+node_modules/
+.wrangler/
+.env
+.env.*
+.dev.vars
+.dev.vars.*

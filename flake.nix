@@ -80,7 +80,7 @@
 
             meta = with pkgs.lib; {
               description = "A Pomodoro timer with daemon support for waybar and other status bars";
-              homepage = "https://jolars.github.io/tomat";
+              homepage = "https://tomat.cc";
               license = licenses.mit;
               maintainers = [ ];
               mainProgram = "tomat";

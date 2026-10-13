@@ -43,3 +43,27 @@ tasks:
     desc: Serve mdbook documentation locally
     cmds:
       - mdbook serve docs
+
+  docs-build:
+    desc: Build documentation and legacy redirects for deployment
+    cmds:
+      - pnpm docs:build
+
+  docs-preview:
+    desc: Preview the built documentation in the Workers runtime
+    deps: [docs-build]
+    cmds:
+      - pnpm docs:preview
+
+  docs-deploy-check:
+    desc: Validate the documentation deployment without uploading
+    deps: [docs-build]
+    cmds:
+      - pnpm docs:test
+      - pnpm docs:deploy:check
+
+  docs-deploy:
+    desc: Deploy documentation to tomat.cc
+    deps: [docs-deploy-check]
+    cmds:
+      - pnpm docs:deploy

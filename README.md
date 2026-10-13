@@ -24,7 +24,7 @@ package manager if available.
 
 ```bash
 # Install the latest release
-curl --proto '=https' --tlsv1.2 -sSf https://jolars.github.io/tomat/install | sh
+curl --proto '=https' --tlsv1.2 -sSf https://tomat.cc/install | sh
 
 # Start daemon and begin working
 tomat daemon start
@@ -36,7 +36,7 @@ tomat status
 
 ## Documentation
 
-The full documentation is available at <https://jolars.github.io/tomat/>.
+The full documentation is available at <https://tomat.cc/>.
 
 ## Installation
 
@@ -46,7 +46,7 @@ The installer selects the appropriate release binary for Linux or macOS and
 installs it to `~/.local/bin`:
 
 ```sh
-curl --proto '=https' --tlsv1.2 -sSf https://jolars.github.io/tomat/install | sh
+curl --proto '=https' --tlsv1.2 -sSf https://tomat.cc/install | sh
 ```
 
 Set `TOMAT_INSTALL_DIR` to change the destination, `TOMAT_TAG` to pin a

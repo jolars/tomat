@@ -1,0 +1,9 @@
+allowBuilds:
+  esbuild: true
+  workerd: true
+
+verifyDepsBeforeRun: false
+
+overrides:
+  # https://github.com/advisories/GHSA-wq5f-xc86-pv6w
+  "sharp@<0.35.5": ^0.35.5
