@@ -14,6 +14,7 @@
     pkgs.cargo-deny
     pkgs.ffmpeg
     pkgs.mdbook
+    pkgs.pandoc
     pkgs.mdbook-mermaid
     pkgs.mdbook-linkcheck2
   ];

@@ -40,6 +40,25 @@ async function verify() {
     await response.arrayBuffer();
   }
 
+  for (const pathname of ["/", "/guide/installation.html", "/configuration/"]) {
+    for (const method of ["GET", "HEAD"]) {
+      const response = await fetch(`${base}${pathname}`, {
+        method,
+        headers: { Accept: "text/markdown" },
+        signal: AbortSignal.timeout(15000),
+      });
+      assert.equal(response.status, 200, `${pathname}: expected Markdown page`);
+      assert.match(response.headers.get("Content-Type"), /^text\/markdown/);
+      assert.match(response.headers.get("Vary"), /(?:^|,\s*)Accept(?:,|$)/i);
+      const body = await response.text();
+      if (method === "HEAD") assert.equal(body, "");
+      else {
+        assert.match(body, /^# /m);
+        assert.doesNotMatch(body, /<html|<nav|<script/i);
+      }
+    }
+  }
+
   for (const method of ["GET", "HEAD"]) {
     const response = await fetch(`${base}/install`, {
       method,
@@ -78,7 +97,7 @@ for (let attempt = 1; ; attempt++) {
   try {
     await verify();
     console.log(
-      `Verified documentation, assets, installer, and routing at ${base}.`,
+      `Verified documentation, Markdown negotiation, assets, installer, and routing at ${base}.`,
     );
     break;
   } catch (error) {

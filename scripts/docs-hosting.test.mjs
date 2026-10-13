@@ -13,6 +13,7 @@ import test from "node:test";
 import vm from "node:vm";
 import { buildLegacyPages, redirectTarget } from "./docs-legacy.mjs";
 import { buildSitemap } from "./docs-sitemap.mjs";
+import { buildMarkdown } from "./docs-markdown.mjs";
 import worker from "./docs-worker.mjs";
 
 test("sitemap includes content with directory URLs and excludes helper pages and redirects", async (t) => {
@@ -48,7 +49,7 @@ function assets(files) {
           {
             status: file === undefined ? 404 : 200,
             headers: {
-              "Content-Type": "application/octet-stream",
+              "Content-Type": new URL(request.url).pathname.endsWith(".html") && file !== undefined ? "text/html; charset=utf-8" : "application/octet-stream",
               ETag: '"fixture"',
             },
           },
@@ -210,4 +211,62 @@ test("generated Pages redirects work in the browser and retain the raw installer
       `https://tomat.cc/${expected}?q=a%26b#installation`,
     );
   }
+});
+
+test("Markdown negotiation serves page variants, respects q=0, and supports HEAD", async () => {
+  for (const pathname of ["/", "/index.html", "/guide/"]) {
+    const htmlPath = pathname.endsWith("/") ? `${pathname}index.html` : pathname;
+    const mdPath = `/_markdown${htmlPath.replace(/\.html$/, ".md")}`;
+    for (const method of ["GET", "HEAD"]) {
+      for (const [accept, markdown] of [
+        ["text/markdown", true], ["text/html, text/markdown;q=0.5", true],
+        ["TEXT/MARKDOWN; charset=utf-8", true], ["text/markdown;q=0", false],
+        ["text/html", false], ["*/*", false],
+      ]) {
+        const env = assets({ [htmlPath]: "<main>Page</main>", [mdPath]: "# Page\n" });
+        const response = await worker.fetch(new Request(`https://tomat.cc${pathname}`, {
+          method, headers: { Accept: accept },
+        }), env);
+        assert.equal(response.status, 200);
+        assert.equal(response.headers.get("Vary"), "Accept");
+        assert.equal(response.headers.get("Content-Type"), markdown ? "text/markdown; charset=utf-8" : "text/html; charset=utf-8");
+        assert.equal(await response.text(), method === "HEAD" ? "" : markdown ? "# Page\n" : "<main>Page</main>");
+        assert.equal(env.requests.at(-1).method, method);
+      }
+    }
+  }
+});
+
+test("Markdown requests preserve missing pages, missing variants, and the installer", async () => {
+  const env = assets({ "/index.html": "<main>Page</main>", "/install": "#!/bin/sh\n" });
+  for (const [pathname, status, body] of [
+    ["/", 200, "<main>Page</main>"], ["/missing.html", 404, "Missing page"],
+    ["/install", 200, "#!/bin/sh\n"],
+  ]) {
+    const response = await worker.fetch(new Request(`https://tomat.cc${pathname}`, {
+      headers: { Accept: "text/markdown" },
+    }), env);
+    assert.equal(response.status, status);
+    assert.equal(await response.text(), body);
+  }
+});
+
+test("Markdown build extracts rendered content and excludes navigation and helper pages", async (t) => {
+  const book = await mkdtemp(path.join(os.tmpdir(), "tomat-markdown-"));
+  t.after(() => rm(book, { recursive: true, force: true }));
+  await mkdir(path.join(book, "guide"));
+  const html = '<nav>Navigation</nav><main><h1><a class="header" href="#title">Title</a></h1><p>Read <a href="guide/page.html">the guide</a>.</p><pre><code class="language-sh">tomat start\n</code></pre></main><footer>Footer</footer>';
+  for (const page of ["index.html", "guide/page.html", "404.html", "print.html", "toc.html"]) {
+    await writeFile(path.join(book, page), html);
+  }
+  await writeFile(path.join(book, "old.html"), '<meta http-equiv="refresh" content="0; url=/">');
+  await buildMarkdown(book);
+  const markdown = await readFile(path.join(book, "_markdown/index.md"), "utf8");
+  assert.match(markdown, /^# Title/m);
+  assert.match(markdown, /\[the guide\]\(guide\/page.html\)/);
+  assert.match(markdown, /```\s*sh\ntomat start/);
+  assert.doesNotMatch(markdown, /Navigation|Footer|<main|#title/);
+  assert.deepEqual((await readdir(path.join(book, "_markdown"))).sort(), ["guide", "index.md"]);
+  await buildMarkdown(book);
+  assert.equal(await readFile(path.join(book, "_markdown/index.md"), "utf8"), markdown);
 });
