@@ -10,7 +10,7 @@ installs it to `~/.local/bin`. If you prefer, download and inspect the script
 before running it.
 
 ```sh
-curl --proto '=https' --tlsv1.2 -sSf https://jolars.github.io/tomat/install | sh
+curl --proto '=https' --tlsv1.2 -sSf https://tomat.cc/install | sh
 ```
 
 Set `TOMAT_INSTALL_DIR` to change the destination, `TOMAT_TAG` to pin a

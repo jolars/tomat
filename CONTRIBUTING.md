@@ -76,6 +76,50 @@ cargo build
 ./target/debug/tomat daemon stop
 ```
 
+## Website Hosting
+
+Cloudflare Workers serves the mdBook documentation at <https://tomat.cc/>.
+The `www.tomat.cc` domain redirects to the apex domain, preserving paths and
+query strings. GitHub Pages hosts browser redirects for the old documentation
+URLs and retains the installer at `/tomat/install` for existing shell commands.
+
+The website tools use Node.js 24 and pnpm 11 or 12; CI pins pnpm 12.9.0.
+From the repository root, run:
+
+```sh
+pnpm install --frozen-lockfile
+pnpm docs:build
+pnpm docs:test
+pnpm docs:deploy:check
+pnpm docs:preview
+```
+
+On NixOS, devenv sets `MINIFLARE_WORKERD_PATH` to run the project's Workers
+runtime with the Nix dynamic loader.
+
+The build uses mdBook and mdbook-mermaid, copies the installer into the site,
+and generates the legacy Pages redirects in `target/legacy-pages`. It uses
+the committed CLI reference generated from `src/cli.rs`; regenerate it with
+Cargo when changing the CLI.
+
+After building and checking the site, `pnpm docs:deploy` uploads the Worker and
+assets together. Authenticate locally with `pnpm exec wrangler login`, or set
+`CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in your environment. Never
+commit credentials. `wrangler.jsonc` defines both custom domains, which
+Cloudflare connects to the Worker with managed DNS and HTTPS certificates.
+
+The Documentation workflow deploys on published releases and manual runs.
+Release runs build the released tag; manual runs build the selected ref. It
+verifies the new site before publishing legacy redirects. The repository needs
+the GitHub Actions secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
+The token must permit deployment to `tomat-web` and Workers Routes Write for
+the `tomat.cc` zone. Creating the Worker initially requires Workers Admin at
+the product scope; subsequent deployments can use a Worker-scoped Editor.
+See the [Cloudflare permissions documentation](https://developers.cloudflare.com/workers/authorization/workers/).
+
+Check the deployed site with `node scripts/docs-verify.mjs`. Run the same checks
+against a local Worker with `node scripts/docs-verify.mjs http://localhost:8787`.
+
 ## Code Quality Standards
 
 ### Mandatory Requirements

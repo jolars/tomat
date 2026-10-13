@@ -35,7 +35,7 @@ graph TD
 The easiest way to install Tomat on Linux or macOS is with the install script:
 
 ```sh
-curl --proto '=https' --tlsv1.2 -sSf https://jolars.github.io/tomat/install | sh
+curl --proto '=https' --tlsv1.2 -sSf https://tomat.cc/install | sh
 ```
 
 You can also use Cargo or a package manager:

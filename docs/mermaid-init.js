@@ -19,10 +19,11 @@
     const theme = lastThemeWasLight ? 'default' : 'dark';
     mermaid.initialize({ startOnLoad: true, theme });
 
-    // Simplest way to make mermaid re-render the diagrams in the new theme is via refreshing the page
+    // Reloading makes Mermaid redraw the diagrams with the newly selected theme.
 
     for (const darkTheme of darkThemes) {
-        document.getElementById(darkTheme).addEventListener('click', () => {
+        const button = document.getElementById(`mdbook-theme-${darkTheme}`) ?? document.getElementById(darkTheme);
+        button?.addEventListener('click', () => {
             if (lastThemeWasLight) {
                 window.location.reload();
             }
@@ -30,7 +31,8 @@
     }
 
     for (const lightTheme of lightThemes) {
-        document.getElementById(lightTheme).addEventListener('click', () => {
+        const button = document.getElementById(`mdbook-theme-${lightTheme}`) ?? document.getElementById(lightTheme);
+        button?.addEventListener('click', () => {
             if (!lastThemeWasLight) {
                 window.location.reload();
             }

@@ -7,51 +7,109 @@ on:
       - published
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: tomat-website-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  docs:
+  build:
     name: Build Documentation
     runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
+      - uses: actions/checkout@v7
 
       - uses: jontze/action-mdbook@v4
         with:
-          token: ${{secrets.GITHUB_TOKEN}}
+          token: ${{ secrets.GITHUB_TOKEN }}
           use-linkcheck: false
           use-mermaid: true
 
-      - name: Build documentation
-        run: mdbook build docs
-
-      - name: Publish installer
-        run: |
-          install -m 0644 scripts/tomat-installer.sh docs/book/install
-          cmp scripts/tomat-installer.sh docs/book/install
-          sh -n docs/book/install
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v6
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v5
+      - uses: actions/setup-node@v7
         with:
-          path: "docs/book"
+          node-version: "24"
 
-      - name: Deploy to GitHub Pages
+      - uses: pnpm/action-setup@v6
+        with:
+          version: "12.9.0"
+
+      - name: Install website tooling
+        run: pnpm install --frozen-lockfile
+
+      - name: Build documentation and legacy redirects
+        run: pnpm docs:build
+
+      - name: Test hosting and installer
+        run: |
+          pnpm docs:test
+          scripts/test-installer.sh
+
+      - name: Validate Worker deployment
+        run: pnpm docs:deploy:check
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: documentation
+          path: docs/book
+          if-no-files-found: error
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: target/legacy-pages
+
+  deploy-workers:
+    name: Deploy to Cloudflare Workers
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: cloudflare-workers
+      url: https://tomat.cc/
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: "12.9.0"
+
+      - name: Install website tooling
+        run: pnpm install --frozen-lockfile
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: documentation
+          path: docs/book
+
+      - name: Deploy Worker and assets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm docs:deploy
+
+      - name: Verify the live site before redirecting old links
+        run: node scripts/docs-verify.mjs
+
+  deploy-pages:
+    name: Publish Legacy Redirects
+    needs: [build, deploy-workers]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v6
+
+      - name: Deploy redirects to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5

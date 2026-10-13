@@ -71,8 +71,25 @@ jobs:
           use-admonish: true
           use-katex: false
 
-      - name: Build documentation
-        run: mdbook build docs
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: "12.9.0"
+
+      - name: Install website tooling
+        run: pnpm install --frozen-lockfile
+
+      - name: Build documentation and legacy redirects
+        run: pnpm docs:build
+
+      - name: Test documentation hosting
+        run: pnpm docs:test
+
+      - name: Validate Worker deployment
+        run: pnpm docs:deploy:check
 
       - name: Test installer
         run: scripts/test-installer.sh
