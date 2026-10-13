@@ -10,7 +10,8 @@ default-theme = "light"
 preferred-dark-theme = "navy"
 git-repository-url = "https://github.com/jolars/tomat"
 edit-url-template = "https://github.com/jolars/tomat/edit/main/docs/{path}"
-additional-js = ["mermaid.min.js", "mermaid-init.js"]
+additional-js = ["mermaid-init.js"]
+additional-css = ["theme/site.css"]
 
 [preprocessor]
 

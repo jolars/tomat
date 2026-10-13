@@ -1,0 +1,36 @@
+/* System fonts keep text metrics stable while the page loads. */
+:root {
+    --mono-font: Consolas, "Ubuntu Mono", Menlo, "DejaVu Sans Mono", monospace;
+}
+
+html {
+    font-family: system-ui, sans-serif;
+}
+
+#mdbook-menu-bar .right-buttons {
+    display: flex;
+    align-items: center;
+}
+
+#mdbook-menu-bar .right-buttons a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    min-height: 44px;
+}
+
+
+#mdbook-menu-bar .right-buttons a .fa-svg {
+    padding: 0;
+}
+
+/* Reserve inline-code padding before syntax highlighting adds its class. */
+:not(pre) > code {
+    padding: 0.1em 0.3em;
+}
+
+.content ul,
+.content ol {
+    line-height: 1.5em;
+}

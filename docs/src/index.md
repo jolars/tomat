@@ -1,4 +1,4 @@
-<img src="./images/logo.svg" alt="Tomat logo" class="right" style="width: 192px;" />
+<img src="./images/logo.svg" alt="Tomat logo" class="right" width="192" height="192" />
 
 # Introduction
 

@@ -2,7 +2,23 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-(() => {
+(async () => {
+    if (!document.querySelector(".mermaid")) return;
+
+    // Resolve against this script so nested chapters use the same local library.
+    const libraryUrl = new URL("mermaid.min.js", document.currentScript.src);
+    try {
+        await new Promise((resolve, reject) => {
+            const script = document.createElement("script");
+            script.src = libraryUrl.href;
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.append(script);
+        });
+    } catch (error) {
+        console.error("Unable to load Mermaid diagrams.", error);
+        return;
+    }
     const darkThemes = ['ayu', 'navy', 'coal'];
     const lightThemes = ['light', 'rust'];
 
@@ -17,7 +33,8 @@
     }
 
     const theme = lastThemeWasLight ? 'default' : 'dark';
-    mermaid.initialize({ startOnLoad: true, theme });
+    mermaid.initialize({ startOnLoad: false, theme });
+    await mermaid.run();
 
     // Reloading makes Mermaid redraw the diagrams with the newly selected theme.
 
