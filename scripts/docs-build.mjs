@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { chmod, copyFile, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { buildLegacyPages } from "./docs-legacy.mjs";
+import { buildSitemap } from "./docs-sitemap.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const book = new URL("../docs/book/", import.meta.url);
@@ -9,6 +10,7 @@ const installer = new URL("./tomat-installer.sh", import.meta.url);
 const publishedInstaller = new URL("install", book);
 
 execFileSync("mdbook", ["build", "docs"], { cwd: root, stdio: "inherit" });
+await buildSitemap(fileURLToPath(book));
 await copyFile(installer, publishedInstaller);
 await chmod(publishedInstaller, 0o644);
 const [source, published] = await Promise.all([

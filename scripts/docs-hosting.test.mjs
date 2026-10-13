@@ -12,7 +12,28 @@ import path from "node:path";
 import test from "node:test";
 import vm from "node:vm";
 import { buildLegacyPages, redirectTarget } from "./docs-legacy.mjs";
+import { buildSitemap } from "./docs-sitemap.mjs";
 import worker from "./docs-worker.mjs";
+
+test("sitemap includes content with directory URLs and excludes helper pages and redirects", async (t) => {
+  const book = await mkdtemp(path.join(os.tmpdir(), "tomat-sitemap-"));
+  t.after(() => rm(book, { recursive: true, force: true }));
+  await mkdir(path.join(book, "guide"));
+  for (const page of ["index.html", "404.html", "print.html", "toc.html", "guide/index.html", "guide/install & setup.html"]) {
+    await writeFile(path.join(book, page), "<html>Documentation</html>");
+  }
+  await writeFile(path.join(book, "old.html"), '<meta http-equiv="refresh" content="0; url=guide/">');
+  await writeFile(path.join(book, "logo.svg"), "<svg></svg>");
+  await buildSitemap(book);
+  const sitemap = await readFile(path.join(book, "sitemap.xml"), "utf8");
+  assert.deepEqual([...sitemap.matchAll(/<loc>(.*?)<\/loc>/g)].map((match) => match[1]), [
+    "https://tomat.cc/",
+    "https://tomat.cc/guide/",
+    "https://tomat.cc/guide/install%20%26%20setup.html",
+  ]);
+  await buildSitemap(book);
+  assert.equal(await readFile(path.join(book, "sitemap.xml"), "utf8"), sitemap);
+});
 
 function assets(files) {
   const requests = [];

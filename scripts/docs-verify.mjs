@@ -23,6 +23,8 @@ async function verify() {
     "/guide/installation.html",
     "/configuration/",
     "/images/logo.svg",
+    "/sitemap.xml",
+    "/robots.txt",
     `/${searchIndex}`,
     `/${mermaid}`,
   ]) {
