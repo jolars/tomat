@@ -830,8 +830,7 @@ pub async fn start_daemon(quiet: bool) -> Result<(), Box<dyn std::error::Error>>
         }
     }
 
-    // Try to lock the PID file to prevent race conditions with concurrent start attempts
-    // We keep this lock until the spawned daemon creates its own lock
+    // Reject startup while another process holds the PID file lock.
     let lock_file = open_pid_file(&pid_file_path)?;
     lock_file
         .try_lock_exclusive()
@@ -839,6 +838,10 @@ pub async fn start_daemon(quiet: bool) -> Result<(), Box<dyn std::error::Error>>
 
     // Get the current executable path
     let exe_path = std::env::current_exe()?;
+
+    // The child can run before spawn returns, so release our lock first.
+    // The daemon acquires its own exclusive lock to prevent duplicate instances.
+    drop(lock_file);
 
     // Start daemon in background
     let child = Command::new(&exe_path)
@@ -854,10 +857,6 @@ pub async fn start_daemon(quiet: bool) -> Result<(), Box<dyn std::error::Error>>
     if !quiet {
         println!("Started daemon in background (PID: {})", child_pid);
     }
-
-    // Release the lock so the daemon can acquire it
-    // The small time window here is acceptable because the daemon is already running
-    drop(lock_file);
 
     // Poll for daemon startup with timeout (max 2 seconds, check every 10ms)
     let start = std::time::Instant::now();

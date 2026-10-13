@@ -69,7 +69,11 @@ fn test_quiet_daemon_management() -> Result<(), Box<dyn std::error::Error>> {
         .env("TOMAT_TESTING", "1")
         .output()?;
 
-    assert!(start.status.success());
+    assert!(
+        start.status.success(),
+        "daemon start failed: {}",
+        String::from_utf8_lossy(&start.stderr)
+    );
     assert!(start.stdout.is_empty());
     assert!(start.stderr.is_empty());
 
