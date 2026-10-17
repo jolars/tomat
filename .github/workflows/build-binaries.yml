@@ -59,7 +59,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.release.tag_name || github.ref }}
+          ref: ${{ github.event.release.tag_name || inputs.tag || github.ref }}
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -227,3 +227,15 @@ jobs:
           gh release upload "$TAG" "$RPM_FILE"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-aur:
+    name: Publish AUR Package
+    needs: build-binaries
+    if: >-
+      github.event_name == 'release' ||
+      (github.event_name == 'workflow_dispatch' && inputs.upload == 'true')
+    uses: ./.github/workflows/publish-aur.yml
+    with:
+      tag: ${{ github.event.release.tag_name || inputs.tag }}
+    secrets:
+      AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
