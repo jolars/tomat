@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.15.1](https://github.com/jolars/tomat/compare/v2.15.0...v2.15.1) (2026-10-23)
+
+### Bug Fixes
+
+- verify lazy-loaded Mermaid assets ([`264cd0a`](https://github.com/jolars/tomat/commit/264cd0a4cebb036f2b2eace292f8f238e26bf0d1))
+
 ## [2.15.0](https://github.com/jolars/tomat/compare/v2.14.0...v2.15.0) (2026-10-23)
 
 ### Features
