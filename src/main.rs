@@ -183,6 +183,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             handle_response(response, quiet, None)?;
         }
 
+        Commands::Reset => {
+            let response = send_command("reset", serde_json::Value::Null)
+                .await
+                .map_err(connection_error)?;
+            handle_response(response, quiet, Some("Timer reset"))?;
+        }
+
         Commands::Stop => {
             let response = send_command("stop", serde_json::Value::Null)
                 .await

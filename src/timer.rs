@@ -583,6 +583,15 @@ impl TimerState {
         }
     }
 
+    pub fn reset(&mut self) {
+        if matches!(self.phase, Phase::Idle) {
+            return;
+        }
+
+        self.start_time = current_timestamp();
+        self.paused_elapsed_seconds = self.is_paused.then_some(0);
+    }
+
     pub fn stop(&mut self) {
         self.phase = Phase::Idle;
         self.start_time = 0;
@@ -770,6 +779,58 @@ mod tests {
         unsafe {
             std::env::set_var("TOMAT_TESTING", "1");
         }
+    }
+
+    #[test]
+    fn test_reset_preserves_phase_progress_and_settings() {
+        for phase in [Phase::Work, Phase::Break, Phase::LongBreak] {
+            for paused in [false, true] {
+                let mut timer = TimerState::new(30.0, 7.0, 20.0, 5);
+                match phase {
+                    Phase::Work => timer.start_work(),
+                    Phase::Break => timer.start_break(),
+                    Phase::LongBreak => timer.start_long_break(),
+                    Phase::Idle => unreachable!(),
+                }
+                timer.current_session_count = 2;
+                timer.auto_advance = AutoAdvanceMode::All;
+                timer.start_time = current_timestamp() - 60;
+                timer.is_paused = paused;
+                timer.paused_elapsed_seconds = paused.then_some(60);
+                timer.pending_hook = Some("work_start".to_string());
+                let before = serde_json::to_value(&timer).unwrap();
+
+                timer.reset();
+
+                assert_eq!(
+                    timer.get_remaining_seconds(),
+                    (timer.duration_minutes * 60.0) as u64
+                );
+                let mut expected = before;
+                expected["start_time"] = timer.start_time.into();
+                expected["paused_elapsed_seconds"] = if paused {
+                    0.into()
+                } else {
+                    serde_json::Value::Null
+                };
+                assert_eq!(serde_json::to_value(&timer).unwrap(), expected);
+                if paused {
+                    timer.resume();
+                    assert_eq!(
+                        timer.get_remaining_seconds(),
+                        (timer.duration_minutes * 60.0) as u64
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_reset_idle_does_nothing() {
+        let mut timer = TimerState::new(25.0, 5.0, 15.0, 4);
+        let before = serde_json::to_value(&timer).unwrap();
+        timer.reset();
+        assert_eq!(serde_json::to_value(&timer).unwrap(), before);
     }
 
     #[test]

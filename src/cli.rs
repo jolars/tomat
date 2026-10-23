@@ -193,6 +193,13 @@ EXAMPLES:
         #[command(flatten)]
         timer: TimerArgs,
     },
+    /// Reset the current phase to its full duration
+    #[command(
+        long_about = "Reset the current work or break phase to its full duration, preserving \
+        the phase, session count, settings, and whether the timer is running or paused. \
+        Does nothing when the timer is idle."
+    )]
+    Reset,
     /// Stop the current session
     #[command(long_about = "Stop the current Pomodoro session and return the timer to idle state.")]
     Stop,

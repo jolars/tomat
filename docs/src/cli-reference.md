@@ -90,6 +90,12 @@ Start a new Pomodoro timer session with the specified durations. If no options a
 `--volume <VOLUME>`
 :   Set the audio volume for sound notifications, from 0.0 (silent) to 1.0 (maximum). Values outside this range will be clamped. If not specified, uses the value from the platform config file or the built-in default of 0.5.
 
+## `tomat reset`
+
+Reset the current work or break phase to its full duration, preserving the phase, session count, settings, and whether the timer is running or paused. Does nothing when the timer is idle.
+
+**Usage:** `tomat reset`
+
 ## `tomat stop`
 
 Stop the current Pomodoro session and return the timer to idle state.

@@ -414,6 +414,16 @@ async fn handle_client(
                 }
             }
         }
+        "reset" => {
+            state.reset();
+            save_state(state);
+
+            ServerResponse {
+                success: true,
+                data: serde_json::Value::Null,
+                message: "Timer reset".to_string(),
+            }
+        }
         "stop" => {
             state.stop();
 

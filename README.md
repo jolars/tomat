@@ -235,6 +235,7 @@ The timer is controlled through several `tomat` subcommands:
 tomat status    # Get current status (JSON for waybar)
 tomat watch     # Continuously output status updates
 tomat toggle    # Pause/resume timer
+tomat reset     # Reset the current phase, preserving running or paused state
 tomat skip      # Skip to next phase
 tomat stop      # Stop timer and return to idle
 ```

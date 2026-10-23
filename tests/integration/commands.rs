@@ -11,6 +11,7 @@ fn test_quiet_suppresses_success_messages() -> Result<(), Box<dyn std::error::Er
         &["-q", "resume"][..],
         &["toggle", "-q"][..],
         &["--quiet", "skip"][..],
+        &["reset", "--quiet"][..],
         &["stop", "--quiet"][..],
     ] {
         let output = Command::new(TestDaemon::get_binary_path())
@@ -179,5 +180,32 @@ fn test_zero_sessions_rejected() -> Result<(), Box<dyn std::error::Error>> {
         );
     }
 
+    Ok(())
+}
+
+#[test]
+fn test_reset_current_break() -> Result<(), Box<dyn std::error::Error>> {
+    let daemon = TestDaemon::start()?;
+    daemon.send_command(&["start", "--work", "30", "--break", "7", "--sessions", "5"])?;
+    daemon.send_command(&["skip"])?;
+    daemon.send_command(&["resume"])?;
+    std::thread::sleep(std::time::Duration::from_secs(2));
+    daemon.send_command(&["pause"])?;
+    let before = daemon.send_command(&["status", "--output", "plain", "--format", "{time}"])?;
+    assert_ne!(before, "07:00");
+
+    daemon.send_command(&["reset"])?;
+    let status = daemon.get_status()?;
+    assert_eq!(status["class"], "break-paused");
+    assert!(status["text"].as_str().unwrap().contains("07:00"));
+
+    daemon.send_command(&["resume"])?;
+    daemon.send_command(&["reset"])?;
+    assert_eq!(daemon.get_status()?["class"], "break");
+
+    daemon.send_command(&["stop"])?;
+    let idle = daemon.get_status()?;
+    daemon.send_command(&["reset"])?;
+    assert_eq!(daemon.get_status()?, idle);
     Ok(())
 }
