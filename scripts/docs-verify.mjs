@@ -15,18 +15,21 @@ async function verify() {
   assert.equal(home.status, 200, "/: expected 200");
   const html = await home.text();
   assert.match(html, /Welcome to the documentation/);
-  const searchIndex = html.match(
+  const searchIndexMatch = html.match(
     /window\.path_to_searchindex_js = "([^"]+)"/,
-  )[1];
-  const mermaid = html.match(/src="(mermaid-[^"]+\.min\.js)"/)[1];
+  );
+  assert.ok(searchIndexMatch, "Home page must reference the search index.");
+  const mermaidInitMatch = html.match(/src="(mermaid-init-[^"]+\.js)"/);
+  assert.ok(mermaidInitMatch, "Home page must reference the Mermaid loader.");
   for (const pathname of [
     "/guide/installation.html",
     "/configuration/",
     "/images/logo.svg",
     "/sitemap.xml",
     "/robots.txt",
-    `/${searchIndex}`,
-    `/${mermaid}`,
+    `/${searchIndexMatch[1]}`,
+    `/${mermaidInitMatch[1]}`,
+    "/mermaid.min.js",
   ]) {
     const response = await fetch(`${base}${pathname}`, {
       redirect: "manual",
