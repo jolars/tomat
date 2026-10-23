@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.15.0](https://github.com/jolars/tomat/compare/v2.14.0...v2.15.0) (2026-10-23)
+
+### Features
+
+- add timer reset command ([`f296ef4`](https://github.com/jolars/tomat/commit/f296ef4f540b9e3398a563f92e9e56f5f3f9fbba)), closes [#113](https://github.com/jolars/tomat/issues/113)
+
 ## [2.14.0](https://github.com/jolars/tomat/compare/v2.13.0...v2.14.0) (2026-10-13)
 
 ### Features
