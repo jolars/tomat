@@ -354,6 +354,9 @@ impl TimerState {
             });
         }
 
+        // Paused progress belongs to the phase that just ended.
+        self.paused_elapsed_seconds = None;
+
         // Now handle the phase transition
         let (message, sound_type, start_hook_event) = match self.phase {
             Phase::Idle => unreachable!("Idle phase handled above"),
@@ -920,6 +923,51 @@ mod tests {
         assert!(!timer.is_paused);
         assert_eq!(timer.current_session_count, 0);
         assert_eq!(timer.duration_minutes, 0.0);
+    }
+
+    #[test]
+    fn test_next_phase_discards_previous_paused_progress() {
+        setup_test_env();
+        for (phase, session_count, next_phase, duration) in [
+            (Phase::Work, 0, Phase::Break, 60),
+            (Phase::Work, 1, Phase::LongBreak, 60),
+            (Phase::Break, 1, Phase::Work, 120),
+            (Phase::LongBreak, 0, Phase::Work, 120),
+        ] {
+            for elapsed in [4, 90] {
+                let mut timer = TimerState::new(2.0, 1.0, 1.0, 2);
+                match phase {
+                    Phase::Work => timer.start_work(),
+                    Phase::Break => timer.start_break(),
+                    Phase::LongBreak => timer.start_long_break(),
+                    Phase::Idle => unreachable!(),
+                }
+                timer.current_session_count = session_count;
+                timer.start_time = current_timestamp() - elapsed;
+                timer.pause();
+
+                timer
+                    .next_phase(
+                        &SoundConfig::default(),
+                        &NotificationConfig::default(),
+                        &crate::config::HooksConfig::default(),
+                    )
+                    .unwrap();
+
+                assert_eq!(timer.phase.to_string(), next_phase.to_string());
+                assert!(timer.is_paused);
+                assert_eq!(
+                    timer.get_remaining_seconds(),
+                    duration,
+                    "Skipping paused {phase:?} after {elapsed}s should start a full {next_phase:?}"
+                );
+
+                timer.resume();
+
+                assert!(!timer.is_paused);
+                assert!(timer.get_remaining_seconds().abs_diff(duration) <= 1);
+            }
+        }
     }
 
     #[test]
