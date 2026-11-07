@@ -5,8 +5,8 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::audio::SoundType;
-use crate::config::{AutoAdvanceMode, NotificationConfig, SoundConfig};
+use crate::audio::{AudioController, SoundType};
+use crate::config::{AutoAdvanceMode, NotificationConfig};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
 #[serde(rename_all = "lowercase")]
@@ -236,6 +236,10 @@ impl std::fmt::Display for Phase {
 }
 
 impl TimerState {
+    pub fn should_tick(&self) -> bool {
+        matches!(self.phase, Phase::Work) && !self.is_paused && self.get_remaining_seconds() > 0
+    }
+
     pub fn new(work: f32, break_time: f32, long_break: f32, sessions: u32) -> Self {
         Self {
             phase: Phase::Idle,
@@ -321,7 +325,7 @@ impl TimerState {
 
     pub fn next_phase(
         &mut self,
-        sound_config: &SoundConfig,
+        audio: &AudioController,
         notification_config: &NotificationConfig,
         hooks_config: &crate::config::HooksConfig,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -425,10 +429,7 @@ impl TimerState {
             }
         };
 
-        // Play sound if enabled and not testing
-        if sound_config.effective_mode() != crate::config::SoundMode::None && !is_testing() {
-            self.play_transition_sound(sound_config, sound_type)?;
-        }
+        audio.play_transition(sound_type);
 
         // Send notification (existing code)
         if !is_testing() && notification_config.enabled {
@@ -459,60 +460,6 @@ impl TimerState {
             self.pending_hook = Some(start_hook_event.to_string());
         }
 
-        Ok(())
-    }
-
-    fn play_transition_sound(
-        &self,
-        config: &SoundConfig,
-        sound_type: SoundType,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        match config.effective_mode() {
-            crate::config::SoundMode::None => {
-                // No sound
-                return Ok(());
-            }
-            crate::config::SoundMode::SystemBeep => {
-                crate::audio::play_system_beep();
-                return Ok(());
-            }
-            crate::config::SoundMode::Embedded => {
-                // Continue with embedded/custom sound logic below
-            }
-        }
-
-        // Check for custom sound file first
-        let custom_file = match sound_type {
-            SoundType::WorkToBreak => &config.work_to_break,
-            SoundType::BreakToWork => &config.break_to_work,
-            SoundType::WorkToLongBreak => &config.work_to_long_break,
-        };
-
-        if let Some(file_path) = custom_file {
-            // Try custom file first
-            if let Err(e) = crate::audio::play_custom_file(file_path, config.volume) {
-                eprintln!("Failed to play custom sound '{}': {}", file_path, e);
-                // Fallback to embedded sound
-                self.try_embedded_sound(config, sound_type)?;
-            }
-        } else {
-            // Use embedded sound
-            self.try_embedded_sound(config, sound_type)?;
-        }
-
-        Ok(())
-    }
-
-    fn try_embedded_sound(
-        &self,
-        config: &SoundConfig,
-        sound_type: SoundType,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        if let Err(e) = crate::audio::play_embedded_sound(sound_type, config.volume) {
-            eprintln!("Failed to play embedded sound: {}", e);
-            // Final fallback to system beep
-            crate::audio::play_system_beep();
-        }
         Ok(())
     }
 
@@ -785,6 +732,67 @@ mod tests {
     }
 
     #[test]
+    fn ticking_follows_work_state_and_restored_progress() {
+        setup_test_env();
+        let mut timer = TimerState::new(25.0, 5.0, 15.0, 1);
+        assert!(!timer.should_tick());
+        timer.start_work();
+        assert!(timer.should_tick());
+        let restored: TimerState =
+            serde_json::from_str(&serde_json::to_string(&timer).unwrap()).unwrap();
+        assert!(restored.should_tick());
+        timer.pause();
+        assert!(!timer.should_tick());
+        timer.reset();
+        assert!(!timer.should_tick());
+        timer.resume();
+        assert!(timer.should_tick());
+        timer.reset();
+        assert!(timer.should_tick());
+        timer.start_time = current_timestamp() - 25 * 60;
+        assert!(!timer.should_tick());
+        timer.stop();
+        assert!(!timer.should_tick());
+    }
+
+    #[test]
+    fn ticking_follows_phase_transitions_with_each_auto_advance_mode() {
+        setup_test_env();
+        for mode in [
+            AutoAdvanceMode::None,
+            AutoAdvanceMode::All,
+            AutoAdvanceMode::ToBreak,
+            AutoAdvanceMode::ToWork,
+        ] {
+            for sessions in [1, 4] {
+                let mut timer = TimerState::new(25.0, 5.0, 15.0, sessions);
+                timer.auto_advance = mode.clone();
+                timer.start_work();
+                timer
+                    .next_phase(
+                        &AudioController::silent(),
+                        &NotificationConfig::default(),
+                        &crate::config::HooksConfig::default(),
+                    )
+                    .unwrap();
+                assert!(!timer.should_tick());
+                timer.resume();
+                assert!(!timer.should_tick());
+                timer
+                    .next_phase(
+                        &AudioController::silent(),
+                        &NotificationConfig::default(),
+                        &crate::config::HooksConfig::default(),
+                    )
+                    .unwrap();
+                assert_eq!(timer.should_tick(), mode.should_advance(false));
+                timer.resume();
+                assert!(timer.should_tick());
+            }
+        }
+    }
+
+    #[test]
     fn test_reset_preserves_phase_progress_and_settings() {
         for phase in [Phase::Work, Phase::Break, Phase::LongBreak] {
             for paused in [false, true] {
@@ -948,7 +956,7 @@ mod tests {
 
                 timer
                     .next_phase(
-                        &SoundConfig::default(),
+                        &AudioController::silent(),
                         &NotificationConfig::default(),
                         &crate::config::HooksConfig::default(),
                     )
@@ -980,7 +988,7 @@ mod tests {
 
         timer
             .next_phase(
-                &SoundConfig::default(),
+                &AudioController::silent(),
                 &NotificationConfig::default(),
                 &crate::config::HooksConfig::default(),
             )
@@ -1002,7 +1010,7 @@ mod tests {
 
         timer
             .next_phase(
-                &SoundConfig::default(),
+                &AudioController::silent(),
                 &NotificationConfig::default(),
                 &crate::config::HooksConfig::default(),
             )
@@ -1025,7 +1033,7 @@ mod tests {
 
         timer
             .next_phase(
-                &SoundConfig::default(),
+                &AudioController::silent(),
                 &NotificationConfig::default(),
                 &crate::config::HooksConfig::default(),
             )
@@ -1046,7 +1054,7 @@ mod tests {
 
         timer
             .next_phase(
-                &SoundConfig::default(),
+                &AudioController::silent(),
                 &NotificationConfig::default(),
                 &crate::config::HooksConfig::default(),
             )
@@ -1066,7 +1074,7 @@ mod tests {
 
         timer
             .next_phase(
-                &SoundConfig::default(),
+                &AudioController::silent(),
                 &NotificationConfig::default(),
                 &crate::config::HooksConfig::default(),
             )
@@ -1210,7 +1218,7 @@ mod tests {
             assert_eq!(timer.current_session_count, i);
             timer
                 .next_phase(
-                    &SoundConfig::default(),
+                    &AudioController::silent(),
                     &NotificationConfig::default(),
                     &crate::config::HooksConfig::default(),
                 )
@@ -1218,7 +1226,7 @@ mod tests {
             assert!(matches!(timer.phase, Phase::Break));
             timer
                 .next_phase(
-                    &SoundConfig::default(),
+                    &AudioController::silent(),
                     &NotificationConfig::default(),
                     &crate::config::HooksConfig::default(),
                 )
@@ -1231,7 +1239,7 @@ mod tests {
         // Fourth session should trigger long break
         timer
             .next_phase(
-                &SoundConfig::default(),
+                &AudioController::silent(),
                 &NotificationConfig::default(),
                 &crate::config::HooksConfig::default(),
             )
@@ -1310,7 +1318,7 @@ mod tests {
         // Transition to break
         timer
             .next_phase(
-                &SoundConfig::default(),
+                &AudioController::silent(),
                 &NotificationConfig::default(),
                 &crate::config::HooksConfig::default(),
             )
@@ -1320,7 +1328,7 @@ mod tests {
         // Transition back to work
         timer
             .next_phase(
-                &SoundConfig::default(),
+                &AudioController::silent(),
                 &NotificationConfig::default(),
                 &crate::config::HooksConfig::default(),
             )
@@ -1462,7 +1470,7 @@ mod tests {
         // Work -> Break should auto-advance
         timer
             .next_phase(
-                &SoundConfig::default(),
+                &AudioController::silent(),
                 &NotificationConfig::default(),
                 &crate::config::HooksConfig::default(),
             )
@@ -1474,7 +1482,7 @@ mod tests {
         // Break -> Work should NOT auto-advance
         timer
             .next_phase(
-                &SoundConfig::default(),
+                &AudioController::silent(),
                 &NotificationConfig::default(),
                 &crate::config::HooksConfig::default(),
             )
@@ -1494,7 +1502,7 @@ mod tests {
         // Work -> Break should NOT auto-advance
         timer
             .next_phase(
-                &SoundConfig::default(),
+                &AudioController::silent(),
                 &NotificationConfig::default(),
                 &crate::config::HooksConfig::default(),
             )
@@ -1506,7 +1514,7 @@ mod tests {
         // Break -> Work should auto-advance
         timer
             .next_phase(
-                &SoundConfig::default(),
+                &AudioController::silent(),
                 &NotificationConfig::default(),
                 &crate::config::HooksConfig::default(),
             )
@@ -1527,7 +1535,7 @@ mod tests {
         // Work -> Long Break should auto-advance (ToBreak mode)
         timer
             .next_phase(
-                &SoundConfig::default(),
+                &AudioController::silent(),
                 &NotificationConfig::default(),
                 &crate::config::HooksConfig::default(),
             )

@@ -21,15 +21,19 @@ auto_advance = "none" # Auto-advance mode (default: "none")
                       # (boolean true/false also supported for backwards compatibility)
 
 [sound]
-enabled = true      # Enable sound notifications (default: true)
-system_beep = false # Use system beep instead of sound files (default: false)
-use_embedded = true # Use embedded sound files (default: true)
+mode = "embedded"  # Transition alerts: "embedded", "system-beep", or "none"
 volume = 0.5        # Volume level 0.0-1.0 (default: 0.5)
 
 # Custom sound files (optional - will override embedded sounds)
 # work_to_break = "/path/to/custom/work-to-break.wav"
 # break_to_work = "/path/to/custom/break-to-work.wav" 
 # work_to_long_break = "/path/to/custom/work-to-long-break.wav"
+
+[sound.ticking]
+enabled = false     # Play ticking during running work sessions (default: false)
+volume = 0.2        # Independent of transition alert volume (default: 0.2)
+# file = "/path/to/custom/focus-loop.ogg" # Optional custom loop
+# Restart the daemon after changing sound settings.
 
 [notification]
 enabled = true   # Enable desktop notifications (default: true)
@@ -172,6 +176,8 @@ text_format = "{icon} {time} {state}" # Text display format (default: "{icon} {t
 #
 # Silent mode:
 # [sound]
+# mode = "none"
+# [sound.ticking]
 # enabled = false
 #
 # Custom notification timeout:

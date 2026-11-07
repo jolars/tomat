@@ -330,6 +330,26 @@ pub struct SoundConfig {
     pub break_to_work: Option<String>,
     /// Custom sound file for work->long_break transition (overrides embedded)
     pub work_to_long_break: Option<String>,
+    #[serde(default)]
+    pub ticking: TickingConfig,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(default)]
+pub struct TickingConfig {
+    pub enabled: bool,
+    pub volume: f32,
+    pub file: Option<String>,
+}
+
+impl Default for TickingConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            volume: 0.2,
+            file: None,
+        }
+    }
 }
 
 fn default_use_embedded() -> bool {
@@ -358,12 +378,14 @@ impl Default for SoundConfig {
             work_to_break: None,
             break_to_work: None,
             work_to_long_break: None,
+            ticking: TickingConfig::default(),
         }
     }
 }
 
 impl SoundConfig {
     /// Get the effective sound mode, considering backwards compatibility with deprecated fields
+    #[cfg(any(feature = "audio", test))]
     pub fn effective_mode(&self) -> SoundMode {
         // If mode is explicitly set, use it
         if let Some(ref mode) = self.mode {
@@ -666,6 +688,44 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn ticking_defaults_and_partial_configuration() {
+        for input in ["", "[sound]", "[sound]\nmode = 'none'", "[sound.ticking]"] {
+            let config: Config = toml::from_str(input).unwrap();
+            assert!(!config.sound.ticking.enabled);
+            assert_eq!(config.sound.ticking.volume, 0.2);
+            assert!(config.sound.ticking.file.is_none());
+        }
+        let config: Config = toml::from_str("[sound.ticking]\nenabled = true").unwrap();
+        assert!(config.sound.ticking.enabled);
+        assert_eq!(config.sound.ticking.volume, 0.2);
+    }
+
+    #[test]
+    fn ticking_settings_are_independent_and_round_trip() {
+        let config: Config = toml::from_str(
+            r#"
+            [sound]
+            mode = "none"
+            volume = 0.8
+            [sound.ticking]
+            enabled = true
+            volume = 0.1
+            file = "/tmp/focus.ogg"
+        "#,
+        )
+        .unwrap();
+        let restored: Config = toml::from_str(&toml::to_string(&config).unwrap()).unwrap();
+        assert_eq!(restored.sound.effective_mode(), SoundMode::None);
+        assert_eq!(restored.sound.volume, 0.8);
+        assert!(restored.sound.ticking.enabled);
+        assert_eq!(restored.sound.ticking.volume, 0.1);
+        assert_eq!(
+            restored.sound.ticking.file.as_deref(),
+            Some("/tmp/focus.ogg")
+        );
+    }
 
     #[test]
     fn test_default_config() {

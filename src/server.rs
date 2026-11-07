@@ -10,6 +10,7 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{UnixListener, UnixStream};
 
 use crate::ServerResponse;
+use crate::audio::AudioController;
 use crate::timer::TimerState;
 
 #[derive(Serialize, Deserialize)]
@@ -310,6 +311,7 @@ async fn handle_client(
     stream: UnixStream,
     state: &mut TimerState,
     config: &crate::config::Config,
+    audio: &AudioController,
 ) -> Result<bool, Box<dyn std::error::Error>> {
     let mut reader = BufReader::new(stream);
     let mut line = String::new();
@@ -477,8 +479,7 @@ async fn handle_client(
                 // Execute skip hook BEFORE phase transition
                 execute_hook(&config.hooks, "skip", state);
 
-                if let Err(e) = state.next_phase(&config.sound, &config.notification, &config.hooks)
-                {
+                if let Err(e) = state.next_phase(audio, &config.notification, &config.hooks) {
                     eprintln!("Error during phase transition: {}", e);
                 }
 
@@ -658,6 +659,7 @@ async fn handle_client(
     };
 
     let should_shutdown = message.command == "shutdown";
+    audio.set_ticking(!should_shutdown && state.should_tick());
 
     let response_json = serde_json::to_string(&response)?;
     let mut writer = reader.into_inner();
@@ -729,10 +731,12 @@ pub async fn run_daemon(quiet: bool) -> Result<(), Box<dyn std::error::Error>> {
         let _ = std::fs::remove_file(&pid_file_path);
     };
 
+    let audio = AudioController::new(&config.sound);
+
     // Set up signal handler for graceful shutdown
     let mut terminate = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
     let result = tokio::select! {
-        result = daemon_loop(listener, &mut state, &config, quiet) => result,
+        result = daemon_loop(listener, &mut state, &config, &audio, quiet) => result,
         _ = tokio::signal::ctrl_c() => {
             if !quiet {
                 println!("Received interrupt signal, shutting down...");
@@ -747,6 +751,8 @@ pub async fn run_daemon(quiet: bool) -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
+    drop(audio);
+
     // Keep the PID file lock alive until here (by keeping _pid_file in scope)
     drop(pid_file);
     cleanup();
@@ -757,13 +763,15 @@ async fn daemon_loop(
     listener: UnixListener,
     state: &mut TimerState,
     config: &crate::config::Config,
+    audio: &AudioController,
     quiet: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     loop {
+        audio.set_ticking(state.should_tick());
         tokio::select! {
             // Handle incoming connections
             Ok((stream, _)) = listener.accept() => {
-                match handle_client(stream, state, config).await {
+                match handle_client(stream, state, config, audio).await {
                     Ok(should_shutdown) if should_shutdown => {
                         if !quiet {
                             println!("Shutdown requested, exiting gracefully");
@@ -798,7 +806,7 @@ async fn daemon_loop(
                 }
             } => {
                 if state.is_finished() {
-                    if let Err(e) = state.next_phase(&config.sound, &config.notification, &config.hooks) {
+                    if let Err(e) = state.next_phase(audio, &config.notification, &config.hooks) {
                         eprintln!("Error during phase transition: {}", e);
                     }
                     // Save state after automatic phase transition

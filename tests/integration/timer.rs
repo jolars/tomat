@@ -384,3 +384,39 @@ auto_advance = "all"
 
     Ok(())
 }
+
+#[test]
+fn test_ticking_configuration_preserves_timer_commands() -> Result<(), Box<dyn std::error::Error>> {
+    let dir = tempfile::tempdir()?;
+    let config_path = dir.path().join("config.toml");
+    std::fs::write(
+        &config_path,
+        r#"
+        [sound]
+        mode = "none"
+        [sound.ticking]
+        enabled = true
+        file = "/nonexistent/tomat-test-loop.wav"
+        [notification]
+        enabled = false
+    "#,
+    )?;
+    let daemon = TestDaemon::start_with_config(Some(&config_path))?;
+    for (args, expected_class) in [
+        (vec!["start"], "work"),
+        (vec!["pause"], "work-paused"),
+        (vec!["reset"], "work-paused"),
+        (vec!["resume"], "work"),
+        (vec!["reset"], "work"),
+        (vec!["toggle"], "work-paused"),
+        (vec!["toggle"], "work"),
+        (vec!["skip"], "break-paused"),
+        (vec!["resume"], "break"),
+        (vec!["skip"], "work-paused"),
+        (vec!["stop"], "idle"),
+    ] {
+        daemon.send_command(&args)?;
+        assert_eq!(daemon.get_status()?["class"], expected_class);
+    }
+    Ok(())
+}
