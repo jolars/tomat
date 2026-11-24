@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.16.1](https://github.com/jolars/tomat/compare/v2.16.0...v2.16.1) (2026-11-24)
+
+### Bug Fixes
+
+- **ci:** run the Rust audit without Checks API access ([`d98adbf`](https://github.com/jolars/tomat/commit/d98adbf81ce071f6b6ba256e390ac8c2a2d4e5b0)), refs [#130](https://github.com/jolars/tomat/issues/130)
+
 ## [2.16.0](https://github.com/jolars/tomat/compare/v2.15.0...v2.16.0) (2026-11-07)
 
 ### Features
